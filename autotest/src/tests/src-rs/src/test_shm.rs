@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2025 ANSSI
+// SPDX-License-Identifier: Apache-2.0
+
 use uapi::exchange::copy_from_kernel;
 use uapi::syscall::*;
 use uapi::systypes::*;
