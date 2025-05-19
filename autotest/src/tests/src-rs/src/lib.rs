@@ -15,7 +15,7 @@ mod test_yield;
 mod test_cycles;
 
 #[no_mangle]
-pub extern "C" fn main() -> ! {
+pub autotest() {
     test_ipc::test_ipc();
     test_irq::test_irq();
     test_map::test_map();
