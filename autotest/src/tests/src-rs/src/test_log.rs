@@ -132,3 +132,28 @@ impl<'a> Write for FmtBuf<'a> {
     }
 }
 
+#[macro_export]
+macro_rules! check_eq {
+    ($a:expr, $b:expr) => {{
+        if $a == $b {
+            log_line!("[SUCCESS   ]", "{} == {}", $a, $b);
+            true
+        } else {
+            log_line!("[KO        ]", "{} != {}", $a, $b);
+            false
+        }
+    }};
+}
+
+#[macro_export]
+macro_rules! check {
+    ($cond:expr, $msg:literal $(, $arg:expr)* $(,)?) => {{
+        if $cond {
+            log_line!("[SUCCESS   ]", $msg $(, $arg)*);
+            true
+        } else {
+            log_line!("[KO        ]", $msg $(, $arg)*);
+            false
+        }
+    }};
+}
