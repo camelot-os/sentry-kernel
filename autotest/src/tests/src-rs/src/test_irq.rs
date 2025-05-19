@@ -1,81 +1,115 @@
 // SPDX-FileCopyrightText: 2025 ANSSI
 // SPDX-License-Identifier: Apache-2.0
 
-use uapi::dma::timer::*;
-use uapi::exchange::copy_from_kernel;
-use uapi::syscall::*;
-use uapi::systypes::EventType;
-use uapi::systypes::*;
+use crate::test_log::*;
+use crate::timer::*;
+use crate::uapi::event::EventType;
+use crate::uapi::status::Status;
+use crate::uapi::systypes::*;
+use crate::uapi::*;
 
-const EVENT_IRQ: u8 = EventType::Irq as u8;
+static mut HANDLE: DeviceHandle = 0;
 
-fn read_irq_from_event_buffer(buf: &[u8]) -> u32 {
-    let irq_bytes =
-        &buf[core::mem::size_of::<ExchangeHeader>()..core::mem::size_of::<ExchangeHeader>() + 4];
-    u32::from_ne_bytes(irq_bytes.try_into().unwrap())
+pub fn test_irq() -> bool {
+    test_suite_start!("sys_irq");
+    let mut ok = true;
+
+    unsafe {
+        timer_map(&mut HANDLE);
+    }
+    timer_init();
+
+    ok &= test_irq_spawn_one_it();
+    ok &= test_irq_spawn_two_it();
+    ok &= test_irq_spawn_periodic();
+
+    unsafe {
+        timer_unmap(HANDLE);
+    }
+
+    test_suite_end!("sys_irq");
+    ok
 }
 
-fn test_irq_spawn_one_it() {
-    let mut buf = [0u8; 128];
+fn test_irq_spawn_two_it() -> bool {
+    let mut ok = true;
+    test_start!();
+
     let irq = timer_get_irqn();
     timer_enable_interrupt();
     timer_enable();
 
-    let res = wait_for_event(EVENT_IRQ, 0);
-    assert_eq!(res, Status::Ok);
-    copy_from_kernel(&mut buf[..]).unwrap();
+    let mut tab = [0u8; 128];
+    ok &= check_eq!(__sys_wait_for_event(EventType::Irq as u8, 0), Status::Ok);
+    ok &= unsafe { copy_from_kernel(tab.as_mut_ptr(), core::mem::size_of::<ExchangeHeader>() + 4) }
+        == Status::Ok;
+    let irqn = u32::from_le_bytes([tab[8], tab[9], tab[10], tab[11]]);
+    ok &= check_eq!(irqn, irq);
 
-    let irq_val = read_irq_from_event_buffer(&buf);
-    assert_eq!(irq_val, irq);
+    timer_enable_interrupt();
+    timer_enable();
 
-    let hdr = unsafe { &*(buf.as_ptr() as *const ExchangeHeader) };
-    assert_eq!(hdr.source, timer_get_handle());
+    ok &= check_eq!(__sys_wait_for_event(EventType::Irq as u8, 0), Status::Ok);
+    ok &= unsafe { copy_from_kernel(tab.as_mut_ptr(), core::mem::size_of::<ExchangeHeader>() + 4) }
+        == Status::Ok;
+    let irqn2 = u32::from_le_bytes([tab[8], tab[9], tab[10], tab[11]]);
+    ok &= check_eq!(irqn2, irq);
+
+    test_end!();
+    ok
 }
+fn test_irq_spawn_one_it() -> bool {
+    let mut ok = true;
+    test_start!();
 
-fn test_irq_spawn_two_it() {
-    let mut buf = [0u8; 128];
     let irq = timer_get_irqn();
+    timer_enable_interrupt();
+    timer_enable();
 
-    for _ in 0..2 {
-        timer_enable_interrupt();
-        timer_enable();
+    let mut tab = [0u8; 128];
+    ok &= check_eq!(__sys_wait_for_event(EventType::Irq as u8, 0), Status::Ok);
+    ok &= unsafe { copy_from_kernel(tab.as_mut_ptr(), core::mem::size_of::<ExchangeHeader>() + 4) }
+        == Status::Ok;
 
-        let res = wait_for_event(EVENT_IRQ, 0);
-        assert_eq!(res, Status::Ok);
-        copy_from_kernel(&mut buf[..]).unwrap();
-
-        let irq_val = read_irq_from_event_buffer(&buf);
-        assert_eq!(irq_val, irq);
+    let irqn = u32::from_le_bytes([tab[8], tab[9], tab[10], tab[11]]);
+    let source = u32::from_le_bytes([tab[4], tab[5], tab[6], tab[7]]);
+    ok &= check_eq!(irqn, irq);
+    unsafe {
+        ok &= check_eq!(source, HANDLE);
     }
+
+    test_end!();
+    ok
 }
 
-fn test_irq_spawn_periodic() {
-    let mut buf = [0u8; 128];
-    let irq = timer_get_irqn();
+fn test_irq_spawn_periodic() -> bool {
+    let mut ok = true;
+    test_start!();
 
+    let irq = timer_get_irqn();
     timer_enable_interrupt();
     timer_set_periodic();
     timer_enable();
 
+    let mut tab = [0u8; 128];
     for count in 0..5 {
-        let res = wait_for_event(EVENT_IRQ, 0);
-        assert_eq!(res, Status::Ok);
-        copy_from_kernel(&mut buf[..]).unwrap();
-
-        let irq_val = read_irq_from_event_buffer(&buf);
-        assert_eq!(irq_val, irq);
-
+        log_info!("interrupt count {} wait", count);
+        ok &= check_eq!(__sys_wait_for_event(EventType::Irq as u8, 0), Status::Ok);
+        ok &= unsafe {
+            copy_from_kernel(tab.as_mut_ptr(), core::mem::size_of::<ExchangeHeader>() + 4)
+        } == Status::Ok;
+        let irqn = u32::from_le_bytes([tab[8], tab[9], tab[10], tab[11]]);
+        ok &= check_eq!(irqn, irq);
         if count < 4 {
             timer_enable_interrupt();
         }
     }
 
-    let res = wait_for_event(EVENT_IRQ, 2000);
-    assert_eq!(res, Status::Timeout);
-}
+    ok &= check_eq!(
+        __sys_wait_for_event(EventType::Irq as u8, 2000),
+        Status::Timeout
+    );
 
-pub fn test_irq() {
-    test_irq_spawn_one_it();
-    test_irq_spawn_two_it();
-    test_irq_spawn_periodic();
+    test_end!();
+    ok
 }
