@@ -2,11 +2,11 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::test_log::*;
-use crate::uapi::*;
 use crate::uapi::dma::*;
+use crate::uapi::event::EventType;
 use crate::uapi::shm::*;
 use crate::uapi::status::Status;
-use crate::uapi::event::EventType;
+use crate::uapi::*;
 
 pub fn test_dma() -> bool {
     let mut all_ok = true;
@@ -46,7 +46,10 @@ fn test_dma_assign_unassign_stream() -> bool {
     let mut streamh: DmaHandle = 0;
     let ok = check_eq!(__sys_get_dma_stream_handle(0x2), Status::Ok)
         & (unsafe {
-            copy_from_kernel(&mut streamh as *mut _ as *mut u8, core::mem::size_of::<DmaHandle>())
+            copy_from_kernel(
+                &mut streamh as *mut _ as *mut u8,
+                core::mem::size_of::<DmaHandle>(),
+            )
         } == Status::Ok)
         & check_eq!(__sys_dma_assign_stream(streamh), Status::Ok)
         & check_eq!(__sys_dma_assign_stream(streamh), Status::Invalid)
@@ -61,7 +64,10 @@ fn test_dma_start_stream() -> bool {
     let mut streamh: DmaHandle = 0;
     let ok = check_eq!(__sys_get_dma_stream_handle(0x2), Status::Ok)
         & (unsafe {
-            copy_from_kernel(&mut streamh as *mut _ as *mut u8, core::mem::size_of::<DmaHandle>())
+            copy_from_kernel(
+                &mut streamh as *mut _ as *mut u8,
+                core::mem::size_of::<DmaHandle>(),
+            )
         } == Status::Ok)
         & check_eq!(__sys_dma_start_stream(streamh), Status::Invalid)
         & check_eq!(__sys_dma_assign_stream(streamh), Status::Ok)
@@ -77,7 +83,10 @@ fn test_dma_get_stream_status() -> bool {
     let mut streamh: DmaHandle = 0;
     let ok = check_eq!(__sys_get_dma_stream_handle(0x2), Status::Ok)
         & (unsafe {
-            copy_from_kernel(&mut streamh as *mut _ as *mut u8, core::mem::size_of::<DmaHandle>())
+            copy_from_kernel(
+                &mut streamh as *mut _ as *mut u8,
+                core::mem::size_of::<DmaHandle>(),
+            )
         } == Status::Ok)
         & check_eq!(__sys_dma_get_stream_status(streamh), Status::Ok);
     test_end!();
@@ -89,7 +98,10 @@ fn test_dma_stop_stream() -> bool {
     let mut streamh: DmaHandle = 0;
     let ok = check_eq!(__sys_get_dma_stream_handle(0x2), Status::Ok)
         & (unsafe {
-            copy_from_kernel(&mut streamh as *mut _ as *mut u8, core::mem::size_of::<DmaHandle>())
+            copy_from_kernel(
+                &mut streamh as *mut _ as *mut u8,
+                core::mem::size_of::<DmaHandle>(),
+            )
         } == Status::Ok)
         & check_eq!(__sys_dma_suspend_stream(streamh), Status::Ok)
         & check_eq!(__sys_dma_unassign_stream(streamh), Status::Ok);
@@ -103,20 +115,29 @@ fn test_dma_start_n_wait_stream() -> bool {
     let mut streamh: DmaHandle = 0;
     ok &= check_eq!(__sys_get_dma_stream_handle(0x2), Status::Ok);
     ok &= unsafe {
-        copy_from_kernel(&mut streamh as *mut _ as *mut u8, core::mem::size_of::<DmaHandle>())
+        copy_from_kernel(
+            &mut streamh as *mut _ as *mut u8,
+            core::mem::size_of::<DmaHandle>(),
+        )
     } == Status::Ok;
 
     let mut myself: TaskHandle = 0;
     ok &= check_eq!(__sys_get_process_handle(0xbabe), Status::Ok);
     ok &= unsafe {
-        copy_from_kernel(&mut myself as *mut _ as *mut u8, core::mem::size_of::<TaskHandle>())
+        copy_from_kernel(
+            &mut myself as *mut _ as *mut u8,
+            core::mem::size_of::<TaskHandle>(),
+        )
     } == Status::Ok;
 
     let mut shm1: ShmHandle = 0;
     let mut info1 = ShmInfos::default();
     ok &= check_eq!(__sys_get_shm_handle(shms[0].id), Status::Ok);
     ok &= unsafe {
-        copy_from_kernel(&mut shm1 as *mut _ as *mut u8, core::mem::size_of::<ShmHandle>())
+        copy_from_kernel(
+            &mut shm1 as *mut _ as *mut u8,
+            core::mem::size_of::<ShmHandle>(),
+        )
     } == Status::Ok;
     ok &= check_eq!(
         __sys_shm_set_credential(shm1, myself, SHM_PERMISSION_WRITE | SHM_PERMISSION_MAP),
@@ -125,15 +146,23 @@ fn test_dma_start_n_wait_stream() -> bool {
     ok &= check_eq!(__sys_map_shm(shm1), Status::Ok);
     ok &= check_eq!(__sys_shm_get_infos(shm1), Status::Ok);
     ok &= unsafe {
-        copy_from_kernel(&mut info1 as *mut _ as *mut u8, core::mem::size_of::<ShmInfos>())
+        copy_from_kernel(
+            &mut info1 as *mut _ as *mut u8,
+            core::mem::size_of::<ShmInfos>(),
+        )
     } == Status::Ok;
-    unsafe { core::ptr::write_bytes(info1.base as *mut u8, 0xa5, 0x100); }
+    unsafe {
+        core::ptr::write_bytes(info1.base as *mut u8, 0xa5, 0x100);
+    }
 
     let mut shm2: ShmHandle = 0;
     let mut info2 = ShmInfos::default();
     ok &= check_eq!(__sys_get_shm_handle(shms[1].id), Status::Ok);
     ok &= unsafe {
-        copy_from_kernel(&mut shm2 as *mut _ as *mut u8, core::mem::size_of::<ShmHandle>())
+        copy_from_kernel(
+            &mut shm2 as *mut _ as *mut u8,
+            core::mem::size_of::<ShmHandle>(),
+        )
     } == Status::Ok;
     ok &= check_eq!(
         __sys_shm_set_credential(shm2, myself, SHM_PERMISSION_WRITE | SHM_PERMISSION_MAP),
@@ -142,9 +171,14 @@ fn test_dma_start_n_wait_stream() -> bool {
     ok &= check_eq!(__sys_map_shm(shm2), Status::Ok);
     ok &= check_eq!(__sys_shm_get_infos(shm2), Status::Ok);
     ok &= unsafe {
-        copy_from_kernel(&mut info2 as *mut _ as *mut u8, core::mem::size_of::<ShmInfos>())
+        copy_from_kernel(
+            &mut info2 as *mut _ as *mut u8,
+            core::mem::size_of::<ShmInfos>(),
+        )
     } == Status::Ok;
-    unsafe { core::ptr::write_bytes(info2.base as *mut u8, 0x42, 0x100); }
+    unsafe {
+        core::ptr::write_bytes(info2.base as *mut u8, 0x42, 0x100);
+    }
 
     ok &= check_eq!(__sys_dma_assign_stream(streamh), Status::Ok);
     ok &= check_eq!(__sys_dma_start_stream(streamh), Status::Ok);
@@ -172,16 +206,25 @@ fn test_dma_get_info() -> bool {
 
     ok &= check_eq!(__sys_get_shm_handle(shms[0].id), Status::Ok);
     ok &= unsafe {
-        copy_from_kernel(&mut shm as *mut _ as *mut u8, core::mem::size_of::<ShmHandle>())
+        copy_from_kernel(
+            &mut shm as *mut _ as *mut u8,
+            core::mem::size_of::<ShmHandle>(),
+        )
     } == Status::Ok;
     ok &= check_eq!(__sys_shm_get_infos(shm), Status::Ok);
     ok &= unsafe {
-        copy_from_kernel(&mut infos as *mut _ as *mut u8, core::mem::size_of::<ShmInfos>())
+        copy_from_kernel(
+            &mut infos as *mut _ as *mut u8,
+            core::mem::size_of::<ShmInfos>(),
+        )
     } == Status::Ok;
 
     ok &= check_eq!(__sys_get_dma_stream_handle(0x1), Status::Ok);
     ok &= unsafe {
-        copy_from_kernel(&mut streamh as *mut _ as *mut u8, core::mem::size_of::<DmaHandle>())
+        copy_from_kernel(
+            &mut streamh as *mut _ as *mut u8,
+            core::mem::size_of::<DmaHandle>(),
+        )
     } == Status::Ok;
 
     ok &= check_eq!(__sys_dma_get_stream_info(streamh), Status::Ok);
