@@ -53,7 +53,7 @@ pub fn set_periodic_timer() -> i32 {
 extern "C" {
     pub fn timer_map(handle: *mut DeviceHandle) -> Status;
 }
-pub timer_map(handle: *mut DeviceHandle) -> Status {
+pub fn timer_map(handle: *mut DeviceHandle) -> Status {
     unsafe { timer_map(handle) }
 }
 extern "C" {
