@@ -64,6 +64,13 @@ pub fn unmap_unmap(handle: DeviceHandle) -> Status {
     unsafe { timer_unmap(handle) }
 }
 
+extern "C" {
+    pub fn timer_init();
+}
+pub fn init_timer() -> Status {
+    unsafe { timer_init() }
+}
+
 pub fn test_irq() -> bool {
     test_suite_start!("sys_irq");
     let mut ok = true;
