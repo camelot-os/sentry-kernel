@@ -3,6 +3,9 @@
 
 testlib_rust_sourceset = ssmod.source_set()
 
+devices_template_rs = files(['src/devices-dt.rs.in'])
+devices_dtsgen_rs = dtsgen.process(devices_template_rs)
+
 # lib.rs must be called
 testlib_rust_sourceset.add(files('src/lib.rs'))
 
@@ -13,6 +16,7 @@ testlib_rust_sourceset.add(when: 'CONFIG_TEST_GPIO', if_true: files('src/test_gp
 testlib_rust_sourceset.add(when: 'CONFIG_TEST_IPC', if_true: files('src/test_ipc.rs'))
 testlib_rust_sourceset.add(when: 'CONFIG_TEST_IRQ', if_true: files('src/test_irq.rs'))
 testlib_rust_sourceset.add(when: 'CONFIG_TEST_DEVICES', if_true: files('src/test_map.rs'))
+testlib_rust_headerset.add(when: 'CONFIG_TEST_DEVICES', if_true: devices_dtsgen_rs)
 testlib_rust_sourceset.add(when: 'CONFIG_TEST_RANDOM', if_true: files('src/test_random.rs'))
 testlib_rust_sourceset.add(when: 'CONFIG_TEST_SHM', if_true: files('src/test_shm.rs'))
 testlib_rust_sourceset.add(when: 'CONFIG_TEST_SIGNALS', if_true: files('src/test_signal.rs'))
