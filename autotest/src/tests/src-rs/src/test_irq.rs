@@ -10,6 +10,60 @@ use crate::uapi::*;
 
 static mut HANDLE: DeviceHandle = 0;
 
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct Stm32TimerDesc {
+    pub base_addr: u32,
+    pub size: usize,
+    pub clk_msk: u32,
+    pub label: u8,
+    pub irqn: u8,
+    pub counter: u16,
+    pub prescaler: u16,
+}
+
+extern "C" {
+    pub fn timer_get_irqn() -> i32;
+}
+pub fn get_timer_irqn() -> i32 {
+    unsafe { timer_get_irqn() }
+}
+
+extern "C" {
+    pub fn timer_enable_interrupt();
+}
+pub fn enable_timer_interrupt() -> i32 {
+    unsafe { timer_enable_interrupt() }
+}
+
+extern "C" {
+    pub fn timer_enable();
+}
+pub fn enable_timer() -> i32 {
+    unsafe { timer_enable() }
+}
+
+extern "C" {
+    pub fn timer_set_periodic();
+}
+pub fn set_periodic_timer() -> i32 {
+    unsafe { timer_set_periodic() }
+}
+
+extern "C" {
+    pub fn timer_map(handle: *mut DeviceHandle) -> Status;
+}
+pub timer_map(handle: *mut DeviceHandle) -> Status {
+    unsafe { timer_map(handle) }
+}
+extern "C" {
+    pub fn timer_unmap(handle: DeviceHandle) -> Status;
+}
+
+pub fn unmap_unmap(handle: DeviceHandle) -> Status {
+    unsafe { timer_unmap(handle) }
+}
+
 pub fn test_irq() -> bool {
     test_suite_start!("sys_irq");
     let mut ok = true;
@@ -35,9 +89,9 @@ fn test_irq_spawn_two_it() -> bool {
     let mut ok = true;
     test_start!();
 
-    let irq = timer_get_irqn();
-    timer_enable_interrupt();
-    timer_enable();
+    let irq = get_timer_irqn();
+    enable_timer_interrupt();
+    enable_timer();
 
     let mut tab = [0u8; 128];
     ok &= check_eq!(__sys_wait_for_event(EventType::Irq as u8, 0), Status::Ok);
@@ -46,8 +100,8 @@ fn test_irq_spawn_two_it() -> bool {
     let irqn = u32::from_le_bytes([tab[8], tab[9], tab[10], tab[11]]);
     ok &= check_eq!(irqn, irq);
 
-    timer_enable_interrupt();
-    timer_enable();
+    enable_timer_interrupt();
+    enable_timer();
 
     ok &= check_eq!(__sys_wait_for_event(EventType::Irq as u8, 0), Status::Ok);
     ok &= unsafe { copy_from_kernel(tab.as_mut_ptr(), core::mem::size_of::<ExchangeHeader>() + 4) }
@@ -62,9 +116,9 @@ fn test_irq_spawn_one_it() -> bool {
     let mut ok = true;
     test_start!();
 
-    let irq = timer_get_irqn();
-    timer_enable_interrupt();
-    timer_enable();
+    let irq = get_timer_irqn();
+    enable_timer_interrupt();
+    enable_timer();
 
     let mut tab = [0u8; 128];
     ok &= check_eq!(__sys_wait_for_event(EventType::Irq as u8, 0), Status::Ok);
@@ -86,10 +140,10 @@ fn test_irq_spawn_periodic() -> bool {
     let mut ok = true;
     test_start!();
 
-    let irq = timer_get_irqn();
-    timer_enable_interrupt();
-    timer_set_periodic();
-    timer_enable();
+    let irq = get_timer_irqn();
+    enable_timer_interrupt();
+    set_periodic_timer();
+    enable_timer();
 
     let mut tab = [0u8; 128];
     for count in 0..5 {
@@ -101,7 +155,7 @@ fn test_irq_spawn_periodic() -> bool {
         let irqn = u32::from_le_bytes([tab[8], tab[9], tab[10], tab[11]]);
         ok &= check_eq!(irqn, irq);
         if count < 4 {
-            timer_enable_interrupt();
+            enable_timer_interrupt();
         }
     }
 
