@@ -2,11 +2,11 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::test_log::*;
-use crate::timer::*;
-use crate::uapi::event::EventType;
-use crate::uapi::status::Status;
-use crate::uapi::systypes::*;
-use crate::uapi::*;
+//use crate::timer::*;
+use uapi::event::EventType;
+use uapi::status::Status;
+use uapi::systypes::*;
+use uapi::*;
 
 static mut HANDLE: DeviceHandle = 0;
 

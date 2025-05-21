@@ -2,10 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::test_log::*;
-use crate::uapi::event::EventType;
-use crate::uapi::status::Status;
-use crate::uapi::systypes::{ExchangeHeader, TaskHandle};
-use crate::uapi::*;
+use uapi::event::EventType;
+use uapi::status::Status;
+use uapi::systypes::{ExchangeHeader, TaskHandle};
+use uapi::*;
 
 pub fn test_ipc() -> bool {
     test_suite_start!("sys_ipc");

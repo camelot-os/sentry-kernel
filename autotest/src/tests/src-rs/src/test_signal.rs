@@ -1,38 +1,96 @@
 // SPDX-FileCopyrightText: 2025 ANSSI
 // SPDX-License-Identifier: Apache-2.0
 
-use uapi::exchange::copy_from_kernel;
-use uapi::syscall::*;
+use crate::test_log::*;
+use uapi::status::Status;
 use uapi::systypes::*;
-use uapi::systypes::{EventType, Signal};
+use uapi::*;
 
-const EVENT_SIGNAL: u8 = EventType::Signal as u8;
-const TIMEOUT_MS: i32 = 20;
-
-fn test_signal_sendrecv() {
-    let mut handle: TaskHandle = 0;
-    let mut buffer = [0u8; 128];
-
-    assert_eq!(get_process_handle(0xbabe), Status::Ok);
-    copy_from_kernel(&mut handle).unwrap();
-
-    for sig in Signal::Abort as u32..=Signal::Usr2 as u32 {
-        let signal = unsafe { core::mem::transmute::<u32, Signal>(sig) };
-        assert_eq!(send_signal(handle, signal), Status::Ok);
-
-        let res = wait_for_event(EVENT_SIGNAL, TIMEOUT_MS);
-        assert_eq!(res, Status::Ok);
-
-        copy_from_kernel(&mut buffer[..core::mem::size_of::<ExchangeHeader>() + 4]).unwrap();
-        let header = unsafe { &*(buffer.as_ptr() as *const ExchangeHeader) };
-        let content_bytes = &buffer
-            [core::mem::size_of::<ExchangeHeader>()..core::mem::size_of::<ExchangeHeader>() + 4];
-        let received_sig = u32::from_ne_bytes(content_bytes.try_into().unwrap());
-
-        assert_eq!(received_sig, signal as u32);
-    }
+#[repr(C)]
+#[derive(Copy, Clone)]
+struct ExchangeEvent {
+    header: ExchangeHeader,
+    data: [u8; 64],
 }
 
-pub fn test_signal() {
-    test_signal_sendrecv();
+fn test_signal_sendrecv() -> bool {
+    test_start!();
+
+    let mut ok = true;
+    let mut handle: TaskHandle = 0;
+    let timeout: i32 = 20;
+    let mut buffer = [0u8; core::mem::size_of::<ExchangeEvent>() + 4];
+
+    let ret = unsafe { __sys_get_process_handle(0xbabe) };
+    if ret != Status::Ok {
+        log_info!("get_process_handle failed: {:?}", ret);
+        test_end!();
+        return false;
+    }
+
+    if unsafe {
+        copy_from_kernel(
+            &mut handle as *mut _ as *mut u8,
+            core::mem::size_of::<TaskHandle>(),
+        )
+    } != Status::Ok
+    {
+        log_info!("copy_from_kernel(handle) failed");
+        test_end!();
+        return false;
+    }
+
+    log_info!("handle is {:#x}", handle);
+    for sig_val in (Signal::Abort as u32)..=(Signal::Usr2 as u32) {
+        let sig = unsafe { core::mem::transmute::<u32, Signal>(sig_val) };
+        log_info!("sending signal {:?} to myself", sig);
+
+        let ret_send = unsafe { __sys_send_signal(handle, sig) };
+        let ret_wait = unsafe { __sys_wait_for_event(EventType::Signal as u8, timeout) };
+
+        let copy_status = unsafe {
+            copy_from_kernel(
+                buffer.as_mut_ptr(),
+                core::mem::size_of::<ExchangeEvent>() + 4,
+            )
+        };
+
+        if ret_send != Status::Ok || ret_wait != Status::Ok || copy_status != Status::Ok {
+            log_info!(
+                "signal {:?} failed: send={:?}, wait={:?}, copy={:?}",
+                sig,
+                ret_send,
+                ret_wait,
+                copy_status
+            );
+            ok = false;
+            continue;
+        }
+
+        let event = unsafe { &*(buffer[4..].as_ptr() as *const ExchangeEvent) };
+        let received_signal = u32::from_ne_bytes(event.data[0..4].try_into().unwrap_or([0; 4]));
+
+        log_info!(
+            "{:?}:{}:{:#x}:src={:#x} signal={}",
+            event.header.event,
+            event.header.length,
+            event.header.magic,
+            event.header.peer,
+            received_signal
+        );
+
+        ok &= check_eq!(received_signal, sig as u32);
+    }
+
+    test_end!();
+    ok
+}
+pub fn test_signal() -> bool {
+    test_suite_start!("sys_signal");
+    let mut ok = true;
+
+    ok &= test_signal_sendrecv();
+
+    test_suite_end!("sys_signal");
+    ok
 }
