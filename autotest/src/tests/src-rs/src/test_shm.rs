@@ -1,12 +1,12 @@
 // SPDX-FileCopyrightText: 2025 ANSSI
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::devices_utils::{SHMS, get_shm_by_name};
 use crate::test_log::*;
 use uapi::shm::*;
 use uapi::status::Status;
 use uapi::systypes::*;
 use uapi::*;
-use crate::devices_utils::{SHMS, get_shm_by_name};
 
 pub fn test_shm() -> bool {
     test_suite_start!("sys_map_shm");
