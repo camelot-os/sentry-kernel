@@ -6,6 +6,7 @@ use uapi::shm::*;
 use uapi::status::Status;
 use uapi::systypes::*;
 use uapi::*;
+use crate::devices_utils::{SHMS, get_shm_by_name};
 
 pub fn test_shm() -> bool {
     test_suite_start!("sys_map_shm");
@@ -27,9 +28,12 @@ pub fn test_shm() -> bool {
 
 fn test_shm_handle() -> bool {
     test_start!();
-    let ok = check_eq!(__sys_get_shm_handle(shms[0].id), Status::Ok)
-        & check_eq!(__sys_get_shm_handle(shms[3].id), Status::Ok)
-        & check_eq!(__sys_get_shm_handle(shms[2].id), Status::Ok)
+    let shm1 = get_shm_by_name("shm_autotest_1").expect("shm_autotest_1 not found");
+    let shm2 = get_shm_by_name("shm_autotest_2").expect("shm_autotest_1 not found");
+    let shm3 = get_shm_by_name("shm_autotest_3").expect("shm_autotest_1 not found");
+    let ok = check_eq!(__sys_get_shm_handle(shm1.id), Status::Ok)
+        & check_eq!(__sys_get_shm_handle(shm2.id), Status::Ok)
+        & check_eq!(__sys_get_shm_handle(shm3.id), Status::Ok)
         & check_eq!(__sys_get_shm_handle(0x42), Status::Invalid);
     test_end!();
     ok
@@ -37,8 +41,9 @@ fn test_shm_handle() -> bool {
 
 fn test_shm_unmap_notmapped() -> bool {
     test_start!();
+    let shm1 = get_shm_by_name("shm_autotest_1").expect("shm_autotest_1 not found");
     let mut shm: ShmHandle = 0;
-    let ok = check_eq!(__sys_get_shm_handle(shms[0].id), Status::Ok)
+    let ok = check_eq!(__sys_get_shm_handle(shm1.id), Status::Ok)
         & (unsafe {
             copy_from_kernel(
                 &mut shm as *mut _ as *mut u8,
@@ -52,8 +57,9 @@ fn test_shm_unmap_notmapped() -> bool {
 
 fn test_shm_invalidmap() -> bool {
     test_start!();
+    let shm1 = get_shm_by_name("shm_autotest_1").expect("shm_autotest_1 not found");
     let mut shm: ShmHandle = 0;
-    let ok = check_eq!(__sys_get_shm_handle(shms[0].id), Status::Ok)
+    let ok = check_eq!(__sys_get_shm_handle(shm1.id), Status::Ok)
         & (unsafe {
             copy_from_kernel(
                 &mut shm as *mut _ as *mut u8,
@@ -67,6 +73,7 @@ fn test_shm_invalidmap() -> bool {
 }
 fn test_shm_mapdenied() -> bool {
     test_start!();
+    let shm1 = get_shm_by_name("shm_autotest_1").expect("shm_autotest_1 not found");
     let mut shm: ShmHandle = 0;
     let mut myself: TaskHandle = 0;
     let perms = SHM_PERMISSION_WRITE | SHM_PERMISSION_MAP;
@@ -78,7 +85,7 @@ fn test_shm_mapdenied() -> bool {
                 core::mem::size_of::<TaskHandle>(),
             )
         } == Status::Ok)
-        & check_eq!(__sys_get_shm_handle(shms[3].id), Status::Ok)
+        & check_eq!(__sys_get_shm_handle(shm1.id), Status::Ok)
         & (unsafe {
             copy_from_kernel(
                 &mut shm as *mut _ as *mut u8,
@@ -93,10 +100,11 @@ fn test_shm_mapdenied() -> bool {
 
 fn test_shm_infos() -> bool {
     test_start!();
+    let shm1 = get_shm_by_name("shm_autotest_1").expect("shm_autotest_1 not found");
     let mut shm: ShmHandle = 0;
     let mut infos = ShmInfos::default();
 
-    let ok = check_eq!(__sys_get_shm_handle(shms[0].id), Status::Ok)
+    let ok = check_eq!(__sys_get_shm_handle(shm1.id), Status::Ok)
         & (unsafe {
             copy_from_kernel(
                 &mut shm as *mut _ as *mut u8,
@@ -110,16 +118,17 @@ fn test_shm_infos() -> bool {
                 core::mem::size_of::<ShmInfos>(),
             )
         } == Status::Ok)
-        & check_eq!(infos.label, shms[0].id)
+        & check_eq!(infos.label, shm1.id)
         & check_eq!(infos.handle, shm)
-        & check_eq!(infos.base as u32, shms[0].baseaddr as u32)
-        & check_eq!(infos.len as u32, shms[0].size as u32);
+        & check_eq!(infos.base as u32, shm1.baseaddr as u32)
+        & check_eq!(infos.len as u32, shm1.size as u32);
     test_end!();
     ok
 }
 
 fn test_shm_creds_on_mapped() -> bool {
     test_start!();
+    let shm1 = get_shm_by_name("shm_autotest_1").expect("shm_autotest_1 not found");
     let mut shm: ShmHandle = 0;
     let mut myself: TaskHandle = 0;
 
@@ -130,7 +139,7 @@ fn test_shm_creds_on_mapped() -> bool {
                 core::mem::size_of::<TaskHandle>(),
             )
         } == Status::Ok)
-        & check_eq!(__sys_get_shm_handle(shms[0].id), Status::Ok)
+        & check_eq!(__sys_get_shm_handle(shm1.id), Status::Ok)
         & (unsafe {
             copy_from_kernel(
                 &mut shm as *mut _ as *mut u8,
@@ -156,6 +165,7 @@ fn test_shm_creds_on_mapped() -> bool {
 }
 fn test_shm_allows_idle() -> bool {
     test_start!();
+    let shm1 = get_shm_by_name("shm_autotest_1").expect("shm_autotest_1 not found");
     let mut shm: ShmHandle = 0;
     let mut idle: TaskHandle = 0;
 
@@ -166,7 +176,7 @@ fn test_shm_allows_idle() -> bool {
                 core::mem::size_of::<TaskHandle>(),
             )
         } == Status::Ok)
-        & check_eq!(__sys_get_shm_handle(shms[0].id), Status::Ok)
+        & check_eq!(__sys_get_shm_handle(shm1.id), Status::Ok)
         & (unsafe {
             copy_from_kernel(
                 &mut shm as *mut _ as *mut u8,
@@ -183,6 +193,7 @@ fn test_shm_allows_idle() -> bool {
 
 fn test_shm_map_unmappable() -> bool {
     test_start!();
+    let shm1 = get_shm_by_name("shm_autotest_1").expect("shm_autotest_1 not found");
     let mut shm: ShmHandle = 0;
     let mut myself: TaskHandle = 0;
     let perms = SHM_PERMISSION_WRITE;
@@ -194,7 +205,7 @@ fn test_shm_map_unmappable() -> bool {
                 core::mem::size_of::<TaskHandle>(),
             )
         } == Status::Ok)
-        & check_eq!(__sys_get_shm_handle(shms[0].id), Status::Ok)
+        & check_eq!(__sys_get_shm_handle(shm1.id), Status::Ok)
         & (unsafe {
             copy_from_kernel(
                 &mut shm as *mut _ as *mut u8,
@@ -209,6 +220,7 @@ fn test_shm_map_unmappable() -> bool {
 
 fn test_shm_mapunmap() -> bool {
     test_start!();
+    let shm1 = get_shm_by_name("shm_autotest_1").expect("shm_autotest_1 not found");
     let mut shm: ShmHandle = 0;
     let mut myself: TaskHandle = 0;
     let perms = SHM_PERMISSION_WRITE | SHM_PERMISSION_MAP;
@@ -220,7 +232,7 @@ fn test_shm_mapunmap() -> bool {
                 core::mem::size_of::<TaskHandle>(),
             )
         } == Status::Ok)
-        & check_eq!(__sys_get_shm_handle(shms[0].id), Status::Ok)
+        & check_eq!(__sys_get_shm_handle(shm1.id), Status::Ok)
         & (unsafe {
             copy_from_kernel(
                 &mut shm as *mut _ as *mut u8,
@@ -236,7 +248,7 @@ fn test_shm_mapunmap() -> bool {
     }
 
     unsafe {
-        let shmptr = shms[0].baseaddr as *mut u32;
+        let shmptr = shm1.baseaddr as *mut u32;
         for i in 0..12 {
             shmptr.add(i).write_volatile(i as u32 * 4);
         }
