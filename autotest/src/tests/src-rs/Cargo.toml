@@ -8,7 +8,7 @@ edition = "2024"
 build = "build.rs"
 
 [dependencies]
-uapi = { path = "../../../../uapi", default-features = false }
+sentry-uapi = { path = "../../../../uapi", default-features = false }
 
 [features]
 default = []
