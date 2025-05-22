@@ -29,8 +29,8 @@ pub fn test_shm() -> bool {
 fn test_shm_handle() -> bool {
     test_start!();
     let shm1 = get_shm_by_name("shm_autotest_1").expect("shm_autotest_1 not found");
-    let shm2 = get_shm_by_name("shm_autotest_2").expect("shm_autotest_1 not found");
-    let shm3 = get_shm_by_name("shm_autotest_3").expect("shm_autotest_1 not found");
+    let shm2 = get_shm_by_name("shm_autotest_2").expect("shm_autotest_2 not found");
+    let shm3 = get_shm_by_name("shm_autotest_3").expect("shm_autotest_3 not found");
     let ok = check_eq!(__sys_get_shm_handle(shm1.id), Status::Ok)
         & check_eq!(__sys_get_shm_handle(shm2.id), Status::Ok)
         & check_eq!(__sys_get_shm_handle(shm3.id), Status::Ok)
