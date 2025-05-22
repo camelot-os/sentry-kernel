@@ -1,7 +1,17 @@
 // SPDX-FileCopyrightText: 2023 Ledger SAS
+// SPDX-FileCopyrightText: 2025 ANSSI
 // SPDX-License-Identifier: Apache-2.0
 
-uses uapi::systypes::DevInfo;
+use uapi::systypes::DevInfo;
+
+/// Liste des identifiants symboliques des périphériques
+pub enum DeviceID {
+    {% for device in dts.get_active_nodes() -%}
+    {% if "0xbabe" in device_get_owner(device) -%}
+    {{ device.label | upper }},
+    {% endif -%}
+    {% endfor %}
+}
 
 {% macro device_get_owner(device) -%}
 {% if device["outpost,owner"] -%}
@@ -11,87 +21,67 @@ uses uapi::systypes::DevInfo;
 {% endif -%}
 {% endmacro -%}
 
-pub enum DeviceID {
+/// Tableau de descripteurs de périphériques
+pub static DEVICES: &[DevInfo] = &[
     {% for device in dts.get_active_nodes() -%}
     {% if "0xbabe" in device_get_owner(device) -%}
-    DeviceID{{ device.label }},
-    {% endif -%}
-    {% endfor -%}
-};
-
-{% set ns = namespace() -%}
-{% set ns.total_devices=0 -%}
-static DEVICES: Vec<DevInfo> = [
-static const devinfo_t devices[] = {
-    {% for device in dts.get_active_nodes() -%}
-    {% if "0xbabe" in device_get_owner(device) -%}
-    {% set ns.total_devices = ns.total_devices + 1 -%}
-    {
-        .id = {{ "0x%xUL"|format(loop.index - 1) }},
+    DevInfo {
+        id: {{ "0x%x"|format(loop.index0) }},
         {% if device.reg -%}
-        .baseaddr = {{ "0x%08x"|format(device.reg[0]) }},
-        .size = {{ "0x%08x"|format(device.reg[1]) }},
+        baseaddr: {{ "0x%08x"|format(device.reg[0]) }},
+        size: {{ "0x%08x"|format(device.reg[1]) }},
         {% else -%}
-        .baseaddr = 0UL,
-        .size = 0UL,
+        baseaddr: 0,
+        size: 0,
         {% endif -%}
-        {% if device.interrupts -%}
-        .num_interrupt = 1,
-        .its = {
-            {% if device.interrupts[0] -%}
-            {  .it_controler = {{ device.interrupts[1] }}UL, .it_num = {{ device.interrupts[0] }}UL },
+        num_interrupt: {% if device.interrupts %}1{% else %}0{% endif %},
+        its: [
+            {% if device.interrupts -%}
+            { it_controler: {{ device.interrupts[1] }}, it_num: {{ device.interrupts[0] }} },
             {% else -%}
-            {  .it_controler = 0UL, .it_num = 0UL },
+            { it_controler: 0, it_num: 0 },
             {% endif -%}
-            {% for irq in [ 1,2,3,4,5,6,7] -%}
-            {  .it_controler = 0UL, .it_num = 0UL },
-            {% endfor -%}
-        },
-        {% else -%}
-        .num_interrupt = 0,
-        .its = {
-            {% for irq in [ 0,1,2,3,4,5,6,7] -%}
-            {  .it_controler = 0UL, .it_num = 0UL },
-            {% endfor -%}
-        },
-        {% endif -%}
-        {% if device['pinctrl-0'] -%}
-        {% set numio = device['pinctrl-0']|length %}
-        .num_ios = {{ numio }},
-        .ios = {
-            {% for io in [ 0,1,2,3,4,5,6,7] -%}
-            {% if io < numio -%}
-            {% set io = device['pinctrl-0'][io] -%}
+            {% for _ in range(7) -%}
+            { it_controler: 0, it_num: 0 },
+            {% endfor %}
+        ],
+        num_ios: {% if device["pinctrl-0"] %}{{ device["pinctrl-0"] | length }}{% else %}0{% endif %},
+        ios: [
+            {% set numio = device["pinctrl-0"] | length if device["pinctrl-0"] else 0 %}
+            {% for io_idx in range(8) %}
+            {% if device["pinctrl-0"] and io_idx < device["pinctrl-0"] | length %}
+            {% set io = device["pinctrl-0"][io_idx] %}
             {
-                {#
-                 the GPIO port id is numeric here, using the same resolution
-                 as the GPIO driver device tree forge (see stm32-gpio-dt.h for e.g.
-                -#}
-                {% set ns.io_gpio_port=0 -%}
-                {% set gpio_ports = dts.get_compatible("st,stm32-gpio") -%}
-                {% for port in gpio_ports -%}
-                {% if port.status and port.status == "okay" -%}
-                {% if port.label == io.pinmux[0].label -%}
-                /* using port {{ port.label.upper() }} */
-                .port = {{ ns.io_gpio_port }},
-                {% endif -%}
-                {% set ns.io_gpio_port = ns.io_gpio_port + 1 -%}
-                {% endif -%}
-                {% endfor -%} .pin = {{ io.pinmux[1] }}, .mode = {{ io.pinmux[2] }}, .af = {{ io.pinmux[3] }}, .ppull =  {{ io.pincfg[0] }}, .speed =  {{ io.pincfg[1] }}, .pupdr =  {{ io.pincfg[2] }}, },
-            {% else -%}
-            { .port = 0, .pin = 0, .mode = 0, .af = 0, .ppull = 0, .speed = 0, .pupdr = 0, },
-            {% endif -%}
-            {% endfor -%}
-        },
-        {% else -%}
-        .num_ios = 0,
-        .ios = {
-            {% for io in [0,1,2,3,4,5,6,7] -%}
-            { .port = 0, .pin = 0, .mode = 0, .af = 0, .ppull = 0, .speed = 0, .pupdr = 0, },
-            {% endfor -%}
-        },
-        {% endif -%}
+                {% set ns.io_gpio_port = 0 %}
+                {% set gpio_ports = dts.get_compatible("st,stm32-gpio") %}
+                {% for port in gpio_ports if port.status == "okay" %}
+                {% if port.label == io.pinmux[0].label %}
+                port: {{ ns.io_gpio_port }},
+                {% endif %}
+                {% set ns.io_gpio_port = ns.io_gpio_port + 1 %}
+                {% endfor %}
+                pin: {{ io.pinmux[1] }},
+                mode: {{ io.pinmux[2] }},
+                af: {{ io.pinmux[3] }},
+                ppull: {{ io.pincfg[0] }},
+                speed: {{ io.pincfg[1] }},
+                pupdr: {{ io.pincfg[2] }},
+            },
+            {% else %}
+            { port: 0, pin: 0, mode: 0, af: 0, ppull: 0, speed: 0, pupdr: 0 },
+            {% endif %}
+            {% endfor %}
+        ],
     },
+    {% endif %}
+    {% endfor %}
+];
+
+/// Noms des périphériques (même ordre que `DEVICES`)
+pub static DEVICE_NAMES: &[&str] = &[
+    {% for device in dts.get_active_nodes() -%}
+    {% if "0xbabe" in device_get_owner(device) -%}
+    "{{ device.label }}",
     {% endif -%}
     {% endfor %}
 ];
