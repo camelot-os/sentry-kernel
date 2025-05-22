@@ -1,152 +1,248 @@
 // SPDX-FileCopyrightText: 2025 ANSSI
 // SPDX-License-Identifier: Apache-2.0
 
-use uapi::exchange::copy_from_kernel;
-use uapi::syscall::*;
+use crate::test_log::*;
+use uapi::shm::*;
+use uapi::status::Status;
 use uapi::systypes::*;
+use uapi::*;
 
-// Hypothèse : Ces constantes doivent être définies selon les données DTS.
-const SHM_MAP_DMAPOOL: ShmLabel = 0;
-const SHM_MAP_NODMAPOOL: ShmLabel = 2;
-const SHM_NOMAP_DMAPOOL: ShmLabel = 3;
+pub fn test_shm() -> bool {
+    test_suite_start!("sys_map_shm");
+    let mut ok = true;
 
-static mut MYSELF: TaskHandle = 0;
-static mut IDLE: TaskHandle = 0;
+    ok &= test_shm_handle();
+    ok &= test_shm_invalidmap();
+    ok &= test_shm_unmap_notmapped();
+    ok &= test_shm_mapunmap();
+    ok &= test_shm_map_unmappable();
+    ok &= test_shm_mapdenied();
+    ok &= test_shm_creds_on_mapped();
+    ok &= test_shm_infos();
+    ok &= test_shm_allows_idle();
 
-fn test_shm_handle() {
-    assert_eq!(get_shm_handle(SHM_MAP_DMAPOOL), Status::Ok);
-    assert_eq!(get_shm_handle(SHM_NOMAP_DMAPOOL), Status::Ok);
-    assert_eq!(get_shm_handle(SHM_MAP_NODMAPOOL), Status::Ok);
-    assert_eq!(get_shm_handle(0x42), Status::Invalid);
+    test_suite_end!("sys_map_shm");
+    ok
 }
 
-fn test_shm_unmap_notmapped() {
-    assert_eq!(get_shm_handle(SHM_MAP_DMAPOOL), Status::Ok);
+fn test_shm_handle() -> bool {
+    test_start!();
+    let ok = check_eq!(__sys_get_shm_handle(shms[0].id), Status::Ok)
+        & check_eq!(__sys_get_shm_handle(shms[3].id), Status::Ok)
+        & check_eq!(__sys_get_shm_handle(shms[2].id), Status::Ok)
+        & check_eq!(__sys_get_shm_handle(0x42), Status::Invalid);
+    test_end!();
+    ok
+}
+
+fn test_shm_unmap_notmapped() -> bool {
+    test_start!();
     let mut shm: ShmHandle = 0;
-    copy_from_kernel(&mut shm).unwrap();
-    assert_eq!(unmap_shm(shm), Status::Invalid);
+    let ok = check_eq!(__sys_get_shm_handle(shms[0].id), Status::Ok)
+        & (unsafe {
+            copy_from_kernel(
+                &mut shm as *mut _ as *mut u8,
+                core::mem::size_of::<ShmHandle>(),
+            )
+        } == Status::Ok)
+        & check_eq!(__sys_unmap_shm(shm), Status::Invalid);
+    test_end!();
+    ok
 }
 
-fn test_shm_invalidmap() {
-    assert_eq!(get_shm_handle(SHM_MAP_DMAPOOL), Status::Ok);
+fn test_shm_invalidmap() -> bool {
+    test_start!();
     let mut shm: ShmHandle = 0;
-    copy_from_kernel(&mut shm).unwrap();
-    shm += 42;
-    assert_eq!(map_shm(shm), Status::Invalid);
+    let ok = check_eq!(__sys_get_shm_handle(shms[0].id), Status::Ok)
+        & (unsafe {
+            copy_from_kernel(
+                &mut shm as *mut _ as *mut u8,
+                core::mem::size_of::<ShmHandle>(),
+            )
+        } == Status::Ok);
+    let invalid = shm + 42;
+    let ok = ok & check_eq!(__sys_map_shm(invalid), Status::Invalid);
+    test_end!();
+    ok
 }
-
-fn test_shm_mapdenied() {
+fn test_shm_mapdenied() -> bool {
+    test_start!();
+    let mut shm: ShmHandle = 0;
+    let mut myself: TaskHandle = 0;
     let perms = SHM_PERMISSION_WRITE | SHM_PERMISSION_MAP;
-    assert_eq!(get_shm_handle(SHM_NOMAP_DMAPOOL), Status::Ok);
-    let mut shm: ShmHandle = 0;
-    copy_from_kernel(&mut shm).unwrap();
-    unsafe {
-        assert_eq!(shm_set_credential(shm, MYSELF, perms), Status::Ok);
-    }
-    assert_eq!(map_shm(shm), Status::Denied);
+
+    let ok = check_eq!(__sys_get_process_handle(0xbabe), Status::Ok)
+        & (unsafe {
+            copy_from_kernel(
+                &mut myself as *mut _ as *mut u8,
+                core::mem::size_of::<TaskHandle>(),
+            )
+        } == Status::Ok)
+        & check_eq!(__sys_get_shm_handle(shms[3].id), Status::Ok)
+        & (unsafe {
+            copy_from_kernel(
+                &mut shm as *mut _ as *mut u8,
+                core::mem::size_of::<ShmHandle>(),
+            )
+        } == Status::Ok)
+        & check_eq!(__sys_shm_set_credential(shm, myself, perms), Status::Ok)
+        & check_eq!(__sys_map_shm(shm), Status::Denied);
+    test_end!();
+    ok
 }
 
-fn test_shm_infos() {
+fn test_shm_infos() -> bool {
+    test_start!();
     let mut shm: ShmHandle = 0;
-    let mut infos = ShmInfo {
-        handle: 0,
-        label: 0,
-        base: 0,
-        len: 0,
-        perms: 0,
-    };
-    assert_eq!(get_shm_handle(SHM_MAP_DMAPOOL), Status::Ok);
-    copy_from_kernel(&mut shm).unwrap();
-    assert_eq!(shm_get_infos(shm), Status::Ok);
-    copy_from_kernel(&mut infos).unwrap();
+    let mut infos = ShmInfos::default();
 
-    assert_eq!(infos.label, SHM_MAP_DMAPOOL);
-    assert_eq!(infos.handle, shm);
+    let ok = check_eq!(__sys_get_shm_handle(shms[0].id), Status::Ok)
+        & (unsafe {
+            copy_from_kernel(
+                &mut shm as *mut _ as *mut u8,
+                core::mem::size_of::<ShmHandle>(),
+            )
+        } == Status::Ok)
+        & check_eq!(__sys_shm_get_infos(shm), Status::Ok)
+        & (unsafe {
+            copy_from_kernel(
+                &mut infos as *mut _ as *mut u8,
+                core::mem::size_of::<ShmInfos>(),
+            )
+        } == Status::Ok)
+        & check_eq!(infos.label, shms[0].id)
+        & check_eq!(infos.handle, shm)
+        & check_eq!(infos.base as u32, shms[0].baseaddr as u32)
+        & check_eq!(infos.len as u32, shms[0].size as u32);
+    test_end!();
+    ok
 }
 
-fn test_shm_creds_on_mapped() {
-    let perms_rw = SHM_PERMISSION_MAP | SHM_PERMISSION_WRITE;
-    let perms_w = SHM_PERMISSION_WRITE;
-
-    assert_eq!(get_process_handle(0xbabe), Status::Ok);
-    unsafe {
-        copy_from_kernel(&mut MYSELF).unwrap();
-    }
-
-    assert_eq!(get_shm_handle(SHM_MAP_DMAPOOL), Status::Ok);
+fn test_shm_creds_on_mapped() -> bool {
+    test_start!();
     let mut shm: ShmHandle = 0;
-    copy_from_kernel(&mut shm).unwrap();
-    unsafe {
-        assert_eq!(shm_set_credential(shm, MYSELF, perms_rw), Status::Ok);
-    }
-    assert_eq!(map_shm(shm), Status::Ok);
-    unsafe {
-        assert_eq!(shm_set_credential(shm, MYSELF, perms_w), Status::Busy);
-    }
-    assert_eq!(unmap_shm(shm), Status::Ok);
-    unsafe {
-        assert_eq!(shm_set_credential(shm, MYSELF, perms_w), Status::Ok);
-    }
+    let mut myself: TaskHandle = 0;
+
+    let ok = check_eq!(__sys_get_process_handle(0xbabe), Status::Ok)
+        & (unsafe {
+            copy_from_kernel(
+                &mut myself as *mut _ as *mut u8,
+                core::mem::size_of::<TaskHandle>(),
+            )
+        } == Status::Ok)
+        & check_eq!(__sys_get_shm_handle(shms[0].id), Status::Ok)
+        & (unsafe {
+            copy_from_kernel(
+                &mut shm as *mut _ as *mut u8,
+                core::mem::size_of::<ShmHandle>(),
+            )
+        } == Status::Ok)
+        & check_eq!(
+            __sys_shm_set_credential(shm, myself, SHM_PERMISSION_MAP | SHM_PERMISSION_WRITE),
+            Status::Ok
+        )
+        & check_eq!(__sys_map_shm(shm), Status::Ok)
+        & check_eq!(
+            __sys_shm_set_credential(shm, myself, SHM_PERMISSION_WRITE),
+            Status::Busy
+        )
+        & check_eq!(__sys_unmap_shm(shm), Status::Ok)
+        & check_eq!(
+            __sys_shm_set_credential(shm, myself, SHM_PERMISSION_WRITE),
+            Status::Ok
+        );
+    test_end!();
+    ok
+}
+fn test_shm_allows_idle() -> bool {
+    test_start!();
+    let mut shm: ShmHandle = 0;
+    let mut idle: TaskHandle = 0;
+
+    let ok = check_eq!(__sys_get_process_handle(0xcafe), Status::Ok)
+        & (unsafe {
+            copy_from_kernel(
+                &mut idle as *mut _ as *mut u8,
+                core::mem::size_of::<TaskHandle>(),
+            )
+        } == Status::Ok)
+        & check_eq!(__sys_get_shm_handle(shms[0].id), Status::Ok)
+        & (unsafe {
+            copy_from_kernel(
+                &mut shm as *mut _ as *mut u8,
+                core::mem::size_of::<ShmHandle>(),
+            )
+        } == Status::Ok)
+        & check_eq!(
+            __sys_shm_set_credential(shm, idle, SHM_PERMISSION_TRANSFER),
+            Status::Ok
+        );
+    test_end!();
+    ok
 }
 
-fn test_shm_allows_idle() {
-    assert_eq!(get_process_handle(0xcafe), Status::Ok);
-    unsafe {
-        copy_from_kernel(&mut IDLE).unwrap();
-    }
-
-    assert_eq!(get_shm_handle(SHM_MAP_DMAPOOL), Status::Ok);
+fn test_shm_map_unmappable() -> bool {
+    test_start!();
     let mut shm: ShmHandle = 0;
-    copy_from_kernel(&mut shm).unwrap();
-    let perms = SHM_PERMISSION_TRANSFER;
-    unsafe {
-        assert_eq!(shm_set_credential(shm, IDLE, perms), Status::Ok);
-    }
-}
-
-fn test_shm_map_unmappable() {
-    assert_eq!(get_process_handle(0xbabe), Status::Ok);
-    unsafe {
-        copy_from_kernel(&mut MYSELF).unwrap();
-    }
-
-    assert_eq!(get_shm_handle(SHM_MAP_DMAPOOL), Status::Ok);
-    let mut shm: ShmHandle = 0;
-    copy_from_kernel(&mut shm).unwrap();
+    let mut myself: TaskHandle = 0;
     let perms = SHM_PERMISSION_WRITE;
-    unsafe {
-        assert_eq!(shm_set_credential(shm, MYSELF, perms), Status::Ok);
-    }
-    assert_eq!(map_shm(shm), Status::Denied);
+
+    let ok = check_eq!(__sys_get_process_handle(0xbabe), Status::Ok)
+        & (unsafe {
+            copy_from_kernel(
+                &mut myself as *mut _ as *mut u8,
+                core::mem::size_of::<TaskHandle>(),
+            )
+        } == Status::Ok)
+        & check_eq!(__sys_get_shm_handle(shms[0].id), Status::Ok)
+        & (unsafe {
+            copy_from_kernel(
+                &mut shm as *mut _ as *mut u8,
+                core::mem::size_of::<ShmHandle>(),
+            )
+        } == Status::Ok)
+        & check_eq!(__sys_shm_set_credential(shm, myself, perms), Status::Ok)
+        & check_eq!(__sys_map_shm(shm), Status::Denied);
+    test_end!();
+    ok
 }
 
-fn test_shm_mapunmap() {
-    assert_eq!(get_process_handle(0xbabe), Status::Ok);
-    unsafe {
-        copy_from_kernel(&mut MYSELF).unwrap();
-    }
-
-    assert_eq!(get_shm_handle(SHM_MAP_DMAPOOL), Status::Ok);
+fn test_shm_mapunmap() -> bool {
+    test_start!();
     let mut shm: ShmHandle = 0;
-    copy_from_kernel(&mut shm).unwrap();
-
+    let mut myself: TaskHandle = 0;
     let perms = SHM_PERMISSION_WRITE | SHM_PERMISSION_MAP;
-    unsafe {
-        assert_eq!(shm_set_credential(shm, MYSELF, perms), Status::Ok);
+
+    let ok = check_eq!(__sys_get_process_handle(0xbabe), Status::Ok)
+        & (unsafe {
+            copy_from_kernel(
+                &mut myself as *mut _ as *mut u8,
+                core::mem::size_of::<TaskHandle>(),
+            )
+        } == Status::Ok)
+        & check_eq!(__sys_get_shm_handle(shms[0].id), Status::Ok)
+        & (unsafe {
+            copy_from_kernel(
+                &mut shm as *mut _ as *mut u8,
+                core::mem::size_of::<ShmHandle>(),
+            )
+        } == Status::Ok)
+        & check_eq!(__sys_shm_set_credential(shm, myself, perms), Status::Ok)
+        & check_eq!(__sys_map_shm(shm), Status::Ok);
+
+    if !ok {
+        test_end!();
+        return false;
     }
 
-    assert_eq!(map_shm(shm), Status::Ok);
-    assert_eq!(unmap_shm(shm), Status::Ok);
-}
+    unsafe {
+        let shmptr = shms[0].baseaddr as *mut u32;
+        for i in 0..12 {
+            shmptr.add(i).write_volatile(i as u32 * 4);
+        }
+    }
 
-pub fn test_shm() {
-    test_shm_handle();
-    test_shm_unmap_notmapped();
-    test_shm_invalidmap();
-    test_shm_mapdenied();
-    test_shm_infos();
-    test_shm_creds_on_mapped();
-    test_shm_allows_idle();
-    test_shm_map_unmappable();
-    test_shm_mapunmap();
+    let ok = ok & check_eq!(__sys_unmap_shm(shm), Status::Ok);
+    test_end!();
+    ok
 }

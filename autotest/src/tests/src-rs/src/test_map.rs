@@ -1,53 +1,87 @@
 // SPDX-FileCopyrightText: 2025 ANSSI
 // SPDX-License-Identifier: Apache-2.0
 
-use uapi::devices::{DEV_ID_I2C1, DEVICE_BASEADDR, DEVICE_ID};
-use uapi::exchange::copy_from_kernel;
-use uapi::syscall::*;
-use uapi::systypes::*;
+use crate::devices::*;
+use crate::test_log::*;
+use crate::uapi::status::Status;
+use crate::uapi::systypes::*;
+use crate::uapi::*;
 
-fn test_map_unmap_notmapped() {
-    let mut dev: DeviceHandle = 0;
-    assert_eq!(get_device_handle(DEVICE_ID[DEV_ID_I2C1]), Status::Ok);
-    copy_from_kernel(&mut dev).unwrap();
-    let res = unmap_dev(dev);
-    assert_eq!(res, Status::Invalid);
+pub fn test_map() -> bool {
+    test_suite_start!("sys_map");
+    let mut ok = true;
+    ok &= test_map_mapunmap();
+    ok &= test_map_invalidmap();
+    ok &= test_map_unmap_notmapped();
+    test_suite_end!("sys_map");
+    ok
 }
 
-fn test_map_invalidmap() {
+fn test_map_unmap_notmapped() -> bool {
+    test_start!();
     let mut dev: DeviceHandle = 0;
-    assert_eq!(get_device_handle(DEVICE_ID[DEV_ID_I2C1]), Status::Ok);
-    copy_from_kernel(&mut dev).unwrap();
-    dev += 42;
-    let res = map_dev(dev);
-    assert_eq!(res, Status::Invalid);
+    let ok = check_eq!(
+        __sys_get_device_handle(devices[DEV_ID_I2C1].id as u8),
+        Status::Ok
+    ) & unsafe {
+        copy_from_kernel(
+            &mut dev as *mut _ as *mut u8,
+            core::mem::size_of::<DeviceHandle>(),
+        )
+    } == Status::Ok & check_eq!(__sys_unmap_dev(dev), Status::Invalid);
+    test_end!();
+    ok
 }
 
-fn test_map_mapunmap() {
+fn test_map_invalidmap() -> bool {
+    test_start!();
     let mut dev: DeviceHandle = 0;
-    assert_eq!(get_device_handle(DEVICE_ID[DEV_ID_I2C1]), Status::Ok);
-    copy_from_kernel(&mut dev).unwrap();
+    let ok = check_eq!(
+        __sys_get_device_handle(devices[DEV_ID_I2C1].id as u8),
+        Status::Ok
+    ) & unsafe {
+        copy_from_kernel(
+            &mut dev as *mut _ as *mut u8,
+            core::mem::size_of::<DeviceHandle>(),
+        )
+    } == Status::Ok;
+    let invalid_dev = dev.wrapping_add(42);
+    let ok = ok & check_eq!(__sys_map_dev(invalid_dev), Status::Invalid);
+    test_end!();
+    ok
+}
 
-    assert_eq!(map_dev(dev), Status::Ok);
+fn test_map_mapunmap() -> bool {
+    test_start!();
+    let mut dev: DeviceHandle = 0;
+    let mut ok = check_eq!(
+        __sys_get_device_handle(devices[DEV_ID_I2C1].id as u8),
+        Status::Ok
+    ) & unsafe {
+        copy_from_kernel(
+            &mut dev as *mut _ as *mut u8,
+            core::mem::size_of::<DeviceHandle>(),
+        )
+    } == Status::Ok;
+    log_info!("handle is {:#x}", dev);
+    ok &= check_eq!(__sys_map_dev(dev), Status::Ok);
 
-    #[cfg(feature = "stm32u5a5")]
-    {
-        let base = DEVICE_BASEADDR[DEV_ID_I2C1] as *const u32;
-        for offset in 0..12 {
-            let reg = unsafe { core::ptr::read_volatile(base.add(offset)) };
-            if offset == 6 {
-                assert_eq!(reg, 0x1);
+    #[cfg(CONFIG_ARCH_MCU_STM32U5A5)]
+    if ok {
+        log_info!("device mapped, checking registers");
+        let base = devices[DEV_ID_I2C1].baseaddr;
+        for offset in (0..12 * 4).step_by(4) {
+            let val = unsafe { core::ptr::read_volatile((base + offset as usize) as *const u32) };
+            if offset != 6 * 4 {
+                ok &= check_eq!(val, 0x0);
             } else {
-                assert_eq!(reg, 0x0);
+                ok &= check_eq!(val, 0x1);
             }
         }
     }
 
-    assert_eq!(unmap_dev(dev), Status::Ok);
-}
-
-pub fn test_map() {
-    test_map_unmap_notmapped();
-    test_map_invalidmap();
-    test_map_mapunmap();
+    log_info!("unmapping");
+    ok &= check_eq!(__sys_unmap_dev(dev), Status::Ok);
+    test_end!();
+    ok
 }
