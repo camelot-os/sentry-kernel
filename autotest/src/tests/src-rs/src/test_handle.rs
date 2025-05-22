@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::test_log::*;
-use crate::uapi::*;
-use crate::uapi::status::Status;
+use uapi::*;
+use uapi::status::Status;
 
 #[repr(C, packed)]
 #[derive(Debug, Copy, Clone)]
