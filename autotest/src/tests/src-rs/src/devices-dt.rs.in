@@ -2,7 +2,10 @@
 // SPDX-FileCopyrightText: 2025 ANSSI
 // SPDX-License-Identifier: Apache-2.0
 
+#![allow(non_upper_case_globals)]
 use uapi::systypes::DevInfo;
+use uapi::systypes::ShmInfo;
+
 
 /// Liste des identifiants symboliques des périphériques
 pub enum DeviceID {
@@ -84,4 +87,29 @@ pub static DEVICE_NAMES: &[&str] = &[
     "{{ device.label }}",
     {% endif -%}
     {% endfor %}
+];
+
+
+/// Liste des segments de mémoire partagée disponibles (SHMS)
+pub static SHMS: &[ShmInfo] = &[
+{%- for node in dts.get_compatible("outpost,shm") if node.status == "okay" %}
+    ShmInfo {
+        id: {{ "0x%x" % loop.index0 }},
+        {% if node.reg %}
+        baseaddr: {{ "0x%08x" % node.reg[0] }},
+        size: {{ "0x%08x" % node.reg[1] }},
+        {% else %}
+        baseaddr: 0,
+        size: 0,
+        {% endif %}
+        perms: {% if node["outpost,perms"] %}{{ "0x%x" % node["outpost,perms"] }}{% else %}0{% endif %},
+        label: {{ "0x%x" % node.get("outpost,label", 0) }},
+    },
+{%- endfor %}
+];
+
+pub static SHM_NAMES: &[&str] = [
+{%- for node in dts.get_compatible("outpost,shm") if node.status == "okay" %}
+    "{{ node.name }}",
+{%- endfor %}
 ];
