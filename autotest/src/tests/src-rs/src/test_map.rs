@@ -20,7 +20,7 @@ pub fn test_map() -> bool {
 
 fn test_map_unmap_notmapped() -> bool {
     test_start!();
-    /// This will fail if the i2c1 is not found
+    // This will fail if the i2c1 is not found
     let device = get_device_by_name("i2c1").expect("i2c1 device not found");
     let mut dev: DeviceHandle = 0;
     let ok = check_eq!(__sys_get_device_handle(device.id as u8), Status::Ok)
