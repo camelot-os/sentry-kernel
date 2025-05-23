@@ -3,10 +3,10 @@
 
 use crate::test_log::*;
 //use crate::timer::*;
-use uapi::event::EventType;
-use uapi::status::Status;
-use uapi::systypes::*;
-use uapi::*;
+use sentry_uapi::event::EventType;
+use sentry_uapi::status::Status;
+use sentry_uapi::systypes::*;
+use sentry_uapi::*;
 
 static mut HANDLE: DeviceHandle = 0;
 

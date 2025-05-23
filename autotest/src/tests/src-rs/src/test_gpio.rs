@@ -2,9 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::test_log::*;
-use crate::uapi::*;
-use crate::uapi::status::Status;
-use crate::uapi::systypes::{SleepDuration, SleepMode, DeviceHandle};
+use sentry_uapi::*;
+use sentry_uapi::status::Status;
+use sentry_uapi::systypes::{SleepDuration, SleepMode, DeviceHandle};
 
 pub fn test_gpio() -> bool {
     test_suite_start!("sys_gpio");

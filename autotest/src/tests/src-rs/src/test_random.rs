@@ -2,9 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::test_log::*;
-use uapi::status::Status;
-use uapi::systypes::Precision;
-use uapi::*;
+use sentry_uapi::status::Status;
+use sentry_uapi::systypes::Precision;
+use sentry_uapi::*;
 
 pub fn test_random() -> bool {
     test_suite_start!("sys_get_random");

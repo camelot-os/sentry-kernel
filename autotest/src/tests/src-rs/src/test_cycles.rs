@@ -2,9 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::test_log::*;
-use crate::uapi::status::Status;
-use crate::uapi::systypes::{Precision, SleepDuration};
-use crate::uapi::*;
+use sentry_uapi::status::Status;
+use sentry_uapi::systypes::{Precision, SleepDuration};
+use sentry_uapi::*;
 
 pub fn test_cycles() -> bool {
     test_suite_start!("sys_cycles");

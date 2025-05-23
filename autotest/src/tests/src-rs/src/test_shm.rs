@@ -3,10 +3,10 @@
 
 use crate::devices_utils::{SHMS, get_shm_by_name};
 use crate::test_log::*;
-use uapi::shm::*;
-use uapi::status::Status;
-use uapi::systypes::*;
-use uapi::*;
+use sentry_uapi::shm::*;
+use sentry_uapi::status::Status;
+use sentry_uapi::systypes::*;
+use sentry_uapi::*;
 
 pub fn test_shm() -> bool {
     test_suite_start!("sys_map_shm");

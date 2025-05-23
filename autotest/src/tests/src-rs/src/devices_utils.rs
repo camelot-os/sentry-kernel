@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::devices::{DEVICE_NAMES, DEVICES, SHMS, SHM_NAMES};
-use uapi::systypes::DevInfo;
+use sentry_uapi::systypes::DevInfo;
 
 /// Search for a device by its name
 pub fn get_device_by_name(name: &str) -> Option<&'static DevInfo> {

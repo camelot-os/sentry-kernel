@@ -1,10 +1,10 @@
 // SPDX-FileCopyrightText: 2025 ANSSI
 // SPDX-License-Identifier: Apache-2.0
 
-use uapi::exchange::copy_from_kernel;
-use uapi::syscall::*;
-use uapi::systypes::SleepDuration;
-use uapi::systypes::*;
+use sentry_uapi::exchange::copy_from_kernel;
+use sentry_uapi::syscall::*;
+use sentry_uapi::systypes::SleepDuration;
+use sentry_uapi::systypes::*;
 
 fn test_sleep_return() {
     let duration = SleepDuration::ArbitraryMs(1000);

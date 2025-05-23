@@ -4,9 +4,9 @@
 use crate::device_utils::get_device_by_name;
 use crate::devices::*;
 use crate::test_log::*;
-use uapi::status::Status;
-use uapi::systypes::*;
-use uapi::*;
+use sentry_uapi::status::Status;
+use sentry_uapi::systypes::*;
+use sentry_uapi::*;
 
 pub fn test_map() -> bool {
     test_suite_start!("sys_map");

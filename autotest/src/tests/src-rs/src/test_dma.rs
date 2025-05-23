@@ -2,11 +2,11 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::test_log::*;
-use crate::uapi::dma::*;
-use crate::uapi::event::EventType;
-use crate::uapi::shm::*;
-use crate::uapi::status::Status;
-use crate::uapi::*;
+use sentry_uapi::dma::*;
+use sentry_uapi::event::EventType;
+use sentry_uapi::shm::*;
+use sentry_uapi::status::Status;
+use sentry_uapi::*;
 
 pub fn test_dma() -> bool {
     let mut all_ok = true;
