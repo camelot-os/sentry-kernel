@@ -160,6 +160,20 @@ config SOC_SUBFAMILY_STM32U5
 	help
 	  STM32U5 family is based on Cortex-M33 with FPU, PMSAv8 MPU and TrustZone
 
+config SOC_SUBFAMILY_STM32H5
+	bool
+	select ARCH_ARM_CORTEX_M33
+	select SOC_FAMILY_STM32
+	select HAS_FPU
+	select HAS_FPU_FPV5
+	select HAS_TRUSTZONE
+	select HAS_DCACHE
+	select HAS_ICACHE
+	select HAS_RNG
+	select HAS_GPDMA
+	help
+	  STM32U5 family is based on Cortex-M33 with FPU, PMSAv8 MPU and TrustZone
+
 config SOC_SUBFAMILY_STM32WB
 	bool
 	select ARCH_ARM_CORTEX_M4
@@ -287,7 +301,7 @@ config ARCH_MCU_STM32U5A9
 
 config ARCH_MCU_STM32H573
 	bool "STM32H573"
-	select SOC_SUBFAMILY_STM32U5
+	select SOC_SUBFAMILY_STM32H5
 
 endchoice
 
