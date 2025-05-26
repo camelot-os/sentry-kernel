@@ -24,11 +24,25 @@ size_t sentry_strnlen(const char *s, size_t maxlen);
 void kernel_zlib(void)
 {
     uint32_t res;
-    char buf[128];
-    /* calling kernel zlib */
-    uint32_t init = Frama_C_entropy_source_u32;
-    res = crc32(NULL, Frama_C_entropy_source_u32, init);
-    /*@ assert (res == init); */
-    memset(buf, Frama_C_entropy_source_u8, 128);
-    crc32(buf, Frama_C_interval_u32(0,128), Frama_C_entropy_source_u32);
+    char src[128];
+    char dest[128];
+
+    /*@
+      loop invariant 0 <= i <= 128;
+      loop invariant \forall integer k; 0 <= k < i ==> src[k] == Frama_C_entropy_source_u8;
+      loop assigns i, src[0 .. 127];
+      loop variant 128 - i;
+     */
+    for (uint8_t i = 0; i < 128; ++i) {
+        dest[i] = Frama_C_entropy_source_u8;
+    }
+    size_t len = sentry_strnlen(src, 128);
+    Frama_C_memset(dest, 0, 128);
+    sentry_memcpy(dest, src, 128);
+    Frama_C_memset(dest, 0, 128);
+    sentry_memcpy(dest, src, 31); /* not word aligned size */
+    Frama_C_memset(dest, 0, 128);
+    /* overlapped regions, in both order */
+    sentry_memcpy(&dest[0], &dest[20], 42);
+    sentry_memcpy(&dest[20], &dest[0], 42);
 }

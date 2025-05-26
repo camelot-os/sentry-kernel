@@ -99,7 +99,7 @@ framac_wp_opts = [
   '-wp-literals',
   '-wp-timeout', '15',
   '-wp-smoke-tests',
-  '-wp-prover','altergo,tip',
+  '-wp-prover','alt-ergo,cvc4,z3',
   '-wp-time-margin', '25',
   '-wp-no-smoke-dead-code',
   '-wp-no-smoke-dead-call',
