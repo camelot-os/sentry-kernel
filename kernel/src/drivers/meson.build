@@ -25,7 +25,8 @@ if kconfig_data.get('CONFIG_HAS_RNG', 0) == 1
 subdir('rng')
 endif
 
-subdir('syscfg')
+# subdir('syscfg')
+
 if kconfig_data.get('CONFIG_DEBUG_OUTPUT_USART', 0) == 1
 subdir('usart')
 endif
