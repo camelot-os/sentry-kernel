@@ -27,6 +27,7 @@ void kernel_zlib(void)
     char src[128];
     char dest[128];
 
+    /* testing string.h API */
     /*@
       loop invariant 0 <= i <= 128;
       loop assigns src[0 .. 127];
@@ -53,4 +54,26 @@ void kernel_zlib(void)
     /* overlapped regions, in both order */
     sentry_memcpy(&dest[0], &dest[20], 42);
     sentry_memcpy(&dest[20], &dest[0], 42);
+    /* memsetting */
+    sentry_memset(&dest[20],0x0, 42);
+    sentry_memset(dest, 0x42, 127);
+
+    /* testing entropy.h API */
+
+    /*
+     * PCG32() is a standard predictible sequence generator,
+     * which random seed depends on the intial state value.
+     * This part demonstrates that the sequence is respectful of the
+     * PGC32 contract.
+     */
+    /*@
+       loop invariant 0 <= i <= 10;
+       loop assigns res;
+       loop variant 10 - i;
+    */
+    for (size_t i = 0; i < 10; ++i) {
+        res = pcg32();
+    }
+    /* Calculate the CRC32 result of src, with initial masking of 0xffffffff */
+    res = crc32((uint8_t*)src, len, 0xffffffff);
 }

@@ -55,7 +55,7 @@ err:
     ensures \result == s; // If s is null, return it unchanged
   behavior valid_string:
    assumes s != \null;
-   ensures \forall integer i; 0 <= i < n ==> ((uint8_t*)s)[i] == c;
+   ensures \forall integer i; 0 <= i < n ==> ((uint8_t*)s)[i] == (c & 0xff);
    ensures \result == s;
 
   complete behaviors;
@@ -71,6 +71,8 @@ void   *sentry_memset(void *s, int c, unsigned int n)
      * string function, invalid input will produce, for integer
      * return, returning 42, for string return, returning NULL */
     if (unlikely(!s)) {
+        /* must be dead defensive code */
+        /*@ assert \false; */
         goto err;
     }
 
@@ -83,7 +85,7 @@ void   *sentry_memset(void *s, int c, unsigned int n)
       @ loop variant n - i;
       */
     for (unsigned int i = 0; i < n; i++) {
-        *bytes = c;
+        *bytes = (c & 0xff);
         bytes++;
     }
 err:
@@ -117,6 +119,10 @@ static secure_bool_t regions_overlaps(const void* a, const void* b, unsigned int
     secure_bool_t res = SECURE_TRUE;
     size_t _a = (size_t)a;
     size_t _b = (size_t)b;
+
+    if (_a == _b) {
+        goto err;
+    }
     if ((_a < _b) && ((_a + n) > _b)) {
         goto err;
     }

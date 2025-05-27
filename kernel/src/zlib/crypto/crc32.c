@@ -85,7 +85,7 @@ uint32_t crc32(unsigned char const * const buf, uint32_t len, uint32_t init)
 
     if (unlikely(buf == NULL)) {
       /* must be dead code */
-      /*@ assert \false; */
+      /*@ assert \false; */
       return init;
     }
     /*@ assert \valid_read(buf + (0 .. len-1)); */
