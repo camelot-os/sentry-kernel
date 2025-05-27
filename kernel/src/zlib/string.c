@@ -5,23 +5,10 @@
 #include <sentry/ktypes.h>
 
 /* string related functions, for debug usage only */
-/*@
-  requires s != \null ==> \valid_read(s + (0 .. maxlen - 1));
-
-  assigns \nothing;
-
-  behavior null_pointer:
-    assumes s == \null;
-    ensures \result == 0; // If s is null, the length is 0
-  behavior valid_string:
-   assumes s != \null;
-   ensures \forall integer i; 0 <= i < \result ==> s[i] != '\0';
-   ensures \result < maxlen ==> s[\result] == '\0';
-   ensures \result == maxlen ==> \forall integer i; 0 <= i < maxlen ==> s[i] != '\0';
-
-  complete behaviors;
-  disjoint behaviors;
-  */
+/*@ requires valid_string_s: valid_read_nstring(s, maxlen);
+  @ assigns \result \from indirect:s[0..maxlen-1], indirect:maxlen;
+  @ ensures result_bounded: \result == strlen(s) || \result == maxlen;
+  @*/
 #ifndef __FRAMAC__
 static
 #endif
@@ -30,7 +17,8 @@ size_t sentry_strnlen(const char *s, size_t maxlen)
     size_t result = 0;
 
     if (s == NULL) {
-        /** TODO: panic to be called */
+        /* should never happen based on subprogram contract */
+        /*@ assert \false; */
         goto err;
     }
     /*@

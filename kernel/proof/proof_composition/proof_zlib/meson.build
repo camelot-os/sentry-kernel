@@ -87,6 +87,7 @@ test(
     '-mdr-out', join_paths(meson.current_build_dir(), test_name + '-report.md'),
     '-mdr-log', 'a:'+join_paths(meson.current_build_dir(), test_name + '-md.log'),
     framac_wp_opts,
+    '-wp-log', 'a:'+ join_paths(meson.current_build_dir(), test_name + '-proofs.log'),
   ],
   env: {'FRAMAC_SESSION': join_paths(meson.current_build_dir(), test_name)},
   suite: 'proof',

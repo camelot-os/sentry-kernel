@@ -29,13 +29,21 @@ void kernel_zlib(void)
 
     /*@
       loop invariant 0 <= i <= 128;
-      loop invariant \forall integer k; 0 <= k < i ==> src[k] == Frama_C_entropy_source_u8;
-      loop assigns i, src[0 .. 127];
+      loop assigns src[0 .. 127];
       loop variant 128 - i;
      */
-    for (uint8_t i = 0; i < 128; ++i) {
-        dest[i] = Frama_C_entropy_source_u8;
+    for (size_t i = 0; i < 128; ++i) {
+        src[i] = Frama_C_interval_u8(0, 127);
     }
+    /*
+     * formal proofness imposes that the input string is valid in all calls,
+     * meaning ASCII char + null termination.
+     * any call to strnlen() in the kernel must respects this contract or the
+     * proof will fail.
+     * NOTE: the null check is kept as dead code (allowed) that include
+     * an assert(false).
+     */
+    src[127] = '\0';
     size_t len = sentry_strnlen(src, 128);
     Frama_C_memset(dest, 0, 128);
     sentry_memcpy(dest, src, 128);
