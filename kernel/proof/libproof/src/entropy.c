@@ -33,6 +33,11 @@ static void Frama_C_update_entropy_bool(void)
     Frama_C_entropy_source_bool = Frama_C_entropy_source_bool;
 }
 
+/*@
+  requires min <= max;
+  assigns Frama_C_entropy_source_int \from Frama_C_entropy_source_int;
+  ensures \result == Frama_C_entropy_source_int || \result == min;
+ */
 int Frama_C_interval_int(int min, int max)
 {
     int r, aux;
@@ -45,6 +50,11 @@ int Frama_C_interval_int(int min, int max)
     return r;
 }
 
+/*@
+  requires min <= max;
+  assigns Frama_C_entropy_source_u8 \from Frama_C_entropy_source_u8;
+  ensures \result == Frama_C_entropy_source_u8 || \result == min;
+*/
 uint8_t Frama_C_interval_u8(uint8_t min, uint8_t max)
 {
     uint8_t r, aux;
@@ -57,6 +67,11 @@ uint8_t Frama_C_interval_u8(uint8_t min, uint8_t max)
     return r;
 }
 
+/*@
+  requires min <= max;
+  assigns Frama_C_entropy_source_u16 \from Frama_C_entropy_source_u16;
+  ensures \result == Frama_C_entropy_source_u16 || \result == min;
+*/
 uint16_t Frama_C_interval_u16(uint16_t min, uint16_t max)
 {
     uint16_t r, aux;
@@ -69,6 +84,11 @@ uint16_t Frama_C_interval_u16(uint16_t min, uint16_t max)
     return r;
 }
 
+/*@
+  requires min <= max;
+  assigns Frama_C_entropy_source_u32 \from Frama_C_entropy_source_u32;
+  ensures \result == Frama_C_entropy_source_u32 || \result == min;
+*/
 uint32_t Frama_C_interval_u32(uint32_t min, uint32_t max)
 {
     uint32_t r, aux;
@@ -81,6 +101,10 @@ uint32_t Frama_C_interval_u32(uint32_t min, uint32_t max)
     return r;
 }
 
+/*@
+  assigns Frama_C_entropy_source_bool \from Frama_C_entropy_source_bool;
+  ensures \result == Frama_C_entropy_source_bool || \result == false;
+*/
 bool Frama_C_interval_bool(void)
 {
     uint8_t raw_val;
