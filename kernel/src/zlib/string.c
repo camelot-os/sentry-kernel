@@ -4,17 +4,6 @@
 #include <string.h>
 #include <sentry/ktypes.h>
 
-/*@
-  // copyright notice: these two predicates matches the Frama-C 30.0 libc predicates
-  // used for ISO C string validation.
-  // They stay under the copyright of the CEA Frama-C project.
-  predicate sentry_valid_or_empty{L}(void *s, size_t n) =
-    (empty_block(s) || \valid_read((char*)s)) && \valid(((char*)s)+(0..n-1));
-
-  predicate sentry_valid_read_or_empty{L}(void *s, size_t n) =
-    (empty_block(s) || \valid_read((char*)s)) && \valid_read(((char*)s)+(1..n-1));
-*/
-
 /* string related functions, for debug usage only */
 /*@ requires valid_string_s: valid_read_nstring(s, maxlen);
   @ assigns \result;

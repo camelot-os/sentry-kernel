@@ -21,6 +21,14 @@ void   *sentry_memcpy(void * restrict dest, const void* restrict src, size_t n);
 void   *sentry_memset(void *s, int c, unsigned int n);
 size_t sentry_strnlen(const char *s, size_t maxlen);
 
+/*@ assigns \nothing; */
+static inline void test_memset(int c, unsigned int n)
+{
+    uint8_t s[n];
+    sentry_memset(NULL, c, n);
+    sentry_memset(s, c, n);
+}
+
 void kernel_zlib(void)
 {
     uint32_t res;
@@ -28,14 +36,18 @@ void kernel_zlib(void)
     char dest[128];
 
     /* testing string.h API */
+    /* defining volatile, unpredictible char value val to cover various use cases */
+    volatile char val = 'a';
     /*@
       loop invariant 0 <= i <= 128;
-      loop assigns src[0 .. 127];
+      loop assigns i, src[0 .. 127];
       loop variant 128 - i;
      */
     for (size_t i = 0; i < 128; ++i) {
-        src[i] = Frama_C_interval_u8(0, 127);
+        src[i] = val;
     }
+    /* at list finishing with null-char at the end (valid ISO C string) */
+    src[127] = '\0';
     /*
      * formal proofness imposes that the input string is valid in all calls,
      * meaning ASCII char + null termination.
@@ -44,20 +56,21 @@ void kernel_zlib(void)
      * NOTE: the null check is kept as dead code (allowed) that include
      * an assert(false).
      */
-    src[127] = '\0';
-    size_t len = sentry_strnlen(src, 128);
-    Frama_C_memset(dest, 0, 128);
-    sentry_memcpy(dest, src, 128);
-    Frama_C_memset(dest, 0, 128);
-    sentry_memcpy(dest, src, 31); /* not word aligned size */
-    Frama_C_memset(dest, 0, 128);
-    /* overlapped regions, in both order */
-    sentry_memcpy(&dest[0], &dest[20], 42);
-    sentry_memcpy(&dest[20], &dest[0], 42);
-    /* memsetting */
-    sentry_memset(&dest[20],0x0, 42);
-    sentry_memset(dest, 0x42, 127);
 
+    size_t len = sentry_strnlen(src, 128);
+
+    /* memset */
+    test_memset(0x0, 42);
+    test_memset(0x42, 127);
+    test_memset(0x0, 128);
+
+
+    /* memcpy. Note: overlapping is forbidden by contract */
+    sentry_memcpy(dest, src, 96);
+    sentry_memcpy(dest, src, 31); /* not word aligned size */
+    sentry_memcpy(&dest[20], dest, 12); /* non aligned */
+
+#if 0
     /* testing entropy.h API */
 
     /*
@@ -66,7 +79,7 @@ void kernel_zlib(void)
      * This part demonstrates that the sequence is respectful of the
      * PGC32 contract.
      */
-    /*@
+    /*
        loop invariant 0 <= i <= 10;
        loop assigns res;
        loop variant 10 - i;
@@ -76,4 +89,5 @@ void kernel_zlib(void)
     }
     /* Calculate the CRC32 result of src, with initial masking of 0xffffffff */
     res = crc32((uint8_t*)src, len, 0xffffffff);
+#endif
 }

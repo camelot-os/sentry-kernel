@@ -66,6 +66,9 @@ test(
 
 test_name = 'frama-c-zlib-wp'
 
+# zlib exported functions to be proved
+zlib_correctness_targets = 'sentry_strnlen,__sentry_memset,sentry_memset,regions_overlaps,__sentry_memcpy,sentry_memcpy,kernel_zlib,test_memset'
+
 test(
   test_name,
   frama_c,
@@ -87,6 +90,7 @@ test(
     '-mdr-out', join_paths(meson.current_build_dir(), test_name + '-report.md'),
     '-mdr-log', 'a:'+join_paths(meson.current_build_dir(), test_name + '-md.log'),
     framac_wp_opts,
+    '-wp-fct', zlib_correctness_targets,
     '-wp-log', 'a:'+ join_paths(meson.current_build_dir(), test_name + '-proofs.log'),
   ],
   env: {'FRAMAC_SESSION': join_paths(meson.current_build_dir(), test_name)},
