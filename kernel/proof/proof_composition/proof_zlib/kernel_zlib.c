@@ -38,6 +38,7 @@ void kernel_zlib(void)
     /* testing string.h API */
     /* defining volatile, unpredictible char value val to cover various use cases */
     volatile char val = 'a';
+    /* initilizing src with garbaged (unpredictable) yet valid chars */
     /*@
       loop invariant 0 <= i <= 128;
       loop assigns i, src[0 .. 127];
@@ -59,6 +60,9 @@ void kernel_zlib(void)
      */
 
     size_t len = sentry_strnlen(src, 128);
+    len = sentry_strnlen(NULL, 128);
+    len = sentry_strnlen(src, 1);
+    len = sentry_strnlen(src, 0);
 
     /* memset */
     test_memset(0x0, 42);
