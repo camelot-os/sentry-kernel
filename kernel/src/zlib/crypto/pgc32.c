@@ -34,6 +34,7 @@ uint32_t pcg32(void)
     uint32_t rot;
     uint32_t result;
 
+    /*@ ghost ghost_pcg32 = 1; */
     state = (uint64_t)(((old % UINT64_MAX) * (N % UINT64_MAX) + (inc % UINT64_MAX)) % UINT64_MAX);
     shifted = (uint32_t)(((old >> 18) ^ old) >> 27);
     rot = old >> 59;
@@ -44,8 +45,13 @@ uint32_t pcg32(void)
 /**
  * Set the seed of the PCG32 sequence
  */
+/*@
+  assigns inc \from indirect:seed_sequence;
+  assigns state \from indirect: seed_state;
+*/
 void pcg32_seed(uint64_t seed_state, uint64_t seed_sequence)
 {
+    /*@ ghost ghost_pcg32 = 1; */
     state = 0;
     inc = (seed_sequence << 1) | 1;
     pcg32();

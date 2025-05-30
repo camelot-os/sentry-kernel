@@ -25,10 +25,22 @@ uint32_t crc32(unsigned char const * const buf, uint32_t len, uint32_t init);
  *  @{
  */
 
+/*@ ghost int ghost_pcg32; */
 
+/*@
+  // assigns \nothing is false, as private variables are assigned.
+  // To demonstrate to other components that there is no public side-effects,
+  // we emulate a single ghost variable assignment here. Other assignments
+  // are declared privately, with the function implementation (see zlib pcg32.c)
+  assigns ghost_pcg32;
+*/
 void pcg32_seed(uint64_t seed_state, uint64_t seed_sequence);
 
 
+/*@
+  // same problem with same solution here
+  assigns ghost_pcg32;
+*/
 uint32_t pcg32(void);
 
 /** @}*/
