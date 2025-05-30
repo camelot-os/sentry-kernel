@@ -48,6 +48,7 @@ void kernel_zlib(void)
     }
     /* at list finishing with null-char at the end (valid ISO C string) */
     src[127] = '\0';
+    /*@ assert \initialized(src+(0..127)); */
     /*
      * formal proofness imposes that the input string is valid in all calls,
      * meaning ASCII char + null termination.

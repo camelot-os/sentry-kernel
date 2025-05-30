@@ -67,7 +67,21 @@ test(
 test_name = 'frama-c-zlib-wp'
 
 # zlib exported functions to be proved
-zlib_correctness_targets = 'sentry_strnlen,__sentry_memset,sentry_memset,regions_overlaps,__sentry_memcpy,sentry_memcpy,kernel_zlib,test_memset'
+zlib_correctness_targets = ','.join(
+  [
+    # string.h local unreachable utilities subprograms
+    '__sentry_strnlen',
+    '__sentry_memset',
+    '__sentry_memcpy',
+    'regions_overlaps',
+    # string.h exported (through aliasing) functions
+    'sentry_strnlen',
+    'sentry_memset',
+    'sentry_memcpy',
+    # Frama-C specific functions and entrypoint for EVA
+    'kernel_zlib',
+    'test_memset',
+  ])
 
 test(
   test_name,

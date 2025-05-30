@@ -4,23 +4,35 @@
 #include <string.h>
 #include <sentry/ktypes.h>
 
-/* string related functions, for debug usage only */
-/*@ requires valid_string_s: valid_read_nstring(s, maxlen);
-  @ assigns \result;
-  @ ensures result_bounded: \result == strlen(s) || \result == maxlen;
-  @*/
-#ifndef __FRAMAC__
-static
-#endif
-size_t sentry_strnlen(const char *s, size_t maxlen)
+/*@
+  axiomatic NullTerminatedString {
+    logic boolean has_null_terminator{L}(char *s, integer N);
+
+    // A string of length N has a null terminator between 0 and N-1
+    axiom null_terminator_exists:
+      \forall char *s, integer N;
+        N > 0 ==> has_null_terminator(s, N) <==>
+        (\exists integer i; 0 <= i < N && s[i] == '\0');
+
+    // If a string has a null terminator, all indices after the null terminator are irrelevant
+    axiom null_terminator_effect:
+      \forall char *s, integer N, integer i;
+        has_null_terminator(s, N) && 0 <= i < N && s[i] == '\0' ==>
+        (\forall integer j; i < j < N ==> s[j] == '\0');
+  }
+*/
+
+/*
+ * @brief ISO C equivalent implementation of strnlen
+ */
+/*@
+   requires valid_string_s: valid_read_nstring(s, maxlen);
+   assigns \result \from indirect:s, indirect:maxlen;
+   ensures acsl_c_equiv: \result == strnlen(s, maxlen);
+  */
+static inline size_t __sentry_strnlen(const char *s, size_t maxlen)
 {
     size_t result = 0;
-
-    if (s == NULL) {
-        /* should never happen based on subprogram contract */
-        /*@ assert \false; */
-        goto err;
-    }
     /*@
       @ loop invariant 0 <= result <= maxlen;
       @ loop invariant \forall integer i; 0 <= i < result ==> s[i] != '\0';
@@ -30,6 +42,31 @@ size_t sentry_strnlen(const char *s, size_t maxlen)
     while ((s[result] != '\0') && result < maxlen) {
         result++;
     }
+err:
+    return result;
+}
+
+/**
+ * @brief hardened implementation of strnlen, checking for null pointer
+ * @see __sentry_strnlen() for ISO C equivalent
+ */
+/*@
+   requires s != \null ==> has_null_terminator(s, maxlen);
+   ensures s != \null ==> acsl_c_equiv: \result == strnlen(s, maxlen);
+   ensures s == \null ==> \result == 0;
+  @*/
+#ifndef __FRAMAC__
+static
+#endif
+size_t sentry_strnlen(const char *s, size_t maxlen)
+{
+    size_t result = 0;
+
+    if (s == NULL) {
+        goto err;
+    }
+    /*@ assert valid_read_nstring(s, maxlen); */
+    result = __sentry_strnlen(s, maxlen);
 err:
     return result;
 }
@@ -180,6 +217,7 @@ err:
   // ISO C equivalent of memcpy
   requires \valid(dest+(0..n-1));
   requires \valid_read(src+(0..n-1));
+  requires \initialized(src+(0..n-1));
   requires separation: \separated(dest+(0..n-1),src+(0..n-1));
   assigns ((uint8_t*)dest)[0 .. (n-1)] \from indirect:src, indirect:n;
   assigns \result \from dest;
@@ -217,8 +255,14 @@ static inline uint8_t *__sentry_memcpy(uint8_t * restrict dest, const uint8_t* r
   */
 /*@
   requires \separated((uint8_t*)src + (0 .. n-1), (uint8_t*)dest + (0 .. n-1));
+  requires \valid_read((uint8_t*)src + (0 .. n-1)) ==> \initialized((uint8_t*)src + (0 .. n-1));
   assigns ((uint8_t*)dest)[0 .. (n-1)] \from indirect:src, indirect:n;
   assigns \result \from indirect:src, indirect:n;
+  // for valid input values, the destination memory must be initalized from src
+  ensures
+    (\separated((uint8_t*)src + (0 .. n-1), (uint8_t*)dest + (0 .. n-1)) &&
+     \valid((uint8_t*)dest + (0 .. n-1)))
+      ==> \initialized((char*)dest + (0 .. n-1));
   ensures \result == dest;
   */
 #ifndef __FRAMAC__
@@ -238,6 +282,7 @@ void   *sentry_memcpy(void * restrict dest, const void* restrict src, size_t n)
     /*@ assert \separated((uint8_t*)dest + (0 .. n-1), (uint8_t*)src + (0 .. n-1)); */
     /*@ assert \valid((uint8_t*)dest + (0 .. (n-1))); */
     /*@ assert \valid_read((uint8_t*)dest + (0 .. (n-1))); */
+    /*@ assert \initialized((uint8_t*)src+(0..n-1)); */
     __sentry_memcpy(dest, src, n);
 err:
     return dest;
