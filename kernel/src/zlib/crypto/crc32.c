@@ -67,39 +67,35 @@ static const uint32_t crc32_tab[] =
  */
 #define UPDC32(octet, crc) (crc32_tab[((crc) ^ (octet)) & 0xff] ^ ((crc) >> 8))
 
-
 /*@
    requires len >= 0;
    requires buf != \null ==> \valid_read(buf + (0 .. len - 1));
-   requires \valid_read(buf + (0 .. len - 1));
    requires \separated(buf + (0 .. (len-1)), (uint32_t const *)crc32_tab + (0 .. 255));
-
    assigns \nothing;
+   // note: equivalence implies that crc32 never colisions
+   ensures (len == 0 || buf == \null) ==> \result == \old(init);
 
-   ensures \result == \old(init) ==> len == 0;
-   ensures len > 0 ==> \result != \old(init);
-   ensures \result == init || \result != init;
   */
 uint32_t crc32(unsigned char const * const buf, uint32_t len, uint32_t init)
 {
-    uint32_t crc32;
+    uint32_t crc32 = init;
     uint32_t i;
 
     if (unlikely(buf == NULL)) {
-      /* must be dead code */
-      /*@ assert \false; */
-      return init;
+      goto err;
+    }
+    if (unlikely(len == 0)) {
+      goto err;
     }
     /*@ assert \valid_read(buf + (0 .. len-1)); */
-    crc32 = init;
     /*@
       @ loop invariant 0 <= i <= len;
-      @ loop assigns crc32, buf[i];
+      @ loop assigns i, crc32;
       @ loop variant len - i;
     */
-    for (i = 0; i < len; i++)
-    {
+    for (i = 0; i < len; i++) {
         crc32 = UPDC32(buf[i], crc32);
     }
+err:
     return crc32;
 }

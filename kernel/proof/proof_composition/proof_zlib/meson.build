@@ -81,6 +81,7 @@ zlib_crypto_correctness_targets = ','.join(
     # PGC32 functions
     'pcg32_seed',
     'pcg32',
+    'crc32',
   ])
 
 test(

@@ -10,6 +10,17 @@
 void kernel_zlib(void)
 {
     uint32_t res;
+    uint8_t src[128];
+    volatile uint8_t val = 0;
+    /* initilizing src with garbaged (unpredictable) values */
+    /*@
+      loop invariant 0 <= i <= 128;
+      loop assigns i, src[0 .. 127];
+      loop variant 128 - i;
+     */
+    for (size_t i = 0; i < 128; ++i) {
+        src[i] = val;
+    }
     /* testing entropy.h API */
 
     // call with default, no seeding
@@ -25,8 +36,8 @@ void kernel_zlib(void)
     uint32_t old_res = res;
     res = pcg32();
     /*@ assert old_res != res; */
-#if 0
     /* Calculate the CRC32 result of src, with initial masking of 0xffffffff */
-    res = crc32((uint8_t*)src, len, 0xffffffff);
-#endif
+    res = crc32(NULL, 128, 0xffffffff);
+    res = crc32(src, 128, 0xffffffff);
+    res = crc32(src, 0, 0xffffffff);
 }
