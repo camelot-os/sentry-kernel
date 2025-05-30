@@ -12,10 +12,12 @@
  * Basic PCG32 implementation
  * TODO: to be reviewed by Patrice, fixed with RNG source
  */
+/* N is a const value */
 static const uint64_t N = 6364136223846793005ULL;
+/* state iterate each time pgc32 is called */
 static uint64_t state = 0x853c49e6748fea9bULL;
+/* inc default value is overridable through pgc32_seed() */
 static uint64_t inc = 0xda3e39cb94b95bdbULL;
-
 
 /*
  * Get back a new value of the PCG32 deterministic sequence based on
@@ -24,23 +26,19 @@ static uint64_t inc = 0xda3e39cb94b95bdbULL;
 /*@
    requires \true;
    assigns state;
-
-   // state predictible upgrade
-   ensures state == \old(state) * 6364136223846793005ULL + 0xda3e39cb94b95bdbULL;
-   // TODO framlly defined result formula
-   ensures \result == ((\old(state) / (1ULL << 18)) ^ \old(state)) / (1ULL << 27) / (\old(state) / (1ULL << 59)) +
-                     (((\old(state) / (1ULL << 18)) ^ \old(state)) / (1ULL << 27) * ((~(\old(state) / (1ULL << 59)) + 1) % 32));
   */
 uint32_t pcg32(void)
 {
     uint64_t old = state;
     uint32_t shifted;
     uint32_t rot;
+    uint32_t result;
 
-    state = old * N + inc;
+    state = (uint64_t)(((old % UINT64_MAX) * (N % UINT64_MAX) + (inc % UINT64_MAX)) % UINT64_MAX);
     shifted = (uint32_t)(((old >> 18) ^ old) >> 27);
     rot = old >> 59;
-    return (shifted >> rot) | (shifted << ((~rot + 1) & 31));
+    result = (shifted >> rot) | (shifted << ((~rot + 1) & 31));
+    return result;
 }
 
 /**
@@ -51,6 +49,6 @@ void pcg32_seed(uint64_t seed_state, uint64_t seed_sequence)
     state = 0;
     inc = (seed_sequence << 1) | 1;
     pcg32();
-    state = state + seed_state;
+    state = (uint64_t)(state + seed_state);
     pcg32();
 }

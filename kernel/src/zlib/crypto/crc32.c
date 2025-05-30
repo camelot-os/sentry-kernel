@@ -69,8 +69,10 @@ static const uint32_t crc32_tab[] =
 
 
 /*@
-   requires buf != \null;
+   requires len >= 0;
+   requires buf != \null ==> \valid_read(buf + (0 .. len - 1));
    requires \valid_read(buf + (0 .. len - 1));
+   requires \separated(buf + (0 .. (len-1)), (uint32_t const *)crc32_tab + (0 .. 255));
 
    assigns \nothing;
 

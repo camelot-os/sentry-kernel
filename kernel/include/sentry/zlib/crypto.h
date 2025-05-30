@@ -25,9 +25,7 @@ uint32_t crc32(unsigned char const * const buf, uint32_t len, uint32_t init);
 /** \addtogroup PGC32
  *  @{
  */
-
 void pcg32_seed(uint64_t seed_state, uint64_t seed_sequence);
-
 uint32_t pcg32(void);
 
 /** @}*/
