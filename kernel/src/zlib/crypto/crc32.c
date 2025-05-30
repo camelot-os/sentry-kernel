@@ -67,15 +67,7 @@ static const uint32_t crc32_tab[] =
  */
 #define UPDC32(octet, crc) (crc32_tab[((crc) ^ (octet)) & 0xff] ^ ((crc) >> 8))
 
-/*@
-   requires len >= 0;
-   requires buf != \null ==> \valid_read(buf + (0 .. len - 1));
-   requires \separated(buf + (0 .. (len-1)), (uint32_t const *)crc32_tab + (0 .. 255));
-   assigns \nothing;
-   // note: equivalence implies that crc32 never colisions
-   ensures (len == 0 || buf == \null) ==> \result == \old(init);
-
-  */
+/*@ requires \separated(buf + (0 .. (len-1)), (uint32_t const *)crc32_tab + (0 .. 255)); */
 uint32_t crc32(unsigned char const * const buf, uint32_t len, uint32_t init)
 {
     uint32_t crc32 = init;

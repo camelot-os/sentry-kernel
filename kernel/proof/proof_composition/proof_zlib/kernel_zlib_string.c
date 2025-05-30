@@ -5,9 +5,8 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <framac_entropy.h>
-#include <sentry/zlib/crypto.h>
-#include <sentry/zlib/math.h>
-#include <sentry/zlib/sort.h>
+#include <sentry/zlib/string.h>
+
 /** TODO: expose sentry_xxx of string.h instead of using externs here */
 
 /**
