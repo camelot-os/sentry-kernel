@@ -73,7 +73,7 @@ zlib_correctness_targets = ','.join(
     '__sentry_strnlen',
     '__sentry_memset',
     '__sentry_memcpy',
-    'regions_overlaps',
+    '__regions_overlaps',
     # string.h exported (through aliasing) functions
     'sentry_strnlen',
     'sentry_memset',

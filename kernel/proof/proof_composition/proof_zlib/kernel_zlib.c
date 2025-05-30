@@ -29,6 +29,7 @@ static inline void test_memset(int c, unsigned int n)
     sentry_memset(s, c, n);
 }
 
+/*@ assigns \nothing; */
 void kernel_zlib(void)
 {
     uint32_t res;
@@ -71,9 +72,13 @@ void kernel_zlib(void)
 
 
     /* memcpy. Note: overlapping is forbidden by contract */
+    sentry_memcpy(NULL, src, 96);
+    sentry_memcpy(NULL, NULL, 96);
+    sentry_memcpy(dest, NULL, 96);
     sentry_memcpy(dest, src, 96);
+    sentry_memcpy(dest, src, 0);
     sentry_memcpy(dest, src, 31); /* not word aligned size */
-    sentry_memcpy(&dest[20], dest, 12); /* non aligned */
+    sentry_memcpy(&dest[1], src, 12); /* non word-aligned memraeas */
 
 #if 0
     /* testing entropy.h API */
