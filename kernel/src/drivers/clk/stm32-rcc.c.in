@@ -472,7 +472,11 @@ kstatus_t rcc_get_bus_clock(bus_id_t busid, uint32_t *busclk)
     switch (busid) {
         case BUS_APB1:
 #if defined(HAS_BUS_APB1_2)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wswitch"
+        /* XXX: Invalid for bus enumeration, see above FIXME */
         case BUS_APB1 + 4:
+#pragma GCC diagnostic pop
 #endif
             *busclk = RCC_APB1_CLOCK_FREQUENCY;
             break;
