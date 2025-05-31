@@ -92,6 +92,19 @@ void   *sentry_memset(void *s, int c, unsigned int n);
   ensures \result == dest;
   */
 void   *sentry_memcpy(void * restrict dest, const void* restrict src, size_t n);
-#endif
+
+/**
+ * Note: because frama-c as no link notion and uses cpp+internal analysis, we cannot
+ * use the __attribute__((alias("fct"))) trick to alias the sentry_ prefixed
+ * functions to the iso-C ones. Instead, we use here cpp-level aliasing that
+ * allows to keep the same function name in the proof suite.
+ * In production, the sentry_ prefixed functions are aliased to the iso-C (see string.c
+ * zlib file).
+ */
+#define strnlen sentry_strnlen
+#define memset sentry_memset
+#define memcpy sentry_memcpy
+
+#endif /* __FRAMAC__ */
 
 #endif/*!ZLIB_STRING_H*/
