@@ -4,10 +4,6 @@
 #ifndef ZLIB_SORT_H
 #define ZLIB_SORT_H
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #include <inttypes.h>
 #include <sentry/ktypes.h>
 
@@ -45,6 +41,12 @@ typedef int (*cmp_func_t)(const void *a, const void *b);
  *
  * basically exchange two cells of same size
  */
+/*@
+    requires \valid((uint8_t*)a + (0 .. size-1));
+    requires \valid((uint8_t*)b + (0 .. size-1));
+    requires size_valid: size > 0;
+    assigns ((uint8_t*)a)[0 .. size-1], ((uint8_t*)b)[0 .. size-1];
+*/
 static inline void generic_swap(void *a, void *b, size_t size)
 {
     uint8_t buf[size];
@@ -62,10 +64,24 @@ static inline void generic_swap(void *a, void *b, size_t size)
  * @param cmp[in]: comparison function, required
  * @param swp[in]: swap function. If NULL, fallback to generic_swap
  */
+/*@
+  requires table_valid: table != \null;
+  requires table != \null ==> \valid((uint8_t*)table + (0 .. len*cell_size-1));
+  requires \valid_function(cmp);
+  requires cell_size_valid: cell_size > 0;
+  requires len_valid: len == 0 || \valid((uint8_t*)table + (0 .. len*cell_size-1));
+  requires swap_valid: swp == \null || \valid_function(swp);
+
+  assigns ((uint8_t*)table)[0 .. len*cell_size-1];
+  ensures len < 2 ==> \result == K_STATUS_OKAY;
+  ensures \result == K_STATUS_OKAY || \result == K_ERROR_INVPARAM;
+*/
 static inline kstatus_t bubble_sort(void *table, size_t len, size_t cell_size, cmp_func_t cmp, swap_func_t swp)
 {
     kstatus_t status = K_ERROR_INVPARAM;
     if (unlikely(table == NULL || cmp == NULL)) {
+        /* defense in depth */
+        /*@ assert \false; */
         goto end;
     }
     if (unlikely(len < 2 || cell_size == 0)) {
@@ -73,10 +89,22 @@ static inline kstatus_t bubble_sort(void *table, size_t len, size_t cell_size, c
         /* nothing to be done */
         goto end;
     }
+    /*@ assert \valid((uint8_t*)table + (0 .. len*cell_size-1)); */
     if (swp == NULL) {
         swp = generic_swap;
     }
+    /*@ assert \valid_function(swp); */
+    /*@
+      loop invariant 0 <= i < len;
+      loop assigns i, ((uint8_t*)table)[0 .. len*cell_size-1];
+      loop variant len - i;
+    */
     for (size_t i = 0; i < len; i++) {
+        /*@
+          loop invariant 0 <= j < len;
+          loop assigns j, ((uint8_t*)table)[0 .. len*cell_size-1];
+          loop variant len - i;
+          */
         for (size_t j = 0; j < len - 1 - i; j++) {
             size_t ta = (size_t)table + (j*cell_size);
             size_t tb = (size_t)table + ((j+1)*cell_size);
@@ -95,8 +123,5 @@ end:
  *  @}
  */
 
-#ifdef __cplusplus
-}
-#endif
 
 #endif/*!ZLIB_SORT_H*/
