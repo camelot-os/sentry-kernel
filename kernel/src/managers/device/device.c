@@ -15,6 +15,8 @@
 #include <sentry/managers/task.h>
 #include <sentry/managers/clock.h>
 
+#include <sentry/arch/asm-generic/panic.h>
+
 #include "devlist-dt.h"
 
 /**

@@ -16,6 +16,10 @@ extern "C" {
 #include <sentry/arch/asm-cortex-m/mpu.h>
 #elif defined(__x86_64__)
 #include <sentry/arch/asm-x86_64/memory.h>
+#elif defined(CONFIG_ARCH_RV32)
+#include <sentry/arch/asm-rv32/pmp.h>
+#else
+#error "unsupported architecture!"
 #endif
 
 #ifdef __cplusplus

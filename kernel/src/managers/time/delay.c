@@ -5,6 +5,7 @@
 #include <string.h>
 #include <sentry/ktypes.h>
 #include <sentry/arch/asm-generic/tick.h>
+#include <sentry/arch/asm-generic/panic.h>
 #include <sentry/managers/debug.h>
 #include <sentry/sched.h>
 

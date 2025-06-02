@@ -8,6 +8,7 @@ arch_source_set.add(files(
   'tick.c',
   'semihosting.c',
   'handler.c',
+  'handler-svc-lut.c',
 ))
 
 # VTOR and handlers are not a part of the library, but instead hold in the

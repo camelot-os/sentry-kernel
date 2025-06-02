@@ -13,6 +13,10 @@ extern "C" {
 #include <sentry/arch/asm-cortex-m/tick.h>
 #elif defined(__x86_64__)
 #include <sentry/arch/asm-x86_64/tick.h>
+#elif defined(CONFIG_ARCH_RV32)
+#include <sentry/arch/asm-rv32/tick.h>
+#else
+#error "unsupported architecture!"
 #endif
 
 #ifdef __cplusplus

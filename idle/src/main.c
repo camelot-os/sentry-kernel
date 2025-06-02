@@ -16,23 +16,10 @@
  */
 uint32_t __stack_chk_guard = 0;
 
-/**
- * NOTE: idle task is a 'bare' Sentry kernel task, meaning that there is
- * no build system calculating each section and mapping the task on the target.
- *
- * As a consequence, the kernel is not able to determine the size of the .data
- * and .bss sections, and these two values are hardcoded (data and bss set to 0)
- * This means that idle task MUST NOT use any globals.
- *
- * Of course, this restriction do not impact standard userspace apps :-)
- */
-
-void __attribute__((no_stack_protector, used, noreturn)) idle(uint32_t label, uint32_t seed)
+void idle_task(unsigned int label, unsigned int seed)
 {
     const char *welcommsg="hello this is idle!\n";
     const char *yieldmsg="yielding for scheduler...\n";
-
-    __switch_to_userspace();
 
     /* update SSP value with given seed */
     __stack_chk_guard = seed;
@@ -51,4 +38,20 @@ void __attribute__((no_stack_protector, used, noreturn)) idle(uint32_t label, ui
         /* rise from LP, force task election */
         __sys_sched_yield();
     } while (1);
+}
+
+/**
+ * NOTE: idle task is a 'bare' Sentry kernel task, meaning that there is
+ * no build system calculating each section and mapping the task on the target.
+ *
+ * As a consequence, the kernel is not able to determine the size of the .data
+ * and .bss sections, and these two values are hardcoded (data and bss set to 0)
+ * This means that idle task MUST NOT use any globals.
+ *
+ * Of course, this restriction do not impact standard userspace apps :-)
+ */
+
+void __attribute__((no_stack_protector, used, noreturn)) idle(uint32_t label, uint32_t seed)
+{
+    __switch_to_userspace(idle_task, label, seed);
 }

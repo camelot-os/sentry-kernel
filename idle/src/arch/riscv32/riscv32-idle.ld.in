@@ -1,0 +1,158 @@
+/*
+ * SPDX-FileCopyrightText: 2025 ANSSI
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+ENTRY(idle)
+
+MEMORY
+{
+{%- set flash_banks = dts.get_compatible("soc-nv-flash") %}
+{%- for flash in flash_banks %}
+    {%- set origin = "0x%08x"|format(flash.reg[0]) %}
+    {%- set length = "0x%08x"|format(flash.reg[1]) %}
+    {{ flash.label.upper() }} (rx): ORIGIN = {{ origin }}, LENGTH = {{ length }}
+{%- endfor %}
+
+{%- set sram_banks = dts.get_compatible("mmio-sram") %}
+{%- for sram in sram_banks %}
+    {%- set origin = "0x%08x"|format(sram.reg[0]) %}
+    {%- set length = "0x%08x"|format(sram.reg[1]) %}
+    {{ sram.label.upper() }} (rw): ORIGIN = {{ origin }}, LENGTH = {{ length }}
+{%- endfor %}
+
+{%- set ccm_banks = dts.get_compatible("st,stm32-ccm") %}
+{%- for ccm in ccm_banks %}
+    {%- set origin = "0x%08x"|format(ccm.reg[0]) %}
+    {%- set length = "0x%08x"|format(ccm.reg[1]) %}
+    {{ ccm.label.upper() }} (rw): ORIGIN = {{ origin }}, LENGTH = {{ length }}
+{%- endfor %}
+
+{%- set outpost_pools = dts.get_compatible("outpost,memory-pool") %}
+{%- for pool in outpost_pools %}
+    {%- set origin = "0x%08x"|format(pool.reg[0]) %}
+    {%- set length = "0x%08x"|format(pool.reg[1]) %}
+    {{ pool.label.upper() }} (rw): ORIGIN = {{ origin }}, LENGTH = {{ length }}
+{%- endfor %}
+}
+
+{%- set idleram_section = dts.chosen["sentry,idleram_section"].label.upper() %}
+{%- set idlecode_section = dts.chosen["sentry,idlecode_section"].label.upper() %}
+
+/* Define output sections */
+SECTIONS
+{
+    .text :
+    {
+        . = ALIGN(4);
+        _sidle = .;
+        _stext = .;	            /* create a global symbol at data start */
+        *startup*(.text.idle)
+        *(.text)
+        *(.text*)
+        *(.rodata)         	/* .rodata sections (constants, strings, etc.) */
+        *(.rodata*)         	/* .rodata sections (constants, strings, etc.) */
+        *(.glue_7)         	/* glue arm to thumb code */
+        *(.glue_7t)        	/* glue thumb to arm code */
+        *(.eh_frame)
+        KEEP (*(.init))
+        KEEP (*(.fini))
+
+        . = ALIGN(4);
+        _etext = .;        	/* define a global symbols at end of code */
+        _exit = .;
+        _eidle = .;
+        . = ALIGN(4);
+    } > {{ idlecode_section }}
+
+    .ARM.extab :
+    {
+        *(.ARM.extab* .gnu.linkonce.armextab.*)
+    } > {{ idlecode_section }}
+
+    .ARM :
+    {
+        __exidx_start = .;
+        *(.ARM.exidx*)
+        __exidx_end = .;
+    } > {{ idlecode_section }}
+
+    .ctors :
+    {
+        __CTOR_LIST__ = .;
+        /* gcc uses crtbegin.o to find the start of
+        the constructors, so we make sure it is
+        first.  Because this is a wildcard, it
+        doesn't matter if the user does not
+        actually link against crtbegin.o; the
+        linker won't look for a file to match a
+        wildcard.  The wildcard also means that it
+        doesn't matter which directory crtbegin.o
+        is in.  */
+        KEEP (*crtbegin.o(.ctors))
+        KEEP (*crtbegin?.o(.ctors))
+        /* We don't want to include the .ctor section from
+        from the crtend.o file until after the sorted ctors.
+        The .ctor section from the crtend file contains the
+        end of ctors marker and it must be last */
+        KEEP (*(EXCLUDE_FILE(*crtend?.o *crtend.o) .ctors))
+        KEEP (*(SORT(.ctors.*)))
+        KEEP (*(.ctors))
+        __CTOR_END__ = .;
+    } > {{ idlecode_section }}
+
+    /* the .got should be empty. This is checked at the end of this script. */
+    .got :
+    {
+        *(.got .got*)
+    } > {{ idlecode_section }}
+
+    __etext = .;    /* define a global symbol at end of code */
+    __DATA_ROM = .; /* Symbol is used by startup for data initialization */
+
+    .svcexchange :
+    {
+        . = ALIGN(4);
+        _s_idle_svcexchange = .;
+        *(.svcexchange*)
+        _e_idle_svcexchange = .;        /* define a global symbol at data end */
+    } > {{ idleram_section }}
+
+    /* used by the startup to initialize data */
+    /* Initialized data sections goes into RAM, load LMA copy after code */
+    .data :
+    {
+        . = ALIGN(4);
+        _ram_start = .;
+        _sdata = .;        /* create a global symbol at data start */
+        *(.data)           /* .data sections */
+        *(.data*)          /* .data* sections */
+        _edata = .;        /* define a global symbol at data end */
+    } > {{ idleram_section }} AT> {{ idlecode_section }}
+
+    _sidata = LOADADDR(.data);
+
+    __CACHE_REGION_START = ORIGIN({{ idlecode_section }});
+    __CACHE_REGION_SIZE  = 0;
+    __NDATA_ROM = __DATA_ROM + SIZEOF(.data); /* Symbol is used by startup for ncache data initialization */
+
+    /* Uninitialized data section */
+    . = ALIGN(4);
+    .bss :
+    {
+        /* This is used by the startup in order to initialize the .bss section */
+        _sbss = .;         /* define a global symbol at bss start */
+        __bss_start__ = _sbss;
+        *debug.o(.bss)
+        *(.bss)
+        *(.bss*)
+        *(COMMON)
+
+        . = ALIGN(4);
+        _ebss = .;         /* define a global symbol at bss end */
+        __bss_end__ = _ebss;
+    } > {{ idleram_section }}
+
+}
+
+ASSERT(SIZEOF(.got) == 0, "error: .got is not empty");

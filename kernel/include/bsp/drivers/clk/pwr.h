@@ -8,7 +8,14 @@
 #include <stdbool.h>
 
 #include <sentry/ktypes.h>
+
+#if defined(__arm__) || defined(__FRAMAC__)
 #include <sentry/arch/asm-cortex-m/buses.h>
+#elif defined(CONFIG_ARCH_RV32)
+#include <sentry/arch/asm-rv32/buses.h>
+#else
+#error "unsupported architecture!"
+#endif
 
 /*
  * TODO:

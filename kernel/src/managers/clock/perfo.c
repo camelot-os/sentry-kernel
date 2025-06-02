@@ -53,6 +53,8 @@ uint64_t mgr_clock_get_cycle(void)
     uint32_t lo, hi;
     asm( "rdtsc" : "=a" (lo), "=d" (hi) );
     cycles = (lo | (hi << 32));
+#elif defined(CONFIG_ARCH_RV32)
+    asm volatile("rdcycle %0" : "=r"(cycles));
 #else
 # error "unsupported arch"
 #endif

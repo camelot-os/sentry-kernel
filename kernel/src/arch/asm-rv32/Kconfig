@@ -1,0 +1,43 @@
+# SPDX-FileCopyrightText: 2025 ANSSI
+# SPDX-License-Identifier: Apache-2.0
+
+menu "RISC-V configurations"
+
+config SOC_SUBFAMILY_QEMURV32
+  bool
+  select HAS_DCACHE
+  select HAS_ICACHE
+  help
+    Basic QEMU RISC-V virt platform
+
+config SOC_SUBFAMILY_OPENTITAN
+  bool
+  select HAS_DCACHE
+  select HAS_ICACHE
+  help
+    Basic QEMU RISC-V virt platform
+
+config ARCH_SOCNAME
+  string
+  default "QEMU_RV32" if SOC_SUBFAMILY_QEMURV32
+  default "OPENTITAN_EARLGREY" if SOC_SUBFAMILY_OPENTITAN
+
+choice
+  bool "target SoC selection"
+  default ARCH_MCU_OPENTITAN
+
+config ARCH_MCU_QEMURV32
+  bool "QEMU_RV32"
+  select SOC_SUBFAMILY_QEMURV32
+
+config ARCH_MCU_OPENTITAN
+  bool "OPENTITAN_EARLGREY"
+  select SOC_SUBFAMILY_OPENTITAN
+
+endchoice
+
+config RUSTC_TARGET
+	string
+	default "riscv32imc-unknown-none-elf" if SOC_SUBFAMILY_OPENTITAN
+
+endmenu

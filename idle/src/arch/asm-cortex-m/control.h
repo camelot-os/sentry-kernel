@@ -13,7 +13,9 @@
  *
  * This asm set the nPRIV bit in CONTROL register after idle start-up.
  */
-static inline void __switch_to_userspace(void)
+static inline void __switch_to_userspace(
+    void (*fn)(unsigned int, unsigned int), unsigned int arg0, unsigned int arg1
+)
 {
     asm volatile(
         "mrs r0,control \r\n"
@@ -22,6 +24,8 @@ static inline void __switch_to_userspace(void)
         "isb"
         ::: "memory"
     );
+
+    fn(arg0, arg1);
 }
 
 #endif /* __IDLE_ARCH_CORTEX_M_CONTROL_H */
