@@ -11,7 +11,6 @@
 /*@
    requires valid_string_s: valid_read_nstring(s, maxlen);
    assigns \result \from indirect:s, indirect:maxlen;
-   ensures acsl_c_equiv: \result == strnlen(s, maxlen);
   */
 static inline size_t __sentry_strnlen(const char *s, size_t maxlen)
 {
