@@ -1,0 +1,21 @@
+# SPDX-FileCopyrightText: 2025 ANSSI
+# SPDX-License-Identifier: Apache-2.0
+
+[package]
+name = "autotest-rs"
+version = "0.1.0"
+edition = "2024"
+build = "build.rs"
+
+[dependencies]
+sentry-uapi = { path = "../../../../uapi", default-features = false }
+
+[features]
+default = []
+
+[profile.dev]
+panic = "abort"
+opt-level = "z"
+
+[build-dependencies]
+cc = "1"
