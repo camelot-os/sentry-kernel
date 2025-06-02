@@ -30,8 +30,7 @@ fn test_signal_sendrecv() -> bool {
 
     if unsafe {
         copy_from_kernel(
-            &mut handle as *mut _ as *mut u8,
-            core::mem::size_of::<TaskHandle>(),
+            &mut (&mut handle as *mut _ as *mut u8)
         )
     } != Status::Ok
     {
@@ -50,8 +49,7 @@ fn test_signal_sendrecv() -> bool {
 
         let copy_status = unsafe {
             copy_from_kernel(
-                buffer.as_mut_ptr(),
-                core::mem::size_of::<ExchangeEvent>() + 4,
+                &mut buffer.as_mut_ptr()
             )
         };
 

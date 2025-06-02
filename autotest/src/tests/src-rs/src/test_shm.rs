@@ -46,8 +46,7 @@ fn test_shm_unmap_notmapped() -> bool {
     let ok = check_eq!(__sys_get_shm_handle(shm1.id), Status::Ok)
         & (unsafe {
             copy_from_kernel(
-                &mut shm as *mut _ as *mut u8,
-                core::mem::size_of::<ShmHandle>(),
+                &mut (&mut shm as *mut _ as *mut u8)
             )
         } == Status::Ok)
         & check_eq!(__sys_unmap_shm(shm), Status::Invalid);
@@ -62,8 +61,7 @@ fn test_shm_invalidmap() -> bool {
     let ok = check_eq!(__sys_get_shm_handle(shm1.id), Status::Ok)
         & (unsafe {
             copy_from_kernel(
-                &mut shm as *mut _ as *mut u8,
-                core::mem::size_of::<ShmHandle>(),
+                &mut (&mut shm as *mut _ as *mut u8)
             )
         } == Status::Ok);
     let invalid = shm + 42;
@@ -81,15 +79,13 @@ fn test_shm_mapdenied() -> bool {
     let ok = check_eq!(__sys_get_process_handle(0xbabe), Status::Ok)
         & (unsafe {
             copy_from_kernel(
-                &mut myself as *mut _ as *mut u8,
-                core::mem::size_of::<TaskHandle>(),
+                &mut (&mut myself as *mut _ as *mut u8)
             )
         } == Status::Ok)
         & check_eq!(__sys_get_shm_handle(shm1.id), Status::Ok)
         & (unsafe {
             copy_from_kernel(
-                &mut shm as *mut _ as *mut u8,
-                core::mem::size_of::<ShmHandle>(),
+                &mut (&mut shm as *mut _ as *mut u8)
             )
         } == Status::Ok)
         & check_eq!(__sys_shm_set_credential(shm, myself, perms), Status::Ok)
@@ -107,15 +103,13 @@ fn test_shm_infos() -> bool {
     let ok = check_eq!(__sys_get_shm_handle(shm1.id), Status::Ok)
         & (unsafe {
             copy_from_kernel(
-                &mut shm as *mut _ as *mut u8,
-                core::mem::size_of::<ShmHandle>(),
+                &mut (&mut shm as *mut _ as *mut u8)
             )
         } == Status::Ok)
         & check_eq!(__sys_shm_get_infos(shm), Status::Ok)
         & (unsafe {
             copy_from_kernel(
-                &mut infos as *mut _ as *mut u8,
-                core::mem::size_of::<ShmInfos>(),
+                &mut (&mut infos as *mut _ as *mut u8)
             )
         } == Status::Ok)
         & check_eq!(infos.label, shm1.id)
@@ -135,15 +129,13 @@ fn test_shm_creds_on_mapped() -> bool {
     let ok = check_eq!(__sys_get_process_handle(0xbabe), Status::Ok)
         & (unsafe {
             copy_from_kernel(
-                &mut myself as *mut _ as *mut u8,
-                core::mem::size_of::<TaskHandle>(),
+                &mut (&mut myself as *mut _ as *mut u8)
             )
         } == Status::Ok)
         & check_eq!(__sys_get_shm_handle(shm1.id), Status::Ok)
         & (unsafe {
             copy_from_kernel(
-                &mut shm as *mut _ as *mut u8,
-                core::mem::size_of::<ShmHandle>(),
+                &mut (&mut shm as *mut _ as *mut u8)
             )
         } == Status::Ok)
         & check_eq!(
@@ -172,15 +164,13 @@ fn test_shm_allows_idle() -> bool {
     let ok = check_eq!(__sys_get_process_handle(0xcafe), Status::Ok)
         & (unsafe {
             copy_from_kernel(
-                &mut idle as *mut _ as *mut u8,
-                core::mem::size_of::<TaskHandle>(),
+                &mut (&mut idle as *mut _ as *mut u8)
             )
         } == Status::Ok)
         & check_eq!(__sys_get_shm_handle(shm1.id), Status::Ok)
         & (unsafe {
             copy_from_kernel(
-                &mut shm as *mut _ as *mut u8,
-                core::mem::size_of::<ShmHandle>(),
+                &mut (&mut shm as *mut _ as *mut u8)
             )
         } == Status::Ok)
         & check_eq!(
@@ -201,15 +191,13 @@ fn test_shm_map_unmappable() -> bool {
     let ok = check_eq!(__sys_get_process_handle(0xbabe), Status::Ok)
         & (unsafe {
             copy_from_kernel(
-                &mut myself as *mut _ as *mut u8,
-                core::mem::size_of::<TaskHandle>(),
+                &mut (&mut myself as *mut _ as *mut u8)
             )
         } == Status::Ok)
         & check_eq!(__sys_get_shm_handle(shm1.id), Status::Ok)
         & (unsafe {
             copy_from_kernel(
-                &mut shm as *mut _ as *mut u8,
-                core::mem::size_of::<ShmHandle>(),
+                &mut (&mut shm as *mut _ as *mut u8)
             )
         } == Status::Ok)
         & check_eq!(__sys_shm_set_credential(shm, myself, perms), Status::Ok)
@@ -228,15 +216,13 @@ fn test_shm_mapunmap() -> bool {
     let ok = check_eq!(__sys_get_process_handle(0xbabe), Status::Ok)
         & (unsafe {
             copy_from_kernel(
-                &mut myself as *mut _ as *mut u8,
-                core::mem::size_of::<TaskHandle>(),
+                &mut (&mut myself as *mut _ as *mut u8)
             )
         } == Status::Ok)
         & check_eq!(__sys_get_shm_handle(shm1.id), Status::Ok)
         & (unsafe {
             copy_from_kernel(
-                &mut shm as *mut _ as *mut u8,
-                core::mem::size_of::<ShmHandle>(),
+                &mut (&mut shm as *mut _ as *mut u8)
             )
         } == Status::Ok)
         & check_eq!(__sys_shm_set_credential(shm, myself, perms), Status::Ok)

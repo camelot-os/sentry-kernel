@@ -26,7 +26,7 @@ fn test_cycles_duration() -> bool {
 
     ok &= check_eq!(__sys_sched_yield(), Status::Ok);
     ok &= check_eq!(__sys_get_cycle(Precision::Microseconds), Status::Ok);
-    ok &= unsafe { copy_from_kernel(&mut start as *mut _ as *mut u8, core::mem::size_of::<u64>()) }
+    ok &= unsafe { copy_from_kernel(&mut (&mut start as *mut _ as *mut u8)) }
         == Status::Ok;
     for _ in 0..=1000 {
         let _ = __sys_get_cycle(Precision::Microseconds);
@@ -34,7 +34,7 @@ fn test_cycles_duration() -> bool {
     }
 
     ok &= check_eq!(__sys_get_cycle(Precision::Microseconds), Status::Ok);
-    ok &= unsafe { copy_from_kernel(&mut stop as *mut _ as *mut u8, core::mem::size_of::<u64>()) }
+    ok &= unsafe { copy_from_kernel(&mut (&mut stop as *mut _ as *mut u8)) }
         == Status::Ok;
 
     log_info!(
@@ -44,18 +44,18 @@ fn test_cycles_duration() -> bool {
 
     ok &= check_eq!(__sys_sched_yield(), Status::Ok);
     ok &= check_eq!(__sys_get_cycle(Precision::Microseconds), Status::Ok);
-    ok &= unsafe { copy_from_kernel(&mut start as *mut _ as *mut u8, core::mem::size_of::<u64>()) }
+    ok &= unsafe { copy_from_kernel(&mut (&mut start as *mut _ as *mut u8)) }
         == Status::Ok;
 
     for _ in 0..=1000 {
         ok &= check_eq!(__sys_get_cycle(Precision::Microseconds), Status::Ok);
         ok &= unsafe {
-            copy_from_kernel(&mut micro as *mut _ as *mut u8, core::mem::size_of::<u64>())
+            copy_from_kernel(&mut (&mut micro as *mut _ as *mut u8))
         } == Status::Ok;
     }
 
     ok &= check_eq!(__sys_get_cycle(Precision::Microseconds), Status::Ok);
-    ok &= unsafe { copy_from_kernel(&mut stop as *mut _ as *mut u8, core::mem::size_of::<u64>()) }
+    ok &= unsafe { copy_from_kernel(&mut (&mut stop as *mut _ as *mut u8)) }
         == Status::Ok;
 
     log_info!(
@@ -73,15 +73,15 @@ fn test_cycles_precision() -> bool {
     let mut nano: u64 = 0;
 
     let milli_st = __sys_get_cycle(Precision::Milliseconds);
-    ok &= unsafe { copy_from_kernel(&mut milli as *mut _ as *mut u8, core::mem::size_of::<u64>()) }
+    ok &= unsafe { copy_from_kernel(&mut (&mut milli as *mut _ as *mut u8)) }
         == Status::Ok;
 
     let micro_st = __sys_get_cycle(Precision::Microseconds);
-    ok &= unsafe { copy_from_kernel(&mut micro as *mut _ as *mut u8, core::mem::size_of::<u64>()) }
+    ok &= unsafe { copy_from_kernel(&mut (&mut micro as *mut _ as *mut u8)) }
         == Status::Ok;
 
     let nano_st = __sys_get_cycle(Precision::Nanoseconds);
-    ok &= unsafe { copy_from_kernel(&mut nano as *mut _ as *mut u8, core::mem::size_of::<u64>()) }
+    ok &= unsafe { copy_from_kernel(&mut (&mut nano as *mut _ as *mut u8)) }
         == Status::Ok;
 
     let cycle_st = __sys_get_cycle(Precision::Cycle);

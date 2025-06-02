@@ -27,8 +27,7 @@ fn test_ipc_send_toobig() -> bool {
     ok &= check_eq!(__sys_get_process_handle(0xbabe), Status::Ok);
     ok &= unsafe {
         copy_from_kernel(
-            &mut handle as *mut _ as *mut u8,
-            core::mem::size_of::<TaskHandle>(),
+            &mut (&mut handle as *mut _ as *mut u8)
         )
     } == Status::Ok;
     log_info!("sending invalid IPC size {}", len1);
@@ -57,14 +56,13 @@ fn test_ipc_sendrecv() -> bool {
     ok &= check_eq!(__sys_get_process_handle(0xbabe), Status::Ok);
     ok &= unsafe {
         copy_from_kernel(
-            &mut handle as *mut _ as *mut u8,
-            core::mem::size_of::<TaskHandle>(),
+            &mut (&mut handle as *mut _ as *mut u8)
         )
     } == Status::Ok;
     log_info!("handle is {:#x}", handle);
     log_info!("sending IPC to myself");
     unsafe {
-        ok &= copy_to_kernel(msg.as_ptr() as *mut u8, msg.len()) == Status::Ok;
+        ok &= copy_to_kernel(&(msg.as_ptr() as *mut u8)) == Status::Ok;
     }
     ok &= check_eq!(__sys_send_ipc(handle, 20), Status::Ok);
     ok &= check_eq!(
@@ -73,8 +71,7 @@ fn test_ipc_sendrecv() -> bool {
     );
     ok &= unsafe {
         copy_from_kernel(
-            data.as_mut_ptr(),
-            20 + core::mem::size_of::<ExchangeHeader>(),
+            data.as_mut_ptr()
         ) == Status::Ok
     };
     let header = unsafe { &*(data.as_ptr() as *const ExchangeHeader) };
@@ -102,13 +99,12 @@ fn test_ipc_deadlock() -> bool {
     ok &= check_eq!(__sys_get_process_handle(0xbabe), Status::Ok);
     ok &= unsafe {
         copy_from_kernel(
-            &mut handle as *mut _ as *mut u8,
-            core::mem::size_of::<TaskHandle>(),
+            &mut (&mut handle as *mut _ as *mut u8),
         )
     } == Status::Ok;
     log_info!("sending IPC to myself");
     unsafe {
-        ok &= copy_to_kernel(msg.as_ptr() as *mut u8, msg.len()) == Status::Ok;
+        ok &= copy_to_kernel(&(msg.as_ptr() as *mut u8)) == Status::Ok;
     }
     ok &= check_eq!(__sys_send_ipc(handle, 20), Status::Ok);
     log_info!("sending another IPC, should lead to STATUS_DEADLK");

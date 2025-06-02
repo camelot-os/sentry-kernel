@@ -26,8 +26,7 @@ fn test_map_unmap_notmapped() -> bool {
     let ok = check_eq!(__sys_get_device_handle(device.id as u8), Status::Ok)
         & unsafe {
             copy_from_kernel(
-                &mut dev as *mut _ as *mut u8,
-                core::mem::size_of::<DeviceHandle>(),
+                &mut (&mut dev as *mut _ as *mut u8)
             )
         }
         == Status::Ok & check_eq!(__sys_unmap_dev(dev), Status::Invalid);
@@ -42,8 +41,7 @@ fn test_map_invalidmap() -> bool {
     let ok = check_eq!(__sys_get_device_handle(device.id as u8), Status::Ok)
         & unsafe {
             copy_from_kernel(
-                &mut dev as *mut _ as *mut u8,
-                core::mem::size_of::<DeviceHandle>(),
+                &mut (&mut dev as *mut _ as *mut u8)
             )
         }
         == Status::Ok;
@@ -60,8 +58,7 @@ fn test_map_mapunmap() -> bool {
     let mut ok = check_eq!(__sys_get_device_handle(device.id as u8), Status::Ok)
         & unsafe {
             copy_from_kernel(
-                &mut dev as *mut _ as *mut u8,
-                core::mem::size_of::<DeviceHandle>(),
+                &mut (&mut dev as *mut _ as *mut u8)
             )
         }
         == Status::Ok;

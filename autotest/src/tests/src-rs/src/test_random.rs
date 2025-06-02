@@ -23,7 +23,7 @@ fn test_random_sequence() -> bool {
     for _ in 0..5 {
         ok &= check_eq!(__sys_get_random(), Status::Ok);
         ok &=
-            unsafe { copy_from_kernel(&mut rng as *mut _ as *mut u8, core::mem::size_of::<u32>()) }
+            unsafe { copy_from_kernel(&mut (&mut rng as *mut _ as *mut u8)) }
                 == Status::Ok;
         log_info!("rng retrieved: {:#010x}", rng);
     }
@@ -40,19 +40,19 @@ fn test_random_duration() -> bool {
 
     ok &= check_eq!(__sys_sched_yield(), Status::Ok);
     ok &= check_eq!(__sys_get_cycle(Precision::Microseconds), Status::Ok);
-    ok &= unsafe { copy_from_kernel(&mut start as *mut _ as *mut u8, core::mem::size_of::<u64>()) }
+    ok &= unsafe { copy_from_kernel(&mut (&mut start as *mut _ as *mut u8)) }
         == Status::Ok;
 
     for _ in 0..=1000 {
         ok &= check_eq!(__sys_get_random(), Status::Ok);
         ok &=
-            unsafe { copy_from_kernel(&mut rng as *mut _ as *mut u8, core::mem::size_of::<u32>()) }
+            unsafe { copy_from_kernel(&mut (&mut rng as *mut _ as *mut u8)) }
                 == Status::Ok;
         idx += 1;
     }
 
     ok &= check_eq!(__sys_get_cycle(Precision::Microseconds), Status::Ok);
-    ok &= unsafe { copy_from_kernel(&mut stop as *mut _ as *mut u8, core::mem::size_of::<u64>()) }
+    ok &= unsafe { copy_from_kernel(&mut (&mut stop as *mut _ as *mut u8)) }
         == Status::Ok;
 
     if idx > 0 {

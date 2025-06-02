@@ -102,7 +102,7 @@ fn test_irq_spawn_two_it() -> bool {
 
     let mut tab = [0u8; 128];
     ok &= check_eq!(__sys_wait_for_event(EventType::Irq as u8, 0), Status::Ok);
-    ok &= unsafe { copy_from_kernel(tab.as_mut_ptr(), core::mem::size_of::<ExchangeHeader>() + 4) }
+    ok &= unsafe { copy_from_kernel(&mut tab.as_mut_ptr()) }
         == Status::Ok;
     let irqn = u32::from_le_bytes([tab[8], tab[9], tab[10], tab[11]]);
     ok &= check_eq!(irqn, irq);
@@ -111,7 +111,7 @@ fn test_irq_spawn_two_it() -> bool {
     enable_timer();
 
     ok &= check_eq!(__sys_wait_for_event(EventType::Irq as u8, 0), Status::Ok);
-    ok &= unsafe { copy_from_kernel(tab.as_mut_ptr(), core::mem::size_of::<ExchangeHeader>() + 4) }
+    ok &= unsafe { copy_from_kernel(&mut tab.as_mut_ptr()) }
         == Status::Ok;
     let irqn2 = u32::from_le_bytes([tab[8], tab[9], tab[10], tab[11]]);
     ok &= check_eq!(irqn2, irq);
@@ -129,7 +129,7 @@ fn test_irq_spawn_one_it() -> bool {
 
     let mut tab = [0u8; 128];
     ok &= check_eq!(__sys_wait_for_event(EventType::Irq as u8, 0), Status::Ok);
-    ok &= unsafe { copy_from_kernel(tab.as_mut_ptr(), core::mem::size_of::<ExchangeHeader>() + 4) }
+    ok &= unsafe { copy_from_kernel(&mut tab.as_mut_ptr()) }
         == Status::Ok;
 
     let irqn = u32::from_le_bytes([tab[8], tab[9], tab[10], tab[11]]);
@@ -157,7 +157,7 @@ fn test_irq_spawn_periodic() -> bool {
         log_info!("interrupt count {} wait", count);
         ok &= check_eq!(__sys_wait_for_event(EventType::Irq as u8, 0), Status::Ok);
         ok &= unsafe {
-            copy_from_kernel(tab.as_mut_ptr(), core::mem::size_of::<ExchangeHeader>() + 4)
+            copy_from_kernel(&mut tab.as_mut_ptr())
         } == Status::Ok;
         let irqn = u32::from_le_bytes([tab[8], tab[9], tab[10], tab[11]]);
         ok &= check_eq!(irqn, irq);
