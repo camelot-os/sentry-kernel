@@ -8,42 +8,48 @@
 #include <sentry/ktypes.h>
 
 #include <sentry/arch/asm-rv32/riscv-utils.h>
+#include <sentry/arch/asm-rv32/membarriers.h>
 
 #define NUM_IRQS 2
 
-kstatus_t     interrupt_enable_irq(uint32_t IRQn);
-kstatus_t     interrupt_disable_irq(uint32_t IRQn);
-uint32_t      interrupt_get_pending_irq(uint32_t IRQn);
-kstatus_t     interrupt_set_pending_irq(uint32_t IRQn);
-kstatus_t     interrupt_clear_pendingirq(uint32_t IRQn);
+kstatus_t interrupt_enable_irq(uint32_t IRQn);
+kstatus_t interrupt_disable_irq(uint32_t IRQn);
+uint32_t interrupt_get_pending_irq(uint32_t IRQn);
+kstatus_t interrupt_set_pending_irq(uint32_t IRQn);
+kstatus_t interrupt_clear_pendingirq(uint32_t IRQn);
 
 /*@
   assigns \nothing;
  */
-static inline void interrupt_disable(void) {
+static inline void interrupt_disable(void)
+{
 #ifndef __FRAMAC__
-//TODO
+  CSR_WRITE(mie, 0);
 #endif
-    return;
+  return;
 }
 
 /*@
   assigns \nothing;
  */
-static inline void interrupt_enable(void) {
+static inline void interrupt_enable(void)
+{
 #ifndef __FRAMAC__
-//TODO
+  CSR_SET(mie, MIE_EI | MIE_SI | MIE_TI);
+  arch_data_sync_barrier();
+  arch_inst_sync_barrier();
 #endif
-    return;
+  return;
 }
 
 /*@
   requires __NVIC_VECTOR_LEN <= NVIC_MAX_ALLOWED_IRQS;
   assigns *NVIC;
  */
-static inline void interrupt_init(void) {
-// TODO
-    return;
+static inline void interrupt_init(void)
+{
+  // TODO
+  return;
 }
 
 #endif /* PLIC_H */

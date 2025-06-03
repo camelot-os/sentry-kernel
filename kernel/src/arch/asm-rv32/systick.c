@@ -5,6 +5,7 @@
 #include <assert.h>
 
 #include <sentry/arch/asm-rv32/systick.h>
+#include <sentry/arch/asm-rv32/riscv-utils.h>
 
 #include <mtimer.h>
 
@@ -72,10 +73,7 @@ void systick_init(void)
   systick_set_timecmp(TIMER_INTERVAL);
 
   // Enable Machine Timer Interrupts
-  asm volatile (
-    "li t0, 0x80 \r\n" // MTIE at offset 7
-    "csrs mie, t0" // Enable MTIE
-  );
+  CSR_SET(mie, MIE_TI);
 
   /*@ ghost_systick_initialized = true; */
 }

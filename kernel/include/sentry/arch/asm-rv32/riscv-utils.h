@@ -19,12 +19,12 @@
 
 #define CSR_SET(reg, bit) ({                                         \
   uint32_t tmp_reg;                                                  \
-  asm volatile("csrrs %0, " #reg ", %1" : "=r"(tmp_reg) : "rK" bit); \
+  asm volatile("csrrs %0, " #reg ", %1" : "=r"(tmp_reg) : "rK" (bit)); \
   })
 
 #define CSR_CLEAR(reg, bit) ({                                       \
   uint32_t tmp_reg;                                                  \
-  asm volatile("csrrc %0, " #reg ", %1" : "=r"(tmp_reg) : "rK" bit); \
+  asm volatile("csrrc %0, " #reg ", %1" : "=r"(tmp_reg) : "rK" (bit)); \
   })
 
 /**
