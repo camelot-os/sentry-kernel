@@ -65,18 +65,6 @@ SECTIONS
         . = ALIGN(4);
     } > {{ idlecode_section }}
 
-    .ARM.extab :
-    {
-        *(.ARM.extab* .gnu.linkonce.armextab.*)
-    } > {{ idlecode_section }}
-
-    .ARM :
-    {
-        __exidx_start = .;
-        *(.ARM.exidx*)
-        __exidx_end = .;
-    } > {{ idlecode_section }}
-
     .ctors :
     {
         __CTOR_LIST__ = .;
