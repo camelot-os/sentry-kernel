@@ -3,9 +3,12 @@
 
 #include <stddef.h>
 
+#include <sentry/ktypes.h>
 #include <sentry/arch/asm-generic/thread.h>
-
 #include <sentry/arch/asm-generic/handler-svc-lut.h>
+
+#include <sentry/managers/task.h>
+#include <sentry/sched.h>
 
 //TODO: Fix uapi type include
 #define STATUS_NO_ENTITY 3

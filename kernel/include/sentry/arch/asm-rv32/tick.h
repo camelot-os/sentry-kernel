@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: ANSSI
+// SPDX-FileCopyrightText: 2025 ANSSI
 // SPDX-License-Identifier: Apache-2.0
 
 #ifndef __ASM_TICK_H
@@ -9,7 +9,6 @@
 void systime_init(void);
 
 uint64_t systime_get_cycle(void);
-
 
 /**
  * return the low word of the cycle counter

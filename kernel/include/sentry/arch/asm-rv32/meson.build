@@ -1,8 +1,15 @@
 # SPDX-FileCopyrightText: ANSSI
 # SPDX-License-Identifier: Apache-2.0
 
+mtimer_template_h = files('mtimer.h.in')
+
+mtimer_h = dtsgen.process(mtimer_template_h)
+
+arch_header_set.add(
+  mtimer_h
+)
+
 arch_header_set.add(files(
-  'asm_utils.h',
   'buses.h',
   'handler.h',
   'io.h',
@@ -10,6 +17,7 @@ arch_header_set.add(files(
   'platform.h',
   'plic.h',
   'pmp.h',
+  'riscv-utils.h',
   'systick.h',
   'thread.h',
   'tick.h',

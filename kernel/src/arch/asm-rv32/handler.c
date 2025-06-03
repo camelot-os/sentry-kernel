@@ -5,7 +5,7 @@
 
 #include <sentry/sched.h>
 
-#include <sentry/arch/asm-rv32/asm_utils.h>
+#include <sentry/arch/asm-rv32/riscv-utils.h>
 #include <sentry/arch/asm-rv32/thread.h>
 #include <sentry/arch/asm-rv32/systick.h>
 #include <sentry/arch/asm-rv32/handler.h>
@@ -69,9 +69,10 @@ static inline __attribute__((noreturn)) void hardfault_handler(stack_frame_t *fr
  */
 stack_frame_t *handle_trap(stack_frame_t *frame)
 {
-  uint32_t mcause  = READ_CSR(mcause);
-  uint32_t mtval   = READ_CSR(mtval);
-  uint32_t user_pc = READ_CSR(mepc);
+  uint32_t tmp_reg;
+  uint32_t mcause  = CSR_READ(mcause);
+  uint32_t mtval   = CSR_READ(mtval);
+  uint32_t user_pc = CSR_READ(mepc);
 
   stack_frame_t *newframe = frame;
 
@@ -85,8 +86,12 @@ stack_frame_t *handle_trap(stack_frame_t *frame)
         // TODO
         break;
       case MCAUSE_MTIMER:
+        // Disable machine-mode timer interrupts
+        CSR_CLEAR(mie, MIE_TI);
         demap_task_protected_area();
         newframe = systick_handler(frame);
+        // Enable machine-mode timer interrupts
+        CSR_SET(mie, MIE_TI);
         break;
       case MCAUSE_MEXTINT:
         // TODO
@@ -215,6 +220,8 @@ void Default_Handler(void)
  */
 extern  __attribute__((noreturn)) void _entrypoint();
 
+extern char _bootupstack;
+
 /**
  * @brief Reset handler
  *
@@ -227,13 +234,22 @@ extern  __attribute__((noreturn)) void _entrypoint();
  * MCAUSE contains cause of the reset
  * PMP registers are set to 0
  */
-__attribute__((noreturn, used)) void Reset_Handler(void)
+__attribute__((noreturn, used))
+__attribute__((naked))
+void Reset_Handler(void)
 {
   uint32_t *src;
   uint32_t *p;
 
+  // Set the stack pointer
+    __asm__ __volatile__(
+        "mv sp, %[stack_top]\n" // Set the stack pointer
+        :
+        : [stack_top] "r" (_bootupstack) // Pass the stack top address as %[stack_top]
+    );
+
   // Disable interrupts
-  WRITE_CSR(mie, 0);
+  CSR_WRITE(mie, 0);
   // Select normal memory access privilege level
   // WRITE_CSR(csrw, 0);
 
@@ -244,7 +260,7 @@ __attribute__((noreturn, used)) void Reset_Handler(void)
   // TODO: stop and clear systick
 
   // Register trap handler
-  WRITE_CSR(mtvec, (uint32_t) Default_Handler);
+  CSR_WRITE(mtvec, (uint32_t) Default_Handler);
 
   // TODO: set main stack pointer
 

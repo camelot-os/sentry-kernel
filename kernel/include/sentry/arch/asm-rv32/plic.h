@@ -7,6 +7,8 @@
 #include <stdint.h>
 #include <sentry/ktypes.h>
 
+#include <sentry/arch/asm-rv32/riscv-utils.h>
+
 #define NUM_IRQS 2
 
 kstatus_t     interrupt_enable_irq(uint32_t IRQn);

@@ -12,8 +12,8 @@
 #include <sentry/arch/asm-x86_64/thread.h>
 #include <sentry/io.h>
 
-#define THREAD_MODE_USER    0xab2f5332UL
-#define THREAD_MODE_KERNEL  0x5371a247UL
+#define THREAD_MODE_USER 0xab2f5332UL
+#define THREAD_MODE_KERNEL 0x5371a247UL
 
 #ifndef __WORDSIZE
 #define __WORDSIZE 4UL
@@ -24,20 +24,17 @@
 #define __STATIC_INLINE static inline
 #endif
 
-
 /**
   \brief   Wait For Interrupt
   \details Wait For Interrupt is a hint instruction that suspends execution until one of a number of events occurs.
  */
-#define __WFI()                             asm volatile("wfi")
-
+#define __WFI() asm volatile("wfi")
 
 /**
   \brief   Wait For Event
-  \details Wait For Event is a hint instruction that permits the processor to enter
-           a low-power state until one of a number of events occurs.
+  \details No real wfe in RISC-V
  */
-#define __WFE()                             asm volatile("nop")
+#define __WFE() asm volatile("nop")
 
 /**
  * @def alignment size of sections. 8bytes on x86_64
@@ -45,18 +42,35 @@
 #define SECTION_ALIGNMENT_LEN 0x8UL
 
 static inline void __attribute__((noreturn)) __platform_spawn_thread(size_t entrypoint __attribute__((unused)),
-                                                                     stack_frame_t *stack_pointer  __attribute__((unused)),
+                                                                     stack_frame_t *stack_pointer __attribute__((unused)),
                                                                      uint32_t flag __attribute__((unused)))
 {
   /* TODO: by now, nothing done in x86_64 test mode. Maybe execv() */
-  do { } while (1);
+  do
+  {
+  } while (1);
 }
 
-static inline void __platform_clear_flags(void) {
-    return;
+static inline void __platform_clear_flags(void)
+{
+  // TODO
+  return;
 }
 
 void __platform_init(void);
 
+static inline uint32_t __platform_get_current_sp(void)
+{
+  uint32_t sp = 0;
 
-#endif/*!__PLATFORM_H_*/
+  // TODO
+
+  return sp;
+}
+
+static inline void __platform_enforce_alignment(void)
+{
+  // TODO
+}
+
+#endif /*!__PLATFORM_H_*/

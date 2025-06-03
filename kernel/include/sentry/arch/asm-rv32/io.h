@@ -69,9 +69,9 @@ static inline void __iowrite16(size_t addr, uint16_t val)
 __attribute__((always_inline))
 static inline void __iowrite32(size_t addr, uint32_t val)
 {
-    // asm volatile(
-    //     "sw %1, %0" : : "r" (*(volatile uint32_t *)addr), "r" (val) : "memory"
-    // );
+    asm volatile(
+        "sw %1, 0(%0)" : : "r" (*(volatile uint32_t *)addr), "r" (val) : "memory"
+    );
 }
 
 /**
