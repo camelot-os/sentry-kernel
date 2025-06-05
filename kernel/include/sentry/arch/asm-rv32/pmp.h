@@ -4,6 +4,10 @@
 #ifndef PMP_H
 #define PMP_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <stdint.h>
 #include <stddef.h>
 #include <stdbool.h>
@@ -13,12 +17,44 @@
 
 #include <sentry/arch/asm-generic/panic.h>
 
+#include <sentry/arch/asm-rv32/riscv-utils.h>
+
+/**
+ * @brief MPU region description
+ *
+ * @note it is based on the ARM structure for compatibility
+ */
+struct mpu_region_desc
+{
+  uint32_t addr;         /**< memory region start addr (must be align on 32 bytes boundary) */
+  uint32_t size;         /**< memory region size => arch dependant */
+  uint8_t id;            /**< memory region ID */
+  uint8_t access_perm;   /**< Read Write access permission for supervisor and/or user mode*/
+  uint8_t mask;          /**< sub region enable mask */
+  uint32_t access_attrs; /**< Cached/Buffered/Shared access attributes */
+  bool noexec;           /**< No-exec bit */
+  bool shareable;        /**< Shared bit */
+};
+
 /**
  * @brief Opaque handle to a PMP entry
  *
- * TODO: implement it
  */
-typedef uint32_t layout_resource_t;
+typedef struct layout_resource {
+  uint8_t index; /* PMP entry index */
+  uint8_t pmpcfg;
+  uint32_t pmpaddr;
+} layout_resource_t;
+
+#define CSR_PMPCFG_BASE  0x3a0
+#define CSR_PMPADDR_BASE 0x3b0
+
+#define PMPCFG_GET(pmpcfg, index) (pmpcfg >> (index *8))
+#define PMPCFG_GET_R(pmpcfg) (pmpcfg & 1)
+#define PMPCFG_GET_W(pmpcfg) ((pmpcfg >> 1) & 1)
+#define PMPCFG_GET_X(pmpcfg) ((pmpcfg >> 2) & 1)
+#define PMPCFG_GET_A(pmpcfg) ((pmpcfg >> 3) & 3)
+#define PMPCFG_GET_L(pmpcfg) ((pmpcfg >> 6) & 1)
 
 #define TASK_FIRST_REGION_NUMBER 2
 #define TASK_MAX_RESSOURCES_NUM (6)
@@ -94,34 +130,11 @@ typedef uint32_t layout_resource_t;
 /** MPU Region Size 2 GBytes */
 #define MPU_REGION_SIZE_2GB (2UL * GBYTE)
 
-struct mpu_region_desc
-{
-  uint32_t addr;         /**< memory region start addr (must be align on 32 bytes boundary) */
-  uint32_t size;         /**< memory region size => arch dependant */
-  uint8_t id;            /**< memory region ID */
-  uint8_t access_perm;   /**< Read Write access permission for supervisor and/or user mode*/
-  uint8_t mask;          /**< sub region enable mask */
-  uint32_t access_attrs; /**< Cached/Buffered/Shared access attributes */
-  bool noexec;           /**< No-exec bit */
-  bool shareable;        /**< Shared bit */
-};
+// PMP granularity
+static uint32_t pmp_granularity;
 
-// TODO: make minimum region size configurable
-#define PMP_MIN_REG_SIZE 4UL
-
-// TODO: get number of PMP region from Kconfig
-#define _PMP_NB_REGIONS 8
-
-/**
- * @brief Return number of supported regions in current PMP
- */
-/*@
-  assigns \nothing;
-*/
-static inline uint32_t mpu_get_nr_regions(void)
-{
-  return _PMP_NB_REGIONS;
-}
+// Number of PMP regions
+static const uint8_t NB_PMP_REGIONS = CONFIG_NUM_MPU_REGIONS;
 
 /**
  * @brief Reset all pmpcfg registers
@@ -132,91 +145,106 @@ static inline uint32_t mpu_get_nr_regions(void)
  */
 static inline void _mpu_initialize(void)
 {
+  uint16_t i;
+
   // TODO: rework the switch to loop across all config and:
   //  - check if it is locked
   //  - if not reset it
-  switch (mpu_get_nr_regions())
-  {
-  /* Fall through configuration of all available pmpcfg registers */
-  case 64:
-    __asm__ volatile("csrw pmpcfg15, zero");
-    __asm__ volatile("csrw pmpcfg14, zero");
-    __asm__ volatile("csrw pmpcfg13, zero");
-    __asm__ volatile("csrw pmpcfg12, zero");
-    __asm__ volatile("csrw pmpcfg11, zero");
-    __asm__ volatile("csrw pmpcfg10, zero");
-    __asm__ volatile("csrw pmpcfg9, zero");
-    __asm__ volatile("csrw pmpcfg8, zero");
-  case 32:
-    __asm__ volatile("csrw pmpcfg7, zero");
-    __asm__ volatile("csrw pmpcfg5, zero");
-    __asm__ volatile("csrw pmpcfg5, zero");
-    __asm__ volatile("csrw pmpcfg4, zero");
-  case 16:
-    __asm__ volatile("csrw pmpcfg3, zero");
-    __asm__ volatile("csrw pmpcfg2, zero");
-  case 8:
-    __asm__ volatile("csrw pmpcfg1, zero");
-  case 4:
-    __asm__ volatile("csrw pmpcfg0, zero");
-    break;
-
-  default:
-    /* Invalid number of PMP regions */
-    panic(PANIC_HARDWARE_INVALID_STATE);
-    break;
+  for (i = 0; i < NB_PMP_REGIONS/4; i++) {
+    CSR_ZERO_ADDR(CSR_PMPCFG_BASE + i);
   }
 }
 
 /**
+ * @brief Detect the maximum granularity supported by the core
+ *
+ * @note Use methode described in 'priv-spec'§3.7.12:
+ *         - Write all ones to pmpaddr0, detect the position of the lsb 1
+ *           set in the address
+ *         - return granularity = 2^(i + 2)
+ */
+static inline uint32_t _mpu_get_granularity(void) {
+  uint32_t i = 0;
+  uint32_t addr = 0;
+
+  CSR_WRITE_ADDR(CSR_PMPCFG_BASE, 0);
+  CSR_WRITE_ADDR(CSR_PMPADDR_BASE, 0xffffffff);
+  addr = CSR_READ_ADDR(CSR_PMPADDR_BASE);
+
+  while (((addr >> i) & 1) == 0) {
+    i += 1;
+  }
+
+  return (1 << (i + 2));
+}
+
+/**
  * @brief Initialize the PMP
+ *
+ * @note RISC-V PMP is always active, each region is activated
  */
 static inline void mpu_enable(void)
 {
-  // if (unlikely(mpu_get_nr_regions() != CONFIG_NUM_MPU_REGIONS)) {
-  //   panic(PANIC_HARDWARE_INVALID_STATE);
-  // }
-  // _mpu_initialize();
+  // Nothing to do
 }
 
 /**
  * @brief Disable the PMP
+ *
+ * @note mpu_disable is called first when the PMP is initialized, use this
+ *    function to get the PMP configuration
  */
 static inline void mpu_disable(void)
 {
+  // Get PMP address granularity
+  pmp_granularity = _mpu_get_granularity();
+
+  // Set all configurations to zero
+  _mpu_initialize();
 }
 
+/**
+ * @brief Compute the best appropriate size for a PMP region
+ */
 static inline uint32_t mpu_convert_size_to_region(uint32_t size)
 {
-  // if (unlikely(size < PMP_MIN_REG_SIZE)) {
-  //   size = PMP_MIN_REG_SIZE; /* Rounding to minimum PMP size */
-  // }
+  if (unlikely(size < pmp_granularity)) {
+    size = pmp_granularity; /* Rounding to minimum PMP size */
+  }
 
   // // NA4 and NAPOT size must be power of two
-  // return ROUND_UP_POW2(size, PMP_MIN_REG_SIZE);
-  return 0;
+  return ((((size) - 1) | ((pmp_granularity) - 1)) + 1);
 }
 
 static inline kstatus_t mpu_forge_resource(const struct mpu_region_desc *desc,
                                            layout_resource_t *resource)
 {
   kstatus_t status = K_ERROR_INVPARAM;
+  uint8_t index = 0;
+  uint32_t pmpcfg = 0;
 
-  // // Test that address and size are correctly aligned
-  // if (unlikely((0 == (desc->addr & PMP_MIN_REG_SIZE - 1)) ||
-  //               (0 == (desc->size & PMP_MIN_REG_SIZE -1))) ) {
-  //   return status;
-  // }
+  // Find available PMP region
+  while (index < NB_PMP_REGIONS) {
+    if (0 == index%4) {
+      pmpcfg = CSR_READ_ADDR(CSR_PMPCFG_BASE + (index/4));
+    }
 
-  // // Find available pmp region
-  // for (uint8_t i = 0; i < _PMP_NB_REGIONS; ++i) {
+    if (0 == PMPCFG_GET_A(PMPCFG_GET(pmpcfg, index%4))) {
+      // Region not assigned yet
+      break;
+    }
+  }
 
-  // }
+  if (NB_PMP_REGIONS == index) {
+    // No free region has been found
+    return K_ERROR_BADSTATE;
+  }
 
-  // // Test if it fits in the memory map
+  resource->index = index;
+  resource->pmpaddr = desc->addr;
 
-  // // Create the region
-
+  status = K_STATUS_OKAY;
+  /*@ assert (status == K_STATUS_OKAY); */
   return status;
 }
 
@@ -290,5 +318,9 @@ static inline void mpu_clear_region(uint32_t rnr)
 {
   // TODO
 }
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* PMP_H */

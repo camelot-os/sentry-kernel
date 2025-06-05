@@ -4,6 +4,10 @@
 #ifndef __THREAD_H
 #define __THREAD_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /**
  * \file context manipulation, including kernel threads
  */
@@ -62,6 +66,10 @@ static inline stack_frame_t *__thread_init_stack_context(uint32_t rerun, size_t 
     frame->a7 = 0;
 
     return frame;
+}
+#endif
+
+#ifdef __cplusplus
 }
 #endif
 

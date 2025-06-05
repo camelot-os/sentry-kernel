@@ -40,4 +40,7 @@ config RUSTC_TARGET
 	string
 	default "riscv32imc-unknown-none-elf" if SOC_SUBFAMILY_OPENTITAN
 
+config PMP_NB_REGION
+  int
+
 endmenu

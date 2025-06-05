@@ -4,6 +4,10 @@
 #ifndef __ASM_TICK_H
 #define __ASM_TICK_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <inttypes.h>
 
 void systime_init(void);
@@ -44,5 +48,9 @@ static inline uint64_t systime_get_nanoseconds(void) {
   //TODO
   return 0;
 }
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* __ASM_TICK_H */

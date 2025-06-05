@@ -4,26 +4,44 @@
 #ifndef __RISCV_UTILS_H
 #define __RISCV_UTILS_H
 
-#define CSR_READ(reg)                               \
-  ({                                                \
-    unsigned long __tmp;                            \
-    asm volatile ("csrr %0, " #reg : "=r"(__tmp));  \
-    __tmp;                                          \
-  })                                                \
+#ifdef __cplusplus
+extern "C" {
+#endif
 
-#define CSR_WRITE(reg, value)                         \
-  do {                                                \
-    uint32_t __tmp = (value);                         \
-    asm volatile ("csrw " #reg ", %0" ::"r"(__tmp));  \
-  } while (0)                                         \
+#define CSR_READ(reg)                             \
+  ({                                              \
+    unsigned long res;                            \
+    asm volatile ("csrr %0, " #reg : "=r"(res));  \
+    res;                                          \
+  })
 
-#define CSR_SET(reg, bit) ({                                         \
-  uint32_t tmp_reg;                                                  \
+#define CSR_WRITE(reg, value) ({                     \
+    uint32_t __tmp = (value);                        \
+    asm volatile ("csrw " #reg ", %0" ::"r"(__tmp)); \
+  })
+
+#define CSR_ZERO_ADDR(reg_addr)                    \
+    asm volatile ("csrw %0, zero" ::"I"(reg_addr));
+
+#define CSR_WRITE_ADDR(reg_addr, value) ({                     \
+    uint32_t __tmp = (value);                                  \
+    asm volatile ("csrw %0, %1" :: "I"(reg_addr), "r"(__tmp)); \
+  })
+
+#define CSR_READ_ADDR(reg_addr)                                \
+  ({                                                           \
+    unsigned long res;                                         \
+    asm volatile ("csrr %0, %1"  : "=r"(res) : "I"(reg_addr)); \
+    res;                                                       \
+  })
+
+#define CSR_SET(reg, bit) ({                                           \
+  uint32_t tmp_reg;                                                    \
   asm volatile("csrrs %0, " #reg ", %1" : "=r"(tmp_reg) : "rK" (bit)); \
   })
 
-#define CSR_CLEAR(reg, bit) ({                                       \
-  uint32_t tmp_reg;                                                  \
+#define CSR_CLEAR(reg, bit) ({                                         \
+  uint32_t tmp_reg;                                                    \
   asm volatile("csrrc %0, " #reg ", %1" : "=r"(tmp_reg) : "rK" (bit)); \
   })
 
@@ -33,5 +51,9 @@
 #define MIE_SI (1 << 3)  // Software interrupt
 #define MIE_TI (1 << 7)  // Timer interrupt
 #define MIE_EI (1 << 11) // External interrupt
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* __RISCV_UTILS_H */

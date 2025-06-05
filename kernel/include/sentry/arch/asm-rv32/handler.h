@@ -4,6 +4,10 @@
 #ifndef HANDLER_H
 #define HANDLER_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <sentry/arch/asm-rv32/thread.h>
 
 /*@
@@ -20,6 +24,10 @@ static inline __attribute__((noreturn)) void __do_panic(void) {
 
 #ifdef __FRAMAC__
 stack_frame_t *svc_handler(stack_frame_t *frame);
+#endif
+
+#ifdef __cplusplus
+}
 #endif
 
 #endif /* HANDLER_H */

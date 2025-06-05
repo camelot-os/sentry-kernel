@@ -18,6 +18,7 @@ arch_header_set.add(files(
   'plic.h',
   'pmp.h',
   'riscv-utils.h',
+  'semihosting.h',
   'systick.h',
   'thread.h',
   'tick.h',

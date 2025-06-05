@@ -4,6 +4,10 @@
 #ifndef __MEMBARRIERS_H_
 #define __MEMBARRIERS_H_
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <inttypes.h>
 #include <stdbool.h>
 
@@ -159,5 +163,9 @@ inline __attribute__((always_inline)) void request_data_membarrier(void) {
     arch_data_mem_barrier();
 #endif
 }
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif/*__MEMBARRIERS_H_*/

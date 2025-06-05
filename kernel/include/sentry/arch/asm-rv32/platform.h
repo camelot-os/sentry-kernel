@@ -4,6 +4,10 @@
 #ifndef __PLATFORM_H_
 #define __PLATFORM_H_
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #ifndef PLATFORM_H
 #error "arch specific header must not be included directly!"
 #endif
@@ -72,5 +76,9 @@ static inline void __platform_enforce_alignment(void)
 {
   // TODO
 }
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /*!__PLATFORM_H_*/

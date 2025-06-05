@@ -4,6 +4,10 @@
 #ifndef PLIC_H
 #define PLIC_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <stdint.h>
 #include <sentry/ktypes.h>
 
@@ -51,5 +55,9 @@ static inline void interrupt_init(void)
   // TODO
   return;
 }
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* PLIC_H */

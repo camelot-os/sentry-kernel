@@ -4,6 +4,10 @@
 #ifndef SYSTICK_H_
 #define SYSTICK_H_
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <inttypes.h>
 #include <sentry/thread.h>
 
@@ -47,5 +51,9 @@ stack_frame_t *systick_handler(stack_frame_t * stack_frame);
     assigns *((SysTick_Type*)SysTick_BASE);
  */
 void systick_stop_and_clear(void);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* SYSTICK_H_ */

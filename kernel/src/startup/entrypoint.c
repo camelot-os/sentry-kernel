@@ -40,6 +40,7 @@ __attribute__((noreturn)) void _entrypoint(void)
     mgr_io_init();  /* I/O probing and init, needed for debug */
     #ifndef CONFIG_BUILD_TARGET_RELEASE
     mgr_debug_init();
+    printk("Hello");
     #endif
     /* debug primitive can be used from now own transparently */
 #ifdef CONFIG_BUILD_TARGET_AUTOTEST

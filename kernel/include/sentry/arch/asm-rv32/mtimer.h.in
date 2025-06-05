@@ -3,9 +3,9 @@
 
 /**
  * Retrieve address of `mtimer` and `mtimercmp` from dts.
- * 
+ *
  * Assume that the dts contains a mtimer node with the two registers in order.
- * 
+ *
  * Example from opentitan_earlgrey.dts:
  *  mtimer: timer@40100110 {
  *    compatible = "riscv,machine-timer";
@@ -23,9 +23,17 @@
 #ifndef MTIMER_H
 #define MTIMER_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 {%- set mtimer = dts.soc.mtimer %}
 
 #define MTIMER_ADDR {{mtimer.reg[0]}}
 #define MTIMERCMP_ADDR {{mtimer.reg[2]}}
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* MTIMER_H */

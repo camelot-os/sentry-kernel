@@ -10,6 +10,10 @@
 #ifndef __ASM_IO_H
 #define __ASM_IO_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <stddef.h>
 #include <inttypes.h>
 
@@ -141,5 +145,9 @@ static inline uint32_t __ioread32(size_t addr)
 
     return val;
 }
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* __ASM_IO_H */
