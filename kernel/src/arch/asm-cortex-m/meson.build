@@ -6,7 +6,6 @@ arch_source_set.add(files(
   'thread.c',
   'systick.c',
   'tick.c',
-  'semihosting.c',
   'handler.c',
   'handler-svc-lut.c',
 ))

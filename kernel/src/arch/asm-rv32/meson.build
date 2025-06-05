@@ -4,6 +4,7 @@
 arch_source_set.add(files(
   'handler-svc-lut.c',
   'handler.c',
+  'semihosting.c',
   'systick.c',
   'tick.c',
 ))
