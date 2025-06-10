@@ -5,7 +5,7 @@
 #![allow(static_mut_refs)]
 #![allow(clippy::wrong_self_convention)]
 use crate::systypes::shm::ShmInfo;
-use crate::systypes::{ExchangeHeader, ShmHandle, Status};
+use crate::systypes::{ExchangeHeader, Status};
 use core::ptr::*;
 
 const EXCHANGE_AREA_LEN: usize = 128; // TODO: replace by CONFIG-defined value
@@ -364,7 +364,7 @@ where
 
 #[cfg(test)]
 mod tests {
-    use crate::systypes::EventType;
+    use crate::systypes::{EventType, ShmHandle};
 
     use super::*;
 
