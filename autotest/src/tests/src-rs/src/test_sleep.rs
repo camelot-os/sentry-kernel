@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: 2025 ANSSI
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::test_log::*;
 use sentry_uapi::exchange::copy_from_kernel;
 use sentry_uapi::syscall::*;
 use sentry_uapi::systypes::SleepDuration;

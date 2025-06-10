@@ -3,6 +3,7 @@
 
 use sentry_api::syscall::*;
 use sentry_uapi::systypes::Status;
+use crate::test_log::*;
 
 fn test_yield_multiple_times() {
     for _ in 0..3 {
