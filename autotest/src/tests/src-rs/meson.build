@@ -16,7 +16,7 @@ testlib_rust_sourceset.add(when: 'CONFIG_TEST_GPIO', if_true: files('src/test_gp
 testlib_rust_sourceset.add(when: 'CONFIG_TEST_IPC', if_true: files('src/test_ipc.rs'))
 testlib_rust_sourceset.add(when: 'CONFIG_TEST_IRQ', if_true: files('src/test_irq.rs'))
 testlib_rust_sourceset.add(when: 'CONFIG_TEST_DEVICES', if_true: files('src/test_map.rs'))
-testlib_rust_headerset.add(when: 'CONFIG_TEST_DEVICES', if_true: devices_dtsgen_rs)
+testlib_rust_sourceset.add(when: 'CONFIG_TEST_DEVICES', if_true: devices_dtsgen_rs)
 testlib_rust_sourceset.add(when: 'CONFIG_TEST_RANDOM', if_true: files('src/test_random.rs'))
 testlib_rust_sourceset.add(when: 'CONFIG_TEST_SHM', if_true: files('src/test_shm.rs'))
 testlib_rust_sourceset.add(when: 'CONFIG_TEST_SIGNALS', if_true: files('src/test_signal.rs'))
@@ -26,14 +26,12 @@ testlib_rust_sourceset.add(when: 'CONFIG_TEST_YIELD', if_true: files('src/test_y
 # Apply Kconfig options
 testlib_rust_sourceset_config = testlib_rust_sourceset.apply(kconfig_data, strict: false)
 
-autotest_test_rustlib = static_library('testlib_rust',
+autotest_test_lib = static_library('testlib_rust',
     sources: testlib_rust_sourceset_config.sources(),
-    rust_abi: 'none',
-    rust_args: [
-        '--crate-type=lib',
-        '--target=thumbv8m.main-none-eabihf',  # or chosen target instead
-    ] + global_rust_build_args,
-    override_options: ["rust_std=disabled"],
-    extra_files: uapi_modules,
+    rust_abi: 'c',
+    rust_args: global_rust_build_args,
+    override_options: [uapi_rust_std],
+    #extra_files: uapi_modules,
+    dependencies: stm32_timer_dts_dtsgen_dep,
     install: false,
 )
