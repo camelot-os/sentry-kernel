@@ -84,53 +84,49 @@ impl SentryExchangeable for crate::systypes::shm::ShmInfo {
     }
 }
 
-/// SentryExchangeable trait implementation for ShmHandle.
-/// ShmHandle is a another structure which is returned by the kernel to the
-/// userspace in order to delivers SHM handle to a given
-/// task.
+/// SentryExchangeable trait implementation for Scalar types.
 ///
-/// In test mode only, this structure can be written back to the Exchange Area.
-/// In production mode, the application can't write such a content to the exchange
-/// as the kernel as strictly no use of it.
-///
-impl SentryExchangeable for crate::systypes::ShmHandle {
-    #[allow(static_mut_refs)]
-    fn from_kernel(&mut self) -> Result<Status, Status> {
-        let (prefix, aligned, _) = unsafe { EXCHANGE_AREA_TEST.0.align_to::<u32>() };
-        // Let's check that the prefix is empty, if not -> Critical error
-        if !prefix.is_empty() {
-            return Err(Status::Critical);
+macro_rules! impl_exchangeable {
+    ($t:ty) => {
+        impl SentryExchangeable for $t {
+            fn from_kernel(&mut self) -> Result<Status, Status> {
+                let (prefix, aligned, _) = unsafe { EXCHANGE_AREA_TEST.0.align_to::<$t>() };
+                if !prefix.is_empty() {
+                    return Err(Status::Critical);
+                }
+
+                let first = aligned.first().ok_or(Status::Invalid)?;
+                unsafe {
+                    core::ptr::copy_nonoverlapping(first, self as *mut $t, 1);
+                }
+                Ok(Status::Ok)
+            }
+
+            #[cfg(test)]
+            fn to_kernel(&self) -> Result<Status, Status> {
+                let (prefix, aligned, _) = unsafe { EXCHANGE_AREA_TEST.0.align_to_mut::<$t>() };
+                if !prefix.is_empty() {
+                    return Err(Status::Critical);
+                }
+
+                let slot = aligned.first_mut().ok_or(Status::Invalid)?;
+                *slot = *self;
+                Ok(Status::Ok)
+            }
+
+            #[cfg(not(test))]
+            fn to_kernel(&self) -> Result<Status, Status> {
+                Err(Status::Invalid)
+            }
         }
-
-        let first = aligned.first().ok_or(Status::Invalid)?;
-
-        unsafe {
-            core::ptr::copy_nonoverlapping(first, self as *mut ShmHandle, 1);
-        }
-        Ok(Status::Ok)
-    }
-
-    #[cfg(test)]
-    #[allow(static_mut_refs)]
-    fn to_kernel(&self) -> Result<Status, Status> {
-        let (prefix, aligned, _) = unsafe { EXCHANGE_AREA_TEST.0.align_to_mut::<u32>() };
-        // Let's check that the prefix is empty, if not -> Critical error
-        if !prefix.is_empty() {
-            return Err(Status::Critical);
-        }
-
-        let slot = aligned.first_mut().ok_or(Status::Invalid)?;
-
-        *slot = *self;
-        Ok(Status::Ok)
-    }
-
-    #[cfg(not(test))]
-    #[allow(static_mut_refs)]
-    fn to_kernel(&self) -> Result<Status, Status> {
-        Err(Status::Invalid)
-    }
+    };
 }
+
+impl_exchangeable!(u8);
+impl_exchangeable!(*mut u8);
+impl_exchangeable!(u16);
+impl_exchangeable!(u32);
+impl_exchangeable!(u64);
 
 // from-exchange related capacity to Exchange header
 impl ExchangeHeader {
