@@ -14,7 +14,10 @@ use core::prelude::v1::Ok;
 use sentry_uapi::systypes::Status;
 use sentry_uapi::systypes::*;
 use sentry_uapi::*;
-use sentry_uapi::ffi_c::*;
+use crate::devices_utils::get_device_by_name;
+use sentry_uapi::ffi_c::__sys_get_device_handle;
+use sentry_uapi::ffi_c::__sys_unmap_dev;
+use sentry_uapi::ffi_c::__sys_map_dev;
 
 pub fn test_map() -> bool {
     test_suite_start!("sys_map");

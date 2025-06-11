@@ -13,7 +13,11 @@ use sentry_uapi::systypes::EventType;
 use sentry_uapi::systypes::Status;
 use sentry_uapi::systypes::{ExchangeHeader, TaskHandle};
 use sentry_uapi::*;
-use sentry_uapi::ffi_c::*;
+use sentry_uapi::ffi_c::__sys_get_process_handle;
+use sentry_uapi::ffi_c::__sys_send_ipc;
+use sentry_uapi::ffi_c::__sys_wait_for_event;
+
+const CONFIG_SVC_EXCHANGE_AREA_LEN: usize = 128; // Should be imported from config
 
 pub fn test_ipc() -> bool {
     test_suite_start!("sys_ipc");

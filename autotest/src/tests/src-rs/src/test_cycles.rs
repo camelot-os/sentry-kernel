@@ -13,7 +13,8 @@ use core::prelude::v1::Ok;
 use sentry_uapi::systypes::Status;
 use sentry_uapi::systypes::{Precision};
 use sentry_uapi::*;
-use sentry_uapi::ffi_c::*;
+use sentry_uapi::ffi_c::__sys_get_cycle;
+use sentry_uapi::ffi_c::__sys_sched_yield;
 
 pub fn test_cycles() -> bool {
     test_suite_start!("sys_cycles");
@@ -91,10 +92,10 @@ fn test_cycles_precision() -> bool {
     ok &= check!(milli as u32 > 0, "milli > 0");
 
     ok &= check_eq!(micro_st, Status::Ok);
-    ok &= check!(((micro * 1000) > milli), "micro*1000 > milli");
+    ok &= check!(micro * 1000 > milli, "micro*1000 > milli");
 
     ok &= check_eq!(nano_st, Status::Ok);
-    ok &= check!(((nano * 1000) > micro), "nano*1000 > micro");
+    ok &= check!(nano * 1000 > micro, "nano*1000 > micro");
 
     ok &= check_eq!(cycle_st, Status::Denied);
 

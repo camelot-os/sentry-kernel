@@ -14,6 +14,7 @@ mod test_shm;
 mod test_signal;
 mod test_sleep;
 mod test_yield;
+mod test_dma;
 mod devices_utils;
 
 #[unsafe(no_mangle)]

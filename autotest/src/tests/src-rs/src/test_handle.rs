@@ -8,7 +8,6 @@ use crate::check_eq;
 use sentry_uapi::*;
 use sentry_uapi::systypes::Status;
 use core::prelude::v1::Ok;
-use sentry_uapi::ffi_c::*;
 
 #[repr(C, packed)]
 #[derive(Debug, Copy, Clone)]

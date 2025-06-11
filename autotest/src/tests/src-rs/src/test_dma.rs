@@ -5,13 +5,31 @@ use crate::log_line;
 use crate::test_end;
 use crate::test_start;
 use crate::check_eq;
-use sentry_uapi::dma::*;
-use sentry_uapi::event::EventType;
-use sentry_uapi::shm::*;
+use sentry_uapi::systypes::EventType;
 use sentry_uapi::systypes::Status;
 use sentry_uapi::*;
 use core::prelude::v1::Ok;
-use sentry_uapi::ffi_c::*;
+use crate::test_suite_start;
+use crate::test_suite_end;
+use crate::check;
+use sentry_uapi::systypes::dma::*;
+use sentry_uapi::ffi_c::__sys_get_dma_stream_handle;
+use sentry_uapi::ffi_c::__sys_dma_get_stream_info;
+use sentry_uapi::ffi_c::__sys_shm_get_infos;
+use sentry_uapi::ffi_c::__sys_get_shm_handle;
+use sentry_uapi::ffi_c::__sys_dma_unassign_stream;
+use sentry_uapi::ffi_c::__sys_dma_suspend_stream;
+use sentry_uapi::ffi_c::__sys_wait_for_event;
+use sentry_uapi::ffi_c::__sys_dma_start_stream;
+use sentry_uapi::ffi_c::__sys_dma_assign_stream;
+use sentry_uapi::ffi_c::__sys_map_shm;
+use sentry_uapi::ffi_c::__sys_dma_get_stream_status;
+use sentry_uapi::ffi_c::__sys_get_process_handle;
+use sentry_uapi::systypes::ShmHandle;
+use sentry_uapi::systypes::StreamHandle;
+use sentry_uapi::systypes::TaskHandle;
+use sentry_uapi::systypes::SHMPermission;
+use sentry_uapi::ffi_c::__sys_shm_set_credential;
 
 pub fn test_dma() -> bool {
     let mut all_ok = true;
@@ -48,7 +66,7 @@ fn test_dma_manipulate_stream_badhandle() -> bool {
 
 fn test_dma_assign_unassign_stream() -> bool {
     test_start!();
-    let mut streamh: DmaHandle = 0;
+    let mut streamh: StreamHandle = 0;
     let ok = check_eq!(__sys_get_dma_stream_handle(0x2), Status::Ok)
         & (unsafe {
             copy_from_kernel(
@@ -65,7 +83,7 @@ fn test_dma_assign_unassign_stream() -> bool {
 
 fn test_dma_start_stream() -> bool {
     test_start!();
-    let mut streamh: DmaHandle = 0;
+    let mut streamh: StreamHandle = 0;
     let ok = check_eq!(__sys_get_dma_stream_handle(0x2), Status::Ok)
         & (unsafe {
             copy_from_kernel(
@@ -83,7 +101,7 @@ fn test_dma_start_stream() -> bool {
 
 fn test_dma_get_stream_status() -> bool {
     test_start!();
-    let mut streamh: DmaHandle = 0;
+    let mut streamh: StreamHandle = 0;
     let ok = check_eq!(__sys_get_dma_stream_handle(0x2), Status::Ok)
         & (unsafe {
             copy_from_kernel(
@@ -97,7 +115,7 @@ fn test_dma_get_stream_status() -> bool {
 
 fn test_dma_stop_stream() -> bool {
     test_start!();
-    let mut streamh: DmaHandle = 0;
+    let mut streamh: StreamHandle = 0;
     let ok = check_eq!(__sys_get_dma_stream_handle(0x2), Status::Ok)
         & (unsafe {
             copy_from_kernel(
@@ -113,7 +131,7 @@ fn test_dma_stop_stream() -> bool {
 fn test_dma_start_n_wait_stream() -> bool {
     test_start!();
     let mut ok = true;
-    let mut streamh: DmaHandle = 0;
+    let mut streamh: StreamHandle = 0;
     ok &= check_eq!(__sys_get_dma_stream_handle(0x2), Status::Ok);
     ok &= unsafe {
         copy_from_kernel(
@@ -131,14 +149,14 @@ fn test_dma_start_n_wait_stream() -> bool {
 
     let mut shm1: ShmHandle = 0;
     let mut info1 = ShmInfos::default();
-    ok &= check_eq!(__sys_get_shm_handle(shms[0].id), Status::Ok);
+    ok &= check_eq!(__sys_get_shm_handle(shm1.id), Status::Ok);
     ok &= unsafe {
         copy_from_kernel(
             &mut (&mut shm1 as *mut _ as *mut u8)
         )
     } == Ok(Status::Ok);
     ok &= check_eq!(
-        __sys_shm_set_credential(shm1, myself, SHM_PERMISSION_WRITE | SHM_PERMISSION_MAP),
+        __sys_shm_set_credential(shm1, myself, SHMPermission::Write | SHMPermission::Map),
         Status::Ok
     );
     ok &= check_eq!(__sys_map_shm(shm1), Status::Ok);
@@ -154,14 +172,14 @@ fn test_dma_start_n_wait_stream() -> bool {
 
     let mut shm2: ShmHandle = 0;
     let mut info2 = ShmInfos::default();
-    ok &= check_eq!(__sys_get_shm_handle(shms[1].id), Status::Ok);
+    ok &= check_eq!(__sys_get_shm_handle(shm2.id), Status::Ok);
     ok &= unsafe {
         copy_from_kernel(
             &mut (&mut shm2 as *mut _ as *mut u8)
         )
     } == Ok(Status::Ok);
     ok &= check_eq!(
-        __sys_shm_set_credential(shm2, myself, SHM_PERMISSION_WRITE | SHM_PERMISSION_MAP),
+        __sys_shm_set_credential(shm2, myself, SHMPermission::Write | SHMPermission::Map),
         Status::Ok
     );
     ok &= check_eq!(__sys_map_shm(shm2), Status::Ok);
@@ -194,12 +212,12 @@ fn test_dma_start_n_wait_stream() -> bool {
 fn test_dma_get_info() -> bool {
     test_start!();
     let mut ok = true;
-    let mut streamh: DmaHandle = 0;
-    let mut stream_info = GpdmaStreamCfg::default();
+    let mut streamh: StreamHandle = 0;
+    let mut stream_info = GpdmaStreamConfig::default();
     let mut shm: ShmHandle = 0;
     let mut infos = ShmInfos::default();
 
-    ok &= check_eq!(__sys_get_shm_handle(shms[0].id), Status::Ok);
+    ok &= check_eq!(__sys_get_shm_handle(shm.id), Status::Ok);
     ok &= unsafe {
         copy_from_kernel(
             &mut (&mut shm as *mut _ as *mut u8)

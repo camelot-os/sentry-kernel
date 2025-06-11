@@ -11,7 +11,9 @@ use crate::test_log::USER_AUTOTEST_INFO;
 use sentry_uapi::systypes::Precision;
 use sentry_uapi::systypes::Status;
 use sentry_uapi::*;
-use sentry_uapi::ffi_c::*;
+use sentry_uapi::ffi_c::__sys_get_random;
+use sentry_uapi::ffi_c::__sys_sched_yield;
+use sentry_uapi::ffi_c::__sys_get_cycle;
 
 pub fn test_random() -> bool {
     test_suite_start!("sys_get_random");

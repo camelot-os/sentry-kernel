@@ -10,9 +10,16 @@ use crate::log_line;
 use core::prelude::v1::Ok;
 use sentry_uapi::systypes::Status;
 use sentry_uapi::systypes::*;
-use crate::systypes::ShmHandle;
+use sentry_uapi::systypes::ShmHandle;
 use sentry_uapi::*;
-use sentry_uapi::ffi_c::*;
+use crate::devices_utils::get_shm_by_name;
+use sentry_uapi::ffi_c::__sys_get_shm_handle;
+use sentry_uapi::ffi_c::__sys_unmap_shm;
+use sentry_uapi::ffi_c::__sys_map_shm;
+use sentry_uapi::ffi_c::__sys_get_process_handle;
+use sentry_uapi::ffi_c::__sys_shm_set_credential;
+use sentry_uapi::ffi_c::__sys_shm_get_infos;
+use sentry_uapi::systypes::SHMPermission;
 
 pub fn test_shm() -> bool {
     test_suite_start!("sys_map_shm");
@@ -72,7 +79,7 @@ fn test_shm_mapdenied() -> bool {
     let shm1 = get_shm_by_name("shm_autotest_1").expect("shm_autotest_1 not found");
     let mut shm: ShmHandle = 0;
     let mut myself: TaskHandle = 0;
-    let perms = SHM_PERMISSION_WRITE | SHM_PERMISSION_MAP;
+    let perms = SHMPermission::Write | SHMPermission::Map;
 
     let ok = check_eq!(__sys_get_process_handle(0xbabe), Status::Ok)
         & (unsafe { copy_from_kernel(&mut (&mut myself as *mut _ as *mut u8)) } == Ok(Status::Ok))
@@ -113,17 +120,17 @@ fn test_shm_creds_on_mapped() -> bool {
         & check_eq!(__sys_get_shm_handle(shm1.id), Status::Ok)
         & (unsafe { copy_from_kernel(&mut (&mut shm as *mut _ as *mut u8)) } == Ok(Status::Ok))
         & check_eq!(
-            __sys_shm_set_credential(shm, myself, SHM_PERMISSION_MAP | SHM_PERMISSION_WRITE),
+            __sys_shm_set_credential(shm, myself, SHMPermission::Map | SHMPermission::Write),
             Status::Ok
         )
         & check_eq!(__sys_map_shm(shm), Status::Ok)
         & check_eq!(
-            __sys_shm_set_credential(shm, myself, SHM_PERMISSION_WRITE),
+            __sys_shm_set_credential(shm, myself, SHMPermission::Write),
             Status::Busy
         )
         & check_eq!(__sys_unmap_shm(shm), Status::Ok)
         & check_eq!(
-            __sys_shm_set_credential(shm, myself, SHM_PERMISSION_WRITE),
+            __sys_shm_set_credential(shm, myself, SHMPermission::Write),
             Status::Ok
         );
     test_end!();
@@ -140,7 +147,7 @@ fn test_shm_allows_idle() -> bool {
         & check_eq!(__sys_get_shm_handle(shm1.id), Status::Ok)
         & (unsafe { copy_from_kernel(&mut (&mut shm as *mut _ as *mut u8)) } == Ok(Status::Ok))
         & check_eq!(
-            __sys_shm_set_credential(shm, idle, SHM_PERMISSION_TRANSFER),
+            __sys_shm_set_credential(shm, idle, SHMPermission::Transfer),
             Status::Ok
         );
     test_end!();
@@ -152,7 +159,7 @@ fn test_shm_map_unmappable() -> bool {
     let shm1 = get_shm_by_name("shm_autotest_1").expect("shm_autotest_1 not found");
     let mut shm: ShmHandle = 0;
     let mut myself: TaskHandle = 0;
-    let perms = SHM_PERMISSION_WRITE;
+    let perms = SHMPermission::Write;
 
     let ok = check_eq!(__sys_get_process_handle(0xbabe), Status::Ok)
         & (unsafe { copy_from_kernel(&mut (&mut myself as *mut _ as *mut u8)) } == Ok(Status::Ok))
@@ -169,7 +176,7 @@ fn test_shm_mapunmap() -> bool {
     let shm1 = get_shm_by_name("shm_autotest_1").expect("shm_autotest_1 not found");
     let mut shm: ShmHandle = 0;
     let mut myself: TaskHandle = 0;
-    let perms = SHM_PERMISSION_WRITE | SHM_PERMISSION_MAP;
+    let perms = SHMPermission::Write | SHMPermission::Map;
 
     let ok = check_eq!(__sys_get_process_handle(0xbabe), Status::Ok)
         & (unsafe { copy_from_kernel(&mut (&mut myself as *mut _ as *mut u8)) } == Ok(Status::Ok))
