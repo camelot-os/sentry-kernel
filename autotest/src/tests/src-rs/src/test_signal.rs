@@ -7,6 +7,7 @@ use crate::test_start;
 use crate::test_suite_end;
 use crate::test_suite_start;
 use crate::log_line;
+use crate::test_log::USER_AUTOTEST_INFO;
 use sentry_uapi::systypes::Status;
 use sentry_uapi::systypes::*;
 use sentry_uapi::*;
@@ -28,21 +29,21 @@ fn test_signal_sendrecv() -> bool {
 
     let ret = unsafe { __sys_get_process_handle(0xbabe) };
     if ret != Status::Ok {
-        log_line!("get_process_handle failed: {:?}", ret);
+        log_line!(USER_AUTOTEST_INFO, "get_process_handle failed: {:?}", ret);
         test_end!();
         return false;
     }
 
     if unsafe { copy_from_kernel(&mut (&mut handle as *mut _ as *mut u8)) } != Ok(Status::Ok) {
-        log_line!("copy_from_kernel(handle) failed");
+        log_line!(USER_AUTOTEST_INFO, "copy_from_kernel(handle) failed");
         test_end!();
         return false;
     }
 
-    log_line!("handle is {:#x}", handle);
+    log_line!(USER_AUTOTEST_INFO, "handle is {:#x}", handle);
     for sig_val in (Signal::Abort as u32)..=(Signal::Usr2 as u32) {
         let sig = unsafe { core::mem::transmute::<u32, Signal>(sig_val) };
-        log_line!("sending signal {:?} to myself", sig);
+        log_line!(USER_AUTOTEST_INFO, "sending signal {:?} to myself", sig);
 
         let ret_send = unsafe { __sys_send_signal(handle, sig) };
         let ret_wait = unsafe { __sys_wait_for_event(EventType::Signal as u8, timeout) };

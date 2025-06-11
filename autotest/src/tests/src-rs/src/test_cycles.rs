@@ -10,7 +10,7 @@ use crate::test_suite_start;
 use crate::log_line;
 use core::prelude::v1::Ok;
 use sentry_uapi::systypes::Status;
-use sentry_uapi::systypes::{Precision, SleepDuration};
+use sentry_uapi::systypes::{Precision};
 use sentry_uapi::*;
 
 pub fn test_cycles() -> bool {

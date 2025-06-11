@@ -7,8 +7,9 @@ use crate::test_start;
 use crate::test_suite_end;
 use crate::test_suite_start;
 use crate::log_line;
+use crate::test_log::USER_AUTOTEST_INFO;
 use core::prelude::v1::Ok;
-use sentry_uapi::event::EventType;
+use sentry_uapi::systypes::EventType;
 use sentry_uapi::systypes::Status;
 use sentry_uapi::systypes::*;
 use sentry_uapi::*;
@@ -156,7 +157,7 @@ fn test_irq_spawn_periodic() -> bool {
 
     let mut tab = [0u8; 128];
     for count in 0..5 {
-        log_line!("interrupt count {} wait", count);
+        log_line!(USER_AUTOTEST_INFO, "interrupt count {} wait", count);
         ok &= check_eq!(__sys_wait_for_event(EventType::Irq as u8, 0), Status::Ok);
         ok &= unsafe { copy_from_kernel(&mut tab.as_mut_ptr()) } == Ok(Status::Ok);
         let irqn = u32::from_le_bytes([tab[8], tab[9], tab[10], tab[11]]);

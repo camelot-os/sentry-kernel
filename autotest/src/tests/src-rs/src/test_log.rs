@@ -1,12 +1,11 @@
 // SPDX-FileCopyrightText: 2025 ANSSI
 // SPDX-License-Identifier: Apache-2.0
 
-#![no_std]
 
 use core::ffi::c_char;
-use core::fmt::{self, Write};
+//use core::fmt::{self, Write};
 
-extern "C" {
+unsafe extern "C" {
     fn printf(fmt: *const c_char, ...) -> i32;
 }
 
@@ -97,18 +96,20 @@ macro_rules! test_suite_end {
 
 #[macro_export]
 macro_rules! log_line {
-    ($fmt:expr $(, $arg:expr)* $(,)?) => {
-        let s = format_args!($fmt $(, $arg)*);
-        use core::fmt::Write;
+    ($prefix:expr, $fmt:expr $(, $arg:expr)* $(,)?) => {{
+        //use core::fmt::Write;
         let mut buf = [0u8; 256];
-        let _ = write!(&mut $crate::test_log::FmtBuf::new(&mut buf), "{}", s);
+        let _ = write!(
+            &mut $crate::test_log::FmtBuf::new(&mut buf),
+            $fmt $(, $arg)*
+        );
         $crate::test_log::c_log(
-            $crate::test_log::USER_AUTOTEST_INFO,
+            $prefix,
             core::module_path!(),
             core::line!(),
             core::str::from_utf8(&buf).unwrap_or(""),
         );
-    };
+    }};
 }
 
 pub struct FmtBuf<'a> {

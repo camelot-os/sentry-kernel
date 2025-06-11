@@ -7,6 +7,7 @@ use crate::test_start;
 use crate::test_suite_end;
 use crate::test_suite_start;
 use crate::log_line;
+use crate::test_log::USER_AUTOTEST_INFO;
 use sentry_uapi::systypes::Precision;
 use sentry_uapi::systypes::Status;
 use sentry_uapi::*;
@@ -24,7 +25,7 @@ fn test_random_sequence() -> bool {
     test_start!();
     let mut ok = true;
     let mut rng: u32 = 0;
-    log_line!("get back random value from KRNG");
+    log_line!(USER_AUTOTEST_INFO, "get back random value from KRNG");
     for _ in 0..5 {
         ok &= check_eq!(__sys_get_random(), Status::Ok);
         ok &= unsafe { copy_from_kernel(&mut (&mut rng as *mut _ as *mut u8)) } == Ok(Status::Ok);

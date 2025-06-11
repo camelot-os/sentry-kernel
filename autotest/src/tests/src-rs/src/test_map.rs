@@ -9,6 +9,7 @@ use crate::test_start;
 use crate::test_suite_end;
 use crate::test_suite_start;
 use crate::log_line;
+use crate::test_log::USER_AUTOTEST_INFO;
 use core::prelude::v1::Ok;
 use sentry_uapi::systypes::Status;
 use sentry_uapi::systypes::*;
@@ -56,12 +57,12 @@ fn test_map_mapunmap() -> bool {
     let mut ok = check_eq!(__sys_get_device_handle(device.id as u8), Status::Ok)
         & unsafe { copy_from_kernel(&mut (&mut dev as *mut _ as *mut u8)) }
         == Ok(Status::Ok);
-    log_line!("handle is {:#x}", dev);
+    log_line!(USER_AUTOTEST_INFO, "handle is {:#x}", dev);
     ok &= check_eq!(__sys_map_dev(dev), Status::Ok);
 
     #[cfg(CONFIG_ARCH_MCU_STM32U5A5)]
     if ok {
-        log_line!("device mapped, checking registers");
+        log_line!(USER_AUTOTEST_INFO, "device mapped, checking registers");
         let base = device.baseaddr;
         for offset in (0..12 * 4).step_by(4) {
             let val = unsafe { core::ptr::read_volatile((base + offset as usize) as *const u32) };
@@ -73,7 +74,7 @@ fn test_map_mapunmap() -> bool {
         }
     }
 
-    log_line!("unmapping");
+    log_line!(USER_AUTOTEST_INFO, "unmapping");
     ok &= check_eq!(__sys_unmap_dev(dev), Status::Ok);
     test_end!();
     ok
