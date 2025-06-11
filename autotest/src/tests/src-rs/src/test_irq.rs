@@ -2,20 +2,19 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::check_eq;
+use crate::log_line;
 use crate::test_end;
+use crate::test_log::USER_AUTOTEST_INFO;
 use crate::test_start;
 use crate::test_suite_end;
 use crate::test_suite_start;
-use crate::log_line;
-use crate::test_log::USER_AUTOTEST_INFO;
 use core::prelude::v1::Ok;
+use sentry_uapi::ffi_c::__sys_wait_for_event;
 use sentry_uapi::systypes::EventType;
 use sentry_uapi::systypes::Status;
 use sentry_uapi::systypes::*;
 use sentry_uapi::*;
-use sentry_uapi::ffi_c::__sys_wait_for_event;
 static mut HANDLE: DeviceHandle = 0;
-
 
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]

@@ -2,18 +2,18 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::check_eq;
+use crate::log_line;
 use crate::test_end;
+use crate::test_log::USER_AUTOTEST_INFO;
 use crate::test_start;
 use crate::test_suite_end;
 use crate::test_suite_start;
-use crate::log_line;
-use crate::test_log::USER_AUTOTEST_INFO;
+use sentry_uapi::ffi_c::__sys_get_cycle;
+use sentry_uapi::ffi_c::__sys_get_random;
+use sentry_uapi::ffi_c::__sys_sched_yield;
 use sentry_uapi::systypes::Precision;
 use sentry_uapi::systypes::Status;
 use sentry_uapi::*;
-use sentry_uapi::ffi_c::__sys_get_random;
-use sentry_uapi::ffi_c::__sys_sched_yield;
-use sentry_uapi::ffi_c::__sys_get_cycle;
 
 pub fn test_random() -> bool {
     test_suite_start!("sys_get_random");

@@ -2,20 +2,20 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::check_eq;
+use crate::log_line;
 use crate::test_end;
+use crate::test_log::USER_AUTOTEST_INFO;
 use crate::test_start;
 use crate::test_suite_end;
 use crate::test_suite_start;
-use crate::log_line;
-use crate::test_log::USER_AUTOTEST_INFO;
 use core::prelude::v1::Ok;
+use sentry_uapi::ffi_c::__sys_get_process_handle;
+use sentry_uapi::ffi_c::__sys_send_ipc;
+use sentry_uapi::ffi_c::__sys_wait_for_event;
 use sentry_uapi::systypes::EventType;
 use sentry_uapi::systypes::Status;
 use sentry_uapi::systypes::{ExchangeHeader, TaskHandle};
 use sentry_uapi::*;
-use sentry_uapi::ffi_c::__sys_get_process_handle;
-use sentry_uapi::ffi_c::__sys_send_ipc;
-use sentry_uapi::ffi_c::__sys_wait_for_event;
 
 const CONFIG_SVC_EXCHANGE_AREA_LEN: usize = 128; // Should be imported from config
 
@@ -104,7 +104,10 @@ fn test_ipc_deadlock() -> bool {
         ok &= copy_to_kernel(&(msg.as_ptr() as *mut u8)) == Ok(Status::Ok);
     }
     ok &= check_eq!(__sys_send_ipc(handle, 20), Status::Ok);
-    log_line!(USER_AUTOTEST_INFO, "sending another IPC, should lead to STATUS_DEADLK");
+    log_line!(
+        USER_AUTOTEST_INFO,
+        "sending another IPC, should lead to STATUS_DEADLK"
+    );
     ok &= check_eq!(__sys_send_ipc(handle, 20), Status::Deadlk);
     test_end!();
     ok

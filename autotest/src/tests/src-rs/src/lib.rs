@@ -4,7 +4,9 @@
 #![no_std]
 #![no_main]
 
+mod devices_utils;
 mod test_cycles;
+mod test_dma;
 mod test_ipc;
 mod test_irq;
 mod test_log;
@@ -14,8 +16,6 @@ mod test_shm;
 mod test_signal;
 mod test_sleep;
 mod test_yield;
-mod test_dma;
-mod devices_utils;
 
 #[unsafe(no_mangle)]
 pub fn autotest() {

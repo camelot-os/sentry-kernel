@@ -1,13 +1,14 @@
 // SPDX-FileCopyrightText: 2025 ANSSI
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::devices::{DEVICE_NAMES, DEVICES, SHMS, SHM_NAMES};
+use crate::devices::{DEVICE_NAMES, DEVICES, SHM_NAMES, SHMS};
 use sentry_uapi::systypes::dev::DevInfo;
 use sentry_uapi::systypes::shm::ShmInfo;
 
 /// Search for a device by its name
 pub fn get_device_by_name(name: &str) -> Option<&'static DevInfo> {
-    DEVICE_NAMES.iter()
+    DEVICE_NAMES
+        .iter()
         .position(|&n| n == name)
         .map(|i| &DEVICES[i])
 }
@@ -18,7 +19,5 @@ pub fn iter_devices() -> impl Iterator<Item = (&'static str, &'static DevInfo)> 
 
 /// Get SHM by name
 pub fn get_shm_by_name(name: &str) -> Option<&'static ShmInfo> {
-    SHM_NAMES.iter()
-        .position(|&n| n == name)
-        .map(|i| &SHMS[i])
+    SHM_NAMES.iter().position(|&n| n == name).map(|i| &SHMS[i])
 }

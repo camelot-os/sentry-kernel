@@ -2,18 +2,18 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::check_eq;
+use crate::log_line;
 use crate::test_end;
+use crate::test_log::USER_AUTOTEST_INFO;
 use crate::test_start;
 use crate::test_suite_end;
 use crate::test_suite_start;
-use crate::log_line;
-use crate::test_log::USER_AUTOTEST_INFO;
-use sentry_uapi::systypes::Status;
-use sentry_uapi::systypes::*;
-use sentry_uapi::*;
 use sentry_uapi::ffi_c::__sys_get_process_handle;
 use sentry_uapi::ffi_c::__sys_send_signal;
 use sentry_uapi::ffi_c::__sys_wait_for_event;
+use sentry_uapi::systypes::Status;
+use sentry_uapi::systypes::*;
+use sentry_uapi::*;
 
 #[repr(C)]
 #[derive(Copy, Clone)]

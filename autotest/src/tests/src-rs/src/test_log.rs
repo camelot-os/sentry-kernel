@@ -1,11 +1,9 @@
 // SPDX-FileCopyrightText: 2025 ANSSI
 // SPDX-License-Identifier: Apache-2.0
 
-
 use core::ffi::c_char;
 //use core::fmt::{self, Write};
 use core::fmt;
-
 
 unsafe extern "C" {
     fn printf(fmt: *const c_char, ...) -> i32;

@@ -2,24 +2,24 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::check_eq;
+use crate::devices_utils::get_shm_by_name;
+use crate::log_line;
 use crate::test_end;
 use crate::test_start;
 use crate::test_suite_end;
 use crate::test_suite_start;
-use crate::log_line;
 use core::prelude::v1::Ok;
+use sentry_uapi::ffi_c::__sys_get_process_handle;
+use sentry_uapi::ffi_c::__sys_get_shm_handle;
+use sentry_uapi::ffi_c::__sys_map_shm;
+use sentry_uapi::ffi_c::__sys_shm_get_infos;
+use sentry_uapi::ffi_c::__sys_shm_set_credential;
+use sentry_uapi::ffi_c::__sys_unmap_shm;
+use sentry_uapi::systypes::SHMPermission;
+use sentry_uapi::systypes::ShmHandle;
 use sentry_uapi::systypes::Status;
 use sentry_uapi::systypes::*;
-use sentry_uapi::systypes::ShmHandle;
 use sentry_uapi::*;
-use crate::devices_utils::get_shm_by_name;
-use sentry_uapi::ffi_c::__sys_get_shm_handle;
-use sentry_uapi::ffi_c::__sys_unmap_shm;
-use sentry_uapi::ffi_c::__sys_map_shm;
-use sentry_uapi::ffi_c::__sys_get_process_handle;
-use sentry_uapi::ffi_c::__sys_shm_set_credential;
-use sentry_uapi::ffi_c::__sys_shm_get_infos;
-use sentry_uapi::systypes::SHMPermission;
 
 pub fn test_shm() -> bool {
     test_suite_start!("sys_map_shm");
