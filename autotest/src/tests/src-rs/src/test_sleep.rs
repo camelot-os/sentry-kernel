@@ -8,6 +8,7 @@ use sentry_uapi::syscall::*;
 use sentry_uapi::systypes::SleepDuration;
 use sentry_uapi::systypes::*;
 use sentry_uapi::*;
+use sentry_uapi::ffi_c::*;
 
 fn test_sleep_return() {
     let duration = SleepDuration::ArbitraryMs(1000);

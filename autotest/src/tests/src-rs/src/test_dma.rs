@@ -11,6 +11,7 @@ use sentry_uapi::shm::*;
 use sentry_uapi::systypes::Status;
 use sentry_uapi::*;
 use core::prelude::v1::Ok;
+use sentry_uapi::ffi_c::*;
 
 pub fn test_dma() -> bool {
     let mut all_ok = true;

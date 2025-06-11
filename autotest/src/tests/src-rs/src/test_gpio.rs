@@ -9,6 +9,7 @@ use sentry_uapi::*;
 use sentry_uapi::systypes::Status;
 use sentry_uapi::systypes::{SleepDuration, SleepMode, DeviceHandle};
 use core::prelude::v1::Ok;
+use sentry_uapi::ffi_c::*;
 
 pub fn test_gpio() -> bool {
     test_suite_start!("sys_gpio");

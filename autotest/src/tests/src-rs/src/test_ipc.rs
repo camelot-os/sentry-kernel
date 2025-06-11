@@ -13,6 +13,7 @@ use sentry_uapi::systypes::EventType;
 use sentry_uapi::systypes::Status;
 use sentry_uapi::systypes::{ExchangeHeader, TaskHandle};
 use sentry_uapi::*;
+use sentry_uapi::ffi_c::*;
 
 pub fn test_ipc() -> bool {
     test_suite_start!("sys_ipc");
@@ -74,6 +75,7 @@ fn test_ipc_sendrecv() -> bool {
         &data[core::mem::size_of::<ExchangeHeader>()..core::mem::size_of::<ExchangeHeader>() + 20];
     let text = core::str::from_utf8(content).unwrap_or("<invalid utf8>");
     log_line!(
+        USER_AUTOTEST_INFO,
         "{}:{}:{}:src={:#x} {}",
         header.event,
         header.length,

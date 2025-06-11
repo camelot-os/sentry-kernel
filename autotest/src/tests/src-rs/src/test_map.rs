@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::check_eq;
-use crate::device_utils::get_device_by_name;
-use crate::devices::*;
+//use crate::device_utils::get_device_by_name;
+//use crate::devices::*;
 use crate::test_end;
 use crate::test_start;
 use crate::test_suite_end;
@@ -14,6 +14,7 @@ use core::prelude::v1::Ok;
 use sentry_uapi::systypes::Status;
 use sentry_uapi::systypes::*;
 use sentry_uapi::*;
+use sentry_uapi::ffi_c::*;
 
 pub fn test_map() -> bool {
     test_suite_start!("sys_map");

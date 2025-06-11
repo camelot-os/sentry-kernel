@@ -11,6 +11,7 @@ use crate::test_log::USER_AUTOTEST_INFO;
 use sentry_uapi::systypes::Precision;
 use sentry_uapi::systypes::Status;
 use sentry_uapi::*;
+use sentry_uapi::ffi_c::*;
 
 pub fn test_random() -> bool {
     test_suite_start!("sys_get_random");
@@ -29,7 +30,7 @@ fn test_random_sequence() -> bool {
     for _ in 0..5 {
         ok &= check_eq!(__sys_get_random(), Status::Ok);
         ok &= unsafe { copy_from_kernel(&mut (&mut rng as *mut _ as *mut u8)) } == Ok(Status::Ok);
-        log_line!("rng retrieved: {:#010x}", rng);
+        log_line!(USER_AUTOTEST_INFO, "rng retrieved: {:#010x}", rng);
     }
     test_end!();
     ok
@@ -57,6 +58,7 @@ fn test_random_duration() -> bool {
 
     if idx > 0 {
         log_line!(
+            USER_AUTOTEST_INFO,
             "average get_random+copy cost: {} µs",
             ((stop - start) / idx as u64) as u32
         );

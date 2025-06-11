@@ -2,17 +2,17 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::check_eq;
-use crate::devices_utils::{SHMS, get_shm_by_name};
 use crate::test_end;
 use crate::test_start;
 use crate::test_suite_end;
 use crate::test_suite_start;
 use crate::log_line;
 use core::prelude::v1::Ok;
-use sentry_uapi::shm::*;
 use sentry_uapi::systypes::Status;
 use sentry_uapi::systypes::*;
+use crate::systypes::ShmHandle;
 use sentry_uapi::*;
+use sentry_uapi::ffi_c::*;
 
 pub fn test_shm() -> bool {
     test_suite_start!("sys_map_shm");

@@ -8,10 +8,12 @@ use crate::test_start;
 use crate::test_suite_end;
 use crate::test_suite_start;
 use crate::log_line;
+use crate::test_log::USER_AUTOTEST_INFO;
 use core::prelude::v1::Ok;
 use sentry_uapi::systypes::Status;
 use sentry_uapi::systypes::{Precision};
 use sentry_uapi::*;
+use sentry_uapi::ffi_c::*;
 
 pub fn test_cycles() -> bool {
     test_suite_start!("sys_cycles");
@@ -42,7 +44,7 @@ fn test_cycles_duration() -> bool {
     ok &= check_eq!(__sys_get_cycle(Precision::Microseconds), Status::Ok);
     ok &= unsafe { copy_from_kernel(&mut (&mut stop as *mut _ as *mut u8)) } == Ok(Status::Ok);
 
-    log_line!(
+    log_line!(USER_AUTOTEST_INFO,
         "average get_cycle cost: {}",
         ((stop - start) / idx as u64) as u32
     );
@@ -60,6 +62,7 @@ fn test_cycles_duration() -> bool {
     ok &= unsafe { copy_from_kernel(&mut (&mut stop as *mut _ as *mut u8)) } == Ok(Status::Ok);
 
     log_line!(
+        USER_AUTOTEST_INFO,
         "average get_cycle+copy cost: {}",
         ((stop - start) / idx as u64) as u32
     );

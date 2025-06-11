@@ -11,6 +11,7 @@ use crate::test_log::USER_AUTOTEST_INFO;
 use sentry_uapi::systypes::Status;
 use sentry_uapi::systypes::*;
 use sentry_uapi::*;
+use sentry_uapi::ffi_c::*;
 
 #[repr(C)]
 #[derive(Copy, Clone)]
@@ -52,6 +53,7 @@ fn test_signal_sendrecv() -> bool {
 
         if ret_send != Status::Ok || ret_wait != Status::Ok || copy_status != Ok(Status::Ok) {
             log_line!(
+                USER_AUTOTEST_INFO,
                 "signal {:?} failed: send={:?}, wait={:?}, copy={:?}",
                 sig,
                 ret_send,
@@ -66,6 +68,7 @@ fn test_signal_sendrecv() -> bool {
         let received_signal = u32::from_ne_bytes(event.data[0..4].try_into().unwrap_or([0; 4]));
 
         log_line!(
+            USER_AUTOTEST_INFO,
             "{:?}:{}:{:#x}:src={:#x} signal={}",
             event.header.event,
             event.header.length,
