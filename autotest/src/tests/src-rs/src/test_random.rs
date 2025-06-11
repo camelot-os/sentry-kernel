@@ -1,9 +1,14 @@
 // SPDX-FileCopyrightText: 2025 ANSSI
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::test_log::*;
-use sentry_uapi::status::Status;
+use crate::check_eq;
+use crate::test_end;
+use crate::test_start;
+use crate::test_suite_end;
+use crate::test_suite_start;
+use crate::log_line;
 use sentry_uapi::systypes::Precision;
+use sentry_uapi::systypes::Status;
 use sentry_uapi::*;
 
 pub fn test_random() -> bool {
@@ -19,13 +24,11 @@ fn test_random_sequence() -> bool {
     test_start!();
     let mut ok = true;
     let mut rng: u32 = 0;
-    log_info!("get back random value from KRNG");
+    log_line!("get back random value from KRNG");
     for _ in 0..5 {
         ok &= check_eq!(__sys_get_random(), Status::Ok);
-        ok &=
-            unsafe { copy_from_kernel(&mut (&mut rng as *mut _ as *mut u8)) }
-                == Status::Ok;
-        log_info!("rng retrieved: {:#010x}", rng);
+        ok &= unsafe { copy_from_kernel(&mut (&mut rng as *mut _ as *mut u8)) } == Ok(Status::Ok);
+        log_line!("rng retrieved: {:#010x}", rng);
     }
     test_end!();
     ok
@@ -40,23 +43,19 @@ fn test_random_duration() -> bool {
 
     ok &= check_eq!(__sys_sched_yield(), Status::Ok);
     ok &= check_eq!(__sys_get_cycle(Precision::Microseconds), Status::Ok);
-    ok &= unsafe { copy_from_kernel(&mut (&mut start as *mut _ as *mut u8)) }
-        == Status::Ok;
+    ok &= unsafe { copy_from_kernel(&mut (&mut start as *mut _ as *mut u8)) } == Ok(Status::Ok);
 
     for _ in 0..=1000 {
         ok &= check_eq!(__sys_get_random(), Status::Ok);
-        ok &=
-            unsafe { copy_from_kernel(&mut (&mut rng as *mut _ as *mut u8)) }
-                == Status::Ok;
+        ok &= unsafe { copy_from_kernel(&mut (&mut rng as *mut _ as *mut u8)) } == Ok(Status::Ok);
         idx += 1;
     }
 
     ok &= check_eq!(__sys_get_cycle(Precision::Microseconds), Status::Ok);
-    ok &= unsafe { copy_from_kernel(&mut (&mut stop as *mut _ as *mut u8)) }
-        == Status::Ok;
+    ok &= unsafe { copy_from_kernel(&mut (&mut stop as *mut _ as *mut u8)) } == Ok(Status::Ok);
 
     if idx > 0 {
-        log_info!(
+        log_line!(
             "average get_random+copy cost: {} µs",
             ((stop - start) / idx as u64) as u32
         );

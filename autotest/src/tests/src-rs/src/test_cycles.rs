@@ -1,8 +1,15 @@
 // SPDX-FileCopyrightText: 2025 ANSSI
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::test_log::*;
-use sentry_uapi::status::Status;
+use crate::check;
+use crate::check_eq;
+use crate::test_end;
+use crate::test_start;
+use crate::test_suite_end;
+use crate::test_suite_start;
+use crate::log_line;
+use core::prelude::v1::Ok;
+use sentry_uapi::systypes::Status;
 use sentry_uapi::systypes::{Precision, SleepDuration};
 use sentry_uapi::*;
 
@@ -26,39 +33,33 @@ fn test_cycles_duration() -> bool {
 
     ok &= check_eq!(__sys_sched_yield(), Status::Ok);
     ok &= check_eq!(__sys_get_cycle(Precision::Microseconds), Status::Ok);
-    ok &= unsafe { copy_from_kernel(&mut (&mut start as *mut _ as *mut u8)) }
-        == Status::Ok;
+    ok &= unsafe { copy_from_kernel(&mut (&mut start as *mut _ as *mut u8)) } == Ok(Status::Ok);
     for _ in 0..=1000 {
         let _ = __sys_get_cycle(Precision::Microseconds);
         idx += 1;
     }
 
     ok &= check_eq!(__sys_get_cycle(Precision::Microseconds), Status::Ok);
-    ok &= unsafe { copy_from_kernel(&mut (&mut stop as *mut _ as *mut u8)) }
-        == Status::Ok;
+    ok &= unsafe { copy_from_kernel(&mut (&mut stop as *mut _ as *mut u8)) } == Ok(Status::Ok);
 
-    log_info!(
+    log_line!(
         "average get_cycle cost: {}",
         ((stop - start) / idx as u64) as u32
     );
 
     ok &= check_eq!(__sys_sched_yield(), Status::Ok);
     ok &= check_eq!(__sys_get_cycle(Precision::Microseconds), Status::Ok);
-    ok &= unsafe { copy_from_kernel(&mut (&mut start as *mut _ as *mut u8)) }
-        == Status::Ok;
+    ok &= unsafe { copy_from_kernel(&mut (&mut start as *mut _ as *mut u8)) } == Ok(Status::Ok);
 
     for _ in 0..=1000 {
         ok &= check_eq!(__sys_get_cycle(Precision::Microseconds), Status::Ok);
-        ok &= unsafe {
-            copy_from_kernel(&mut (&mut micro as *mut _ as *mut u8))
-        } == Status::Ok;
+        ok &= unsafe { copy_from_kernel(&mut (&mut micro as *mut _ as *mut u8)) } == Ok(Status::Ok);
     }
 
     ok &= check_eq!(__sys_get_cycle(Precision::Microseconds), Status::Ok);
-    ok &= unsafe { copy_from_kernel(&mut (&mut stop as *mut _ as *mut u8)) }
-        == Status::Ok;
+    ok &= unsafe { copy_from_kernel(&mut (&mut stop as *mut _ as *mut u8)) } == Ok(Status::Ok);
 
-    log_info!(
+    log_line!(
         "average get_cycle+copy cost: {}",
         ((stop - start) / idx as u64) as u32
     );
@@ -73,16 +74,13 @@ fn test_cycles_precision() -> bool {
     let mut nano: u64 = 0;
 
     let milli_st = __sys_get_cycle(Precision::Milliseconds);
-    ok &= unsafe { copy_from_kernel(&mut (&mut milli as *mut _ as *mut u8)) }
-        == Status::Ok;
+    ok &= unsafe { copy_from_kernel(&mut (&mut milli as *mut _ as *mut u8)) } == Ok(Status::Ok);
 
     let micro_st = __sys_get_cycle(Precision::Microseconds);
-    ok &= unsafe { copy_from_kernel(&mut (&mut micro as *mut _ as *mut u8)) }
-        == Status::Ok;
+    ok &= unsafe { copy_from_kernel(&mut (&mut micro as *mut _ as *mut u8)) } == Ok(Status::Ok);
 
     let nano_st = __sys_get_cycle(Precision::Nanoseconds);
-    ok &= unsafe { copy_from_kernel(&mut (&mut nano as *mut _ as *mut u8)) }
-        == Status::Ok;
+    ok &= unsafe { copy_from_kernel(&mut (&mut nano as *mut _ as *mut u8)) } == Ok(Status::Ok);
 
     let cycle_st = __sys_get_cycle(Precision::Cycle);
 

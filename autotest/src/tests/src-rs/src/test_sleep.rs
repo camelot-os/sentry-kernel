@@ -1,11 +1,13 @@
 // SPDX-FileCopyrightText: 2025 ANSSI
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::test_log::*;
-use sentry_uapi::exchange::copy_from_kernel;
+use crate::check;
+use crate::check_eq;
+use crate::log_line;
 use sentry_uapi::syscall::*;
 use sentry_uapi::systypes::SleepDuration;
 use sentry_uapi::systypes::*;
+use sentry_uapi::*;
 
 fn test_sleep_return() {
     let duration = SleepDuration::ArbitraryMs(1000);
@@ -23,18 +25,18 @@ fn test_sleep_duration() {
         let mut stop: u64 = 0;
 
         let start_status = get_cycle(Precision::Milliseconds);
-        assert_eq!(start_status, Status::Ok);
+        check_eq!(start_status, Status::Ok);
         copy_from_kernel(&mut start).unwrap();
 
         let sleep_status = sleep(duration, SleepMode::Deep);
-        assert_eq!(sleep_status, Status::Timeout);
+        check_eq!(sleep_status, Status::Timeout);
 
         let stop_status = get_cycle(Precision::Milliseconds);
-        assert_eq!(stop_status, Status::Ok);
+        check_eq!(stop_status, Status::Ok);
         copy_from_kernel(&mut stop).unwrap();
 
         let elapsed = (stop - start) as u32;
-        assert!(
+        check!(
             elapsed >= ms && elapsed <= ms + 1,
             "Expected sleep around {}ms, got {}ms",
             ms,

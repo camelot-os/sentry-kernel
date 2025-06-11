@@ -1,12 +1,16 @@
 // SPDX-FileCopyrightText: 2025 ANSSI
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::test_log::*;
+use crate::log_line;
+use crate::test_end;
+use crate::test_start;
+use crate::check_eq;
 use sentry_uapi::dma::*;
 use sentry_uapi::event::EventType;
 use sentry_uapi::shm::*;
-use sentry_uapi::status::Status;
+use sentry_uapi::systypes::Status;
 use sentry_uapi::*;
+use core::prelude::v1::Ok;
 
 pub fn test_dma() -> bool {
     let mut all_ok = true;
@@ -49,7 +53,7 @@ fn test_dma_assign_unassign_stream() -> bool {
             copy_from_kernel(
                 &mut (&mut streamh as *mut _ as *mut u8)
             )
-        } == Status::Ok)
+        } == Ok(Status::Ok))
         & check_eq!(__sys_dma_assign_stream(streamh), Status::Ok)
         & check_eq!(__sys_dma_assign_stream(streamh), Status::Invalid)
         & check_eq!(__sys_dma_unassign_stream(streamh), Status::Ok)
@@ -66,7 +70,7 @@ fn test_dma_start_stream() -> bool {
             copy_from_kernel(
                 &mut (&mut streamh as *mut _ as *mut u8)
             )
-        } == Status::Ok)
+        } == Ok(Status::Ok))
         & check_eq!(__sys_dma_start_stream(streamh), Status::Invalid)
         & check_eq!(__sys_dma_assign_stream(streamh), Status::Ok)
         & check_eq!(__sys_dma_start_stream(streamh), Status::Ok)
@@ -84,7 +88,7 @@ fn test_dma_get_stream_status() -> bool {
             copy_from_kernel(
                 &mut (&mut streamh as *mut _ as *mut u8)
             )
-        } == Status::Ok)
+        } == Ok(Status::Ok))
         & check_eq!(__sys_dma_get_stream_status(streamh), Status::Ok);
     test_end!();
     ok
@@ -98,7 +102,7 @@ fn test_dma_stop_stream() -> bool {
             copy_from_kernel(
                 &mut (&mut streamh as *mut _ as *mut u8)
             )
-        } == Status::Ok)
+        } == Ok(Status::Ok))
         & check_eq!(__sys_dma_suspend_stream(streamh), Status::Ok)
         & check_eq!(__sys_dma_unassign_stream(streamh), Status::Ok);
     test_end!();
@@ -114,7 +118,7 @@ fn test_dma_start_n_wait_stream() -> bool {
         copy_from_kernel(
             &mut (&mut streamh as *mut _ as *mut u8)
         )
-    } == Status::Ok;
+    } == Ok(Status::Ok);
 
     let mut myself: TaskHandle = 0;
     ok &= check_eq!(__sys_get_process_handle(0xbabe), Status::Ok);
@@ -131,7 +135,7 @@ fn test_dma_start_n_wait_stream() -> bool {
         copy_from_kernel(
             &mut (&mut shm1 as *mut _ as *mut u8)
         )
-    } == Status::Ok;
+    } == Ok(Status::Ok);
     ok &= check_eq!(
         __sys_shm_set_credential(shm1, myself, SHM_PERMISSION_WRITE | SHM_PERMISSION_MAP),
         Status::Ok
@@ -142,7 +146,7 @@ fn test_dma_start_n_wait_stream() -> bool {
         copy_from_kernel(
             &mut (&mut info1 as *mut _ as *mut u8)
         )
-    } == Status::Ok;
+    } == Ok(Status::Ok);
     unsafe {
         core::ptr::write_bytes(info1.base as *mut u8, 0xa5, 0x100);
     }
@@ -154,7 +158,7 @@ fn test_dma_start_n_wait_stream() -> bool {
         copy_from_kernel(
             &mut (&mut shm2 as *mut _ as *mut u8)
         )
-    } == Status::Ok;
+    } == Ok(Status::Ok);
     ok &= check_eq!(
         __sys_shm_set_credential(shm2, myself, SHM_PERMISSION_WRITE | SHM_PERMISSION_MAP),
         Status::Ok
@@ -165,7 +169,7 @@ fn test_dma_start_n_wait_stream() -> bool {
         copy_from_kernel(
             &mut (&mut info2 as *mut _ as *mut u8)
         )
-    } == Status::Ok;
+    } == Ok(Status::Ok);
     unsafe {
         core::ptr::write_bytes(info2.base as *mut u8, 0x42, 0x100);
     }
@@ -199,27 +203,27 @@ fn test_dma_get_info() -> bool {
         copy_from_kernel(
             &mut (&mut shm as *mut _ as *mut u8)
         )
-    } == Status::Ok;
+    } == Ok(Status::Ok);
     ok &= check_eq!(__sys_shm_get_infos(shm), Status::Ok);
     ok &= unsafe {
         copy_from_kernel(
             &mut (&mut infos as *mut _ as *mut u8)
         )
-    } == Status::Ok;
+    } == Ok(Status::Ok);
 
     ok &= check_eq!(__sys_get_dma_stream_handle(0x1), Status::Ok);
     ok &= unsafe {
         copy_from_kernel(
             &mut (&mut streamh as *mut _ as *mut u8)
         )
-    } == Status::Ok;
+    } == Ok(Status::Ok);
 
     ok &= check_eq!(__sys_dma_get_stream_info(streamh), Status::Ok);
     ok &= unsafe {
         copy_from_kernel(
             &mut (&mut stream_info as *mut _ as *mut u8)
         )
-    } == Status::Ok;
+    } == Ok(Status::Ok);
 
     ok &= check_eq!(stream_info.stream, 112);
     ok &= check_eq!(stream_info.channel, 1);

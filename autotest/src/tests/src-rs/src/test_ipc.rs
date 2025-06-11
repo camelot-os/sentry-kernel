@@ -1,9 +1,15 @@
 // SPDX-FileCopyrightText: 2025 ANSSI
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::test_log::*;
+use crate::check_eq;
+use crate::test_end;
+use crate::test_start;
+use crate::test_suite_end;
+use crate::test_suite_start;
+use crate::log_line;
+use core::prelude::v1::Ok;
 use sentry_uapi::event::EventType;
-use sentry_uapi::status::Status;
+use sentry_uapi::systypes::Status;
 use sentry_uapi::systypes::{ExchangeHeader, TaskHandle};
 use sentry_uapi::*;
 
@@ -25,21 +31,17 @@ fn test_ipc_send_toobig() -> bool {
     let len1 = CONFIG_SVC_EXCHANGE_AREA_LEN + 1;
     let len2 = 255;
     ok &= check_eq!(__sys_get_process_handle(0xbabe), Status::Ok);
-    ok &= unsafe {
-        copy_from_kernel(
-            &mut (&mut handle as *mut _ as *mut u8)
-        )
-    } == Status::Ok;
-    log_info!("sending invalid IPC size {}", len1);
+    ok &= unsafe { copy_from_kernel(&mut (&mut handle as *mut _ as *mut u8)) } == Ok(Status::Ok);
+    log_line!("sending invalid IPC size {}", len1);
     ok &= check_eq!(__sys_send_ipc(handle, len1 as u8), Status::Invalid);
-    log_info!("sending invalid IPC size {}", len2);
+    log_line!("sending invalid IPC size {}", len2);
     ok &= check_eq!(__sys_send_ipc(handle, len2), Status::Invalid);
     test_end!();
     ok
 }
 fn test_ipc_send_invalidtarget() -> bool {
     test_start!();
-    log_info!("sending IPC to invalid target");
+    log_line!("sending IPC to invalid target");
     let ok = check_eq!(__sys_send_ipc(0xdead1001, 20), Status::Invalid);
     test_end!();
     ok
@@ -54,31 +56,23 @@ fn test_ipc_sendrecv() -> bool {
     let mut data = [0u8; CONFIG_SVC_EXCHANGE_AREA_LEN];
 
     ok &= check_eq!(__sys_get_process_handle(0xbabe), Status::Ok);
-    ok &= unsafe {
-        copy_from_kernel(
-            &mut (&mut handle as *mut _ as *mut u8)
-        )
-    } == Status::Ok;
-    log_info!("handle is {:#x}", handle);
-    log_info!("sending IPC to myself");
+    ok &= unsafe { copy_from_kernel(&mut (&mut handle as *mut _ as *mut u8)) } == Ok(Status::Ok);
+    log_line!("handle is {:#x}", handle);
+    log_line!("sending IPC to myself");
     unsafe {
-        ok &= copy_to_kernel(&(msg.as_ptr() as *mut u8)) == Status::Ok;
+        ok &= copy_to_kernel(&(msg.as_ptr() as *mut u8)) == Ok(Status::Ok);
     }
     ok &= check_eq!(__sys_send_ipc(handle, 20), Status::Ok);
     ok &= check_eq!(
         __sys_wait_for_event(EventType::Ipc as u8, timeout),
         Status::Ok
     );
-    ok &= unsafe {
-        copy_from_kernel(
-            data.as_mut_ptr()
-        ) == Status::Ok
-    };
+    ok &= unsafe { copy_from_kernel(data.as_mut_ptr()) == Ok(Status::Ok) };
     let header = unsafe { &*(data.as_ptr() as *const ExchangeHeader) };
     let content =
         &data[core::mem::size_of::<ExchangeHeader>()..core::mem::size_of::<ExchangeHeader>() + 20];
     let text = core::str::from_utf8(content).unwrap_or("<invalid utf8>");
-    log_info!(
+    log_line!(
         "{}:{}:{}:src={:#x} {}",
         header.event,
         header.length,
@@ -97,17 +91,13 @@ fn test_ipc_deadlock() -> bool {
     let msg = b"hello it's autotest";
 
     ok &= check_eq!(__sys_get_process_handle(0xbabe), Status::Ok);
-    ok &= unsafe {
-        copy_from_kernel(
-            &mut (&mut handle as *mut _ as *mut u8),
-        )
-    } == Status::Ok;
-    log_info!("sending IPC to myself");
+    ok &= unsafe { copy_from_kernel(&mut (&mut handle as *mut _ as *mut u8)) } == Ok(Status::Ok);
+    log_line!("sending IPC to myself");
     unsafe {
-        ok &= copy_to_kernel(&(msg.as_ptr() as *mut u8)) == Status::Ok;
+        ok &= copy_to_kernel(&(msg.as_ptr() as *mut u8)) == Ok(Status::Ok);
     }
     ok &= check_eq!(__sys_send_ipc(handle, 20), Status::Ok);
-    log_info!("sending another IPC, should lead to STATUS_DEADLK");
+    log_line!("sending another IPC, should lead to STATUS_DEADLK");
     ok &= check_eq!(__sys_send_ipc(handle, 20), Status::Deadlk);
     test_end!();
     ok

@@ -1,10 +1,14 @@
 // SPDX-FileCopyrightText: 2025 ANSSI
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::test_log::*;
+use crate::log_line;
+use crate::test_end;
+use crate::test_start;
+use crate::check_eq;
 use sentry_uapi::*;
-use sentry_uapi::status::Status;
+use sentry_uapi::systypes::Status;
 use sentry_uapi::systypes::{SleepDuration, SleepMode, DeviceHandle};
+use core::prelude::v1::Ok;
 
 pub fn test_gpio() -> bool {
     test_suite_start!("sys_gpio");
@@ -28,7 +32,7 @@ fn test_gpio_on() -> bool {
     let mut dev: DeviceHandle = 0;
     let ok = check_eq!(__sys_get_device_handle(devices[DEV_ID_LED0].id), Status::Ok)
         & (unsafe { copy_from_kernel(&mut dev as *mut _ as *mut u8, core::mem::size_of::<DeviceHandle>()) } == Status::Ok);
-    log_info!("handle is {:#x}", dev);
+    log_line!("handle is {:#x}", dev);
     let ok = ok
         & check_eq!(__sys_gpio_configure(dev, 0), Status::Ok)
         & check_eq!(__sys_gpio_set(dev, 0, true), Status::Ok);
@@ -41,7 +45,7 @@ fn test_gpio_off() -> bool {
     let mut dev: DeviceHandle = 0;
     let ok = check_eq!(__sys_get_device_handle(devices[DEV_ID_LED0].id), Status::Ok)
         & (unsafe { copy_from_kernel(&mut dev as *mut _ as *mut u8, core::mem::size_of::<DeviceHandle>()) } == Status::Ok);
-    log_info!("handle is {:#x}", dev);
+    log_line!("handle is {:#x}", dev);
     let ok = ok
         & check_eq!(__sys_gpio_configure(dev, 0), Status::Ok)
         & check_eq!(__sys_gpio_set(dev, 0, false), Status::Ok);
@@ -54,7 +58,7 @@ fn test_gpio_toggle() -> bool {
     let mut dev: DeviceHandle = 0;
     let duration = SleepDuration { tag: SLEEP_DURATION_ARBITRARY_MS, arbitrary_ms: 250 };
     let mut ok = check_eq!(__sys_get_device_handle(devices[DEV_ID_LED0].id), Status::Ok)
-        & (unsafe { copy_from_kernel(&mut dev as *mut _ as *mut u8, core::mem::size_of::<DeviceHandle>()) } == Status::Ok)
+        & (unsafe { copy_from_kernel(&mut dev as *mut _ as *mut u8, core::mem::size_of::<DeviceHandle>()) } == Ok(Status::Ok))
         & check_eq!(__sys_gpio_configure(dev, 0), Status::Ok);
         for _ in 0..10 {
             ok &= check_eq!(__sys_gpio_toggle(dev, 0), Status::Ok);
@@ -68,7 +72,7 @@ fn test_gpio_toggle() -> bool {
         test_start!();
         let mut dev: DeviceHandle = 0;
         let ok = check_eq!(__sys_get_device_handle(devices[DEV_ID_LED0].id), Status::Ok)
-            & (unsafe { copy_from_kernel(&mut dev as *mut _ as *mut u8, core::mem::size_of::<DeviceHandle>()) } == Status::Ok)
+            & (unsafe { copy_from_kernel(&mut dev as *mut _ as *mut u8, core::mem::size_of::<DeviceHandle>()) } == Ok(Status::Ok))
             & check_eq!(__sys_gpio_configure(dev, 4), Status::Invalid)
             & check_eq!(__sys_gpio_configure(dev, 8), Status::Invalid)
             & check_eq!(__sys_gpio_configure(dev, 250), Status::Invalid);

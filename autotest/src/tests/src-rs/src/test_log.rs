@@ -10,18 +10,18 @@ extern "C" {
     fn printf(fmt: *const c_char, ...) -> i32;
 }
 
-const USER_AUTOTEST: &str = "[AT]";
-const USER_AUTOTEST_INFO: &str = "[INFO      ]";
-const USER_AUTOTEST_EXEC: &str = "[EXE       ]";
-const USER_AUTOTEST_START: &str = "[START     ]";
-const USER_AUTOTEST_END: &str = "[END       ]";
-const USER_AUTOTEST_FAIL: &str = "[KO        ]";
-const USER_AUTOTEST_SUCCESS: &str = "[SUCCESS   ]";
-const USER_AUTOTEST_START_SUITE: &str = "[STARTSUITE]";
-const USER_AUTOTEST_END_SUITE: &str = "[ENDSUITE  ]";
+pub const USER_AUTOTEST: &str = "[AT]";
+pub const USER_AUTOTEST_INFO: &str = "[INFO      ]";
+pub const USER_AUTOTEST_EXEC: &str = "[EXE       ]";
+pub const USER_AUTOTEST_START: &str = "[START     ]";
+pub const USER_AUTOTEST_END: &str = "[END       ]";
+pub const USER_AUTOTEST_FAIL: &str = "[KO        ]";
+pub const USER_AUTOTEST_SUCCESS: &str = "[SUCCESS   ]";
+pub const USER_AUTOTEST_START_SUITE: &str = "[STARTSUITE]";
+pub const USER_AUTOTEST_END_SUITE: &str = "[ENDSUITE  ]";
 
 // Rust Wrapper for printf,  UTF-8 / ASCII C-string ended by null
-fn c_log(prefix: &str, file: &str, line: u32, msg: &str) {
+pub fn c_log(prefix: &str, file: &str, line: u32, msg: &str) {
     let _ = unsafe {
         printf(
             b"%s%s %s:%d: %s\n\0".as_ptr().cast(),
@@ -96,7 +96,7 @@ macro_rules! test_suite_end {
 }
 
 #[macro_export]
-macro_rules! log_info {
+macro_rules! log_line {
     ($fmt:expr $(, $arg:expr)* $(,)?) => {
         let s = format_args!($fmt $(, $arg)*);
         use core::fmt::Write;
@@ -110,7 +110,6 @@ macro_rules! log_info {
         );
     };
 }
-
 
 pub struct FmtBuf<'a> {
     buf: &'a mut [u8],

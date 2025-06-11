@@ -1,8 +1,13 @@
 // SPDX-FileCopyrightText: 2025 ANSSI
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::test_log::*;
-use sentry_uapi::status::Status;
+use crate::check_eq;
+use crate::test_end;
+use crate::test_start;
+use crate::test_suite_end;
+use crate::test_suite_start;
+use crate::log_line;
+use sentry_uapi::systypes::Status;
 use sentry_uapi::systypes::*;
 use sentry_uapi::*;
 
@@ -23,38 +28,29 @@ fn test_signal_sendrecv() -> bool {
 
     let ret = unsafe { __sys_get_process_handle(0xbabe) };
     if ret != Status::Ok {
-        log_info!("get_process_handle failed: {:?}", ret);
+        log_line!("get_process_handle failed: {:?}", ret);
         test_end!();
         return false;
     }
 
-    if unsafe {
-        copy_from_kernel(
-            &mut (&mut handle as *mut _ as *mut u8)
-        )
-    } != Status::Ok
-    {
-        log_info!("copy_from_kernel(handle) failed");
+    if unsafe { copy_from_kernel(&mut (&mut handle as *mut _ as *mut u8)) } != Ok(Status::Ok) {
+        log_line!("copy_from_kernel(handle) failed");
         test_end!();
         return false;
     }
 
-    log_info!("handle is {:#x}", handle);
+    log_line!("handle is {:#x}", handle);
     for sig_val in (Signal::Abort as u32)..=(Signal::Usr2 as u32) {
         let sig = unsafe { core::mem::transmute::<u32, Signal>(sig_val) };
-        log_info!("sending signal {:?} to myself", sig);
+        log_line!("sending signal {:?} to myself", sig);
 
         let ret_send = unsafe { __sys_send_signal(handle, sig) };
         let ret_wait = unsafe { __sys_wait_for_event(EventType::Signal as u8, timeout) };
 
-        let copy_status = unsafe {
-            copy_from_kernel(
-                &mut buffer.as_mut_ptr()
-            )
-        };
+        let copy_status = unsafe { copy_from_kernel(&mut buffer.as_mut_ptr()) };
 
-        if ret_send != Status::Ok || ret_wait != Status::Ok || copy_status != Status::Ok {
-            log_info!(
+        if ret_send != Status::Ok || ret_wait != Status::Ok || copy_status != Ok(Status::Ok) {
+            log_line!(
                 "signal {:?} failed: send={:?}, wait={:?}, copy={:?}",
                 sig,
                 ret_send,
@@ -68,7 +64,7 @@ fn test_signal_sendrecv() -> bool {
         let event = unsafe { &*(buffer[4..].as_ptr() as *const ExchangeEvent) };
         let received_signal = u32::from_ne_bytes(event.data[0..4].try_into().unwrap_or([0; 4]));
 
-        log_info!(
+        log_line!(
             "{:?}:{}:{:#x}:src={:#x} signal={}",
             event.header.event,
             event.header.length,

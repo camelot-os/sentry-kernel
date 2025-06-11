@@ -7,6 +7,7 @@
 mod test_cycles;
 mod test_ipc;
 mod test_irq;
+mod test_log;
 mod test_map;
 mod test_random;
 mod test_shm;
@@ -14,7 +15,7 @@ mod test_signal;
 mod test_sleep;
 mod test_yield;
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub fn autotest() {
     test_ipc::test_ipc();
     test_irq::test_irq();

@@ -1,9 +1,9 @@
 // SPDX-FileCopyrightText: 2025 ANSSI
 // SPDX-License-Identifier: Apache-2.0
 
-use sentry_api::syscall::*;
+use crate::assert_eq;
+use sentry_uapi::syscall::*;
 use sentry_uapi::systypes::Status;
-use crate::test_log::*;
 
 fn test_yield_multiple_times() {
     for _ in 0..3 {
