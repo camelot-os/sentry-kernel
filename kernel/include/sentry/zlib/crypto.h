@@ -12,7 +12,7 @@
 
 /*@
    requires len >= 0;
-   requires buf != \null ==> \valid_read(buf + (0 .. len - 1));
+   requires (len > 0 && buf != \null) ==> \valid_read(buf + (0 .. len - 1));
    assigns \nothing;
    // note: equivalence implies that crc32 never colisions
    ensures (len == 0 || buf == \null) ==> \result == \old(init);
