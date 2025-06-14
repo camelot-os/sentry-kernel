@@ -92,6 +92,7 @@ zlib_crypto_correctness_targets = ','.join(
     'pcg32_seed',
     'pcg32',
     'crc32',
+    'kernel_zlib',
   ])
 
 test(
@@ -142,8 +143,8 @@ test_name = 'frama-c-zlib-sort-wp'
 # zlib exported functions to be proved
 zlib_sort_correctness_targets = ','.join(
   [
-    'bubble_sort',
     'generic_swap',
+    'kernel_zlib',
   ])
 
 test(

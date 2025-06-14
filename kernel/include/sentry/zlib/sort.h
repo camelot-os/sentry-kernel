@@ -6,6 +6,7 @@
 
 #include <inttypes.h>
 #include <sentry/ktypes.h>
+#include <sentry/zlib/string.h>
 
 /** \addtogroup sort
  *  @{
@@ -42,17 +43,31 @@ typedef int (*cmp_func_t)(const void *a, const void *b);
  * basically exchange two cells of same size
  */
 /*@
+
+    requires \separated((uint8_t*)a + (0 .. size-1), (uint8_t*)b + (0 .. size-1));
     requires \valid((uint8_t*)a + (0 .. size-1));
     requires \valid((uint8_t*)b + (0 .. size-1));
+    requires \initialized((uint8_t*)a + (0 .. size-1));
+    requires \initialized((uint8_t*)b + (0 .. size-1));
     requires size_valid: size > 0;
     assigns ((uint8_t*)a)[0 .. size-1], ((uint8_t*)b)[0 .. size-1];
+    // functional correctness of the swap notion
+    ensures \forall integer i; 0 <= i < size ==>
+     ((uint8_t*)a)[i] == \old(((uint8_t*)b)[i]) && ((uint8_t*)b)[i] == \old(((uint8_t*)a)[i]);
 */
-static inline void generic_swap(void *a, void *b, size_t size)
+static inline void generic_swap(void * restrict a, void * restrict b, size_t size)
 {
+    /*
+     * this implementation is stack consumming, but cycle efficient. Wey may use instead
+     * a per-cell swap.
+     */
     uint8_t buf[size];
     memcpy(&buf[0], b, size);
+    /*@ assert \forall integer i; 0 <= i < size ==> buf[i] == ((uint8_t*)b)[i]; */
     memcpy(b, a, size);
+    /*@ assert \forall integer i; 0 <= i < size ==> ((uint8_t*)b)[i] == ((uint8_t*)a)[i]; */
     memcpy(a, &buf[0], size);
+    /*@ assert \forall integer i; 0 <= i < size ==> ((uint8_t*)a)[i] == ((uint8_t*)buf)[i]; */
 }
 
 /**

@@ -5,6 +5,7 @@
 #include <stdint.h>
 #include <framac_entropy.h>
 #include <sentry/zlib/sort.h>
+#include <sentry/zlib/string.h>
 
 /*@
     requires \valid((uint8_t*)a);
@@ -49,7 +50,26 @@ static void do_sort(size_t cell_size, cmp_func_t cmp, swap_func_t swp)
 /*@ assigns \nothing; */
 void kernel_zlib(void)
 {
+    volatile uint8_t val = 0;
     uint32_t res;
+    uint8_t a[128];
+    uint8_t b[128];
 
-    do_sort(sizeof(uint8_t), cmp_u8, NULL);
+    /* initilizing src with garbaged (unpredictable) values */
+    /*@
+      loop invariant 0 <= i <= 128;
+      loop assigns i, a[0 .. 127], b[0 .. 127];
+      loop variant 128 - i;
+     */
+    for (size_t i = 0; i < 128; ++i) {
+        a[i] = val;
+        b[i] = val;
+    }
+    /*@ assert \valid(a + (0 .. 127)); */
+    /*@ assert \valid(b + (0 .. 127)); */
+    /*@ assert \initialized(a + (0 .. 127)); */
+    /*@ assert \initialized(b + (0 .. 127)); */
+    generic_swap(a, b, sizeof(a));
+
+    //do_sort(sizeof(uint8_t), cmp_u8, NULL);
 }
