@@ -6,6 +6,7 @@
 
 #include <inttypes.h>
 #include <sentry/ktypes.h>
+#include <sentry/zlib/string.h>
 
 /** \addtogroup sort
  *  @{
@@ -36,23 +37,48 @@ typedef void (*swap_func_t)(void *a, void *b, size_t size);
  */
 typedef int (*cmp_func_t)(const void *a, const void *b);
 
+/*@
+
+    requires \separated((uint8_t*)a + (0 .. size-1), (uint8_t*)b + (0 .. size-1));
+    requires \valid((uint8_t*)a + (0 .. size-1));
+    requires \valid((uint8_t*)b + (0 .. size-1));
+    requires \initialized((uint8_t*)a + (0 .. size-1));
+    requires \initialized((uint8_t*)b + (0 .. size-1));
+    requires size_valid: size > 0;
+    assigns ((uint8_t*)a)[0 .. size-1], ((uint8_t*)b)[0 .. size-1];
+    // functional correctness of the swap notion
+    ensures \forall integer i; 0 <= i < size ==>
+     ((uint8_t*)a)[i] == \old(((uint8_t*)b)[i]) && ((uint8_t*)b)[i] == \old(((uint8_t*)a)[i]);
+*/
 /**
  * @brief generic swap function
  *
- * basically exchange two cells of same size
+ * This function swaps the contents of two memory areas of the same size.
+ * It is designed to be used when a specific swap function is not provided.
+ * It uses a temporary buffer to hold the contents of one area while
+ * performing the swap.
+ *
+ * @param a[out]: pointer to the first memory area to swap
+ * @param b[out]: pointer to the second memory area to swap
+ * @param size[in]: size of the memory areas in bytes
+ *
  */
-/*@
-    requires \valid((uint8_t*)a + (0 .. size-1));
-    requires \valid((uint8_t*)b + (0 .. size-1));
-    requires size_valid: size > 0;
-    assigns ((uint8_t*)a)[0 .. size-1], ((uint8_t*)b)[0 .. size-1];
-*/
-static inline void generic_swap(void *a, void *b, size_t size)
+static inline void generic_swap(void * restrict a, void * restrict b, size_t size)
 {
+    /**
+     * this implementation is stack consumming, but cycle efficient. Wey may use instead
+     * a per-cell swap.
+     *
+     * NOTE: once using C23 instead of C11, the a and b types should also be validated
+     * using static_assert() on typeof() to ensure that they are homogeneous
+     */
     uint8_t buf[size];
     memcpy(&buf[0], b, size);
+    /*@ assert \forall integer i; 0 <= i < size ==> buf[i] == ((uint8_t*)b)[i]; */
     memcpy(b, a, size);
+    /*@ assert \forall integer i; 0 <= i < size ==> ((uint8_t*)b)[i] == ((uint8_t*)a)[i]; */
     memcpy(a, &buf[0], size);
+    /*@ assert \forall integer i; 0 <= i < size ==> ((uint8_t*)a)[i] == ((uint8_t*)buf)[i]; */
 }
 
 /**
@@ -76,7 +102,7 @@ static inline void generic_swap(void *a, void *b, size_t size)
   ensures len < 2 ==> \result == K_STATUS_OKAY;
   ensures \result == K_STATUS_OKAY || \result == K_ERROR_INVPARAM;
 */
-static inline kstatus_t bubble_sort(void *table, size_t len, size_t cell_size, cmp_func_t cmp, swap_func_t swp)
+static inline kstatus_t bubble_sort(void * restrict table, size_t len, size_t cell_size, cmp_func_t cmp, swap_func_t swp)
 {
     kstatus_t status = K_ERROR_INVPARAM;
     if (unlikely(table == NULL || cmp == NULL)) {

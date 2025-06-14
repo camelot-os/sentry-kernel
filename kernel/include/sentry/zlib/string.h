@@ -60,6 +60,7 @@
 
 /*@
    requires s != \null ==> has_null_terminator(s, maxlen);
+   terminates \true;
    assigns \nothing;
    ensures s != \null ==> acsl_c_equiv: \result == strnlen(s, maxlen);
    ensures s == \null ==> \result == 0;
@@ -73,6 +74,8 @@ size_t sentry_strnlen(const char *s, size_t maxlen);
   The effective correctness of below functions contract is made by the test_zlib proof suite.
 */
 /*@
+  terminates \true;
+  exits \false;
   assigns ((uint8_t*)s)[0 .. (n-1)] \from indirect:c, indirect:n;
   assigns \result \from s;
   ensures \result == s;
@@ -81,6 +84,8 @@ void   *sentry_memset(void *s, int c, unsigned int n);
 
 /*@
   requires \valid_read((uint8_t*)src + (0 .. n-1)) ==> \initialized((uint8_t*)src + (0 .. n-1));
+  terminates \true;
+  exits \false;
   assigns ((uint8_t*)dest)[0 .. (n-1)] \from indirect:src, indirect:n;
   assigns \result \from indirect:src, indirect:n;
   // for valid input values, the destination memory must be initalized from src
@@ -100,6 +105,8 @@ void   *sentry_memcpy(void * restrict dest, const void* restrict src, size_t n);
  * allows to keep the same function name in the proof suite.
  * In production, the sentry_ prefixed functions are aliased to the iso-C (see string.c
  * zlib file).
+ * Out of the proof suite, the string.h symbols (ISO C builtins) are used instead, but
+ * the linker will resolve the sentry_ prefixed symbols to the iso-C ones.
  */
 #define strnlen sentry_strnlen
 #define memset sentry_memset
