@@ -3,8 +3,35 @@
 
 #include <string.h>
 #include <sentry/ktypes.h>
+#include <sentry/zlib/string.h>
 
-/* string related functions, for debug usage only */
+/*
+ * @brief ISO C equivalent implementation of strnlen
+ */
+/*@
+   requires valid_string_s: valid_read_nstring(s, maxlen);
+   assigns \result \from indirect:s, indirect:maxlen;
+  */
+static inline size_t __sentry_strnlen(const char *s, size_t maxlen)
+{
+    size_t result = 0;
+    /*@
+      @ loop invariant 0 <= result <= maxlen;
+      @ loop invariant \forall integer i; 0 <= i < result ==> s[i] != '\0';
+      @ loop assigns result;
+      @ loop variant maxlen - result;
+      */
+    while ((s[result] != '\0') && result < maxlen) {
+        result++;
+    }
+    /*@ assert \forall integer k; 0 <= k < result ==> s[k] != '\0'; */
+    return result;
+}
+
+/**
+ * @brief hardened implementation of strnlen, checking for null pointer
+ * @see __sentry_strnlen() for ISO C equivalent
+ */
 #ifndef __FRAMAC__
 static
 #endif
@@ -13,22 +40,55 @@ size_t sentry_strnlen(const char *s, size_t maxlen)
     size_t result = 0;
 
     if (s == NULL) {
-        /** TODO: panic to be called */
         goto err;
     }
-
-    while ((s[result] != '\0') && result < maxlen) {
-        result++;
-    }
+    /*@ assert valid_read_nstring(s, maxlen); */
+    result = __sentry_strnlen(s, maxlen);
+    /*@ assert \forall integer k; 0 <= k < result ==> s[k] != '\0'; */
 err:
     return result;
+}
+
+/*@
+  // ISO C equivalent of memset
+  requires n > 0;
+  requires (empty_block(s) || \valid((uint8_t*)s + (0 .. n-1)));
+  assigns s[0 .. (n-1)] \from indirect:c, indirect:n;
+  assigns \result \from s;
+  ensures n > 0 ==> memarea_set(s, (char)c, n);
+  ensures \result == s;
+  */
+static inline char * __sentry_memset(char *s, int c, unsigned int n)
+{
+    /*@ assert \valid(s + (0 .. (n-1))); */
+    /*@ assert (c & 0xff) == ((uint8_t)c); */
+    /*@ assert \separated(s + (0 .. n-1), (char*)&c); */
+    /*@ assert \valid(s + (0 .. (n-1))); */
+    /*@
+      @ loop invariant 0 <= i <= n;
+      @ loop assigns i, s[0 .. (n-1)];
+      @ loop variant n - i;
+      */
+    for (unsigned int i = 0; i < n; i++) {
+        /*
+         * memseting s with c, keeping internal loop scoping (no border effet).
+         * This do not alter the generated asm, as the compiler will optimise this
+         */
+        /*@ assert 0 <= i < n; */
+        /*@ assert ((c & 0xff) == (char)c); */
+        s[i] = (c & 0xff);
+        /*@ assert s[i] == (char)c; */
+    }
+err:
+    return s;
 }
 
 /**
  * @brief Set n first bytes of a given memory area with a given byte value
  *
  * INFO: The C standard says that null argument(s) to string
- * functions produce undefined behavior.
+ * functions produce undefined behavior. Here such a case is trapped.
+ * The effective behavior conformance is implemented in __sentry_memset().
  *
  * This is a global warning for the POSIX and C99/C99 libstring:
  * check your arguments before using it!
@@ -41,73 +101,153 @@ static
 #endif
 void   *sentry_memset(void *s, int c, unsigned int n)
 {
-    /* sanitation. This part can produce, as defined in the above
-     * standard, an 'undefined behavior'. As a consequence, in all
-     * string function, invalid input will produce, for integer
-     * return, returning 42, for string return, returning NULL */
-    if (unlikely(!s)) {
+    if (unlikely(s == NULL)) {
         goto err;
     }
-
-    /* memseting s with c */
-    char   *bytes = s;
-
-    while (n) {
-        *bytes = c;
-        bytes++;
-        n--;
+    if (SIZE_MAX - n < (size_t)s) {
+        /* integer overflow avoidance for invalid region definition. Should be dead code here */
+        goto err;
     }
+    if (unlikely(n == 0)) {
+        /* nothing to do, just return */
+        goto err;
+    }
+    /*@ assert \valid((uint8_t*)s + (0 .. (n-1))); */
+    s = __sentry_memset((char*)s, c, n);
 err:
     return s;
 }
 
-static secure_bool_t regions_overlaps(const void* a, const void* b, unsigned int n)
+/**
+ *  auxiliary function that returns SECURE_FALSE if regions
+ *  a[0..n-1] and b[0..n-1] do not overlap, or SECURE_TRUE otherwise
+ */
+/*@
+ assigns \nothing;
+
+ behavior same_region:
+    assumes a == b;
+    ensures \result == SECURE_TRUE;
+
+ behavior null_sized:
+ assumes a != b;
+   assumes n == 0;
+   ensures \result == SECURE_FALSE;
+
+ behavior collision_lt:
+  assumes a != b;
+  assumes n > 0;
+  assumes a < b && (b - a) < n;
+  ensures no_eva: \result == SECURE_TRUE;
+
+ behavior collision_gt:
+  assumes a != b;
+  assumes n > 0;
+  assumes b < a && (a - b) < n;
+  ensures no_eva: \result == SECURE_TRUE;
+
+ behavior separated_lt:
+  assumes a != b;
+  assumes n > 0;
+  assumes a < b && (b - a) >= n;
+  ensures no_eva: \result == SECURE_FALSE;
+
+ behavior separated_gt:
+  assumes a != b;
+  assumes n > 0;
+  assumes b < a && (a - b) >= n;
+  ensures no_eva: \result == SECURE_FALSE;
+
+ complete behaviors;
+ disjoint behaviors;
+*/
+static secure_bool_t __regions_overlaps(const size_t a, const size_t b, size_t n)
 {
     secure_bool_t res = SECURE_TRUE;
-    size_t _a = (size_t)a;
-    size_t _b = (size_t)b;
-    if ((_a < _b) && ((_a + n) > _b)) {
+
+    if (a == b) {
+        /* defense in depth, should never happen because of memcpy() preconditions */
+        /*@ assert \false; */
         goto err;
     }
-    if ((_a > _b) && ((_b + n) > _a)) {
+    if (n == 0) {
+        /* no size, no overlap */
+        res = SECURE_FALSE;
         goto err;
     }
+    /* integer overflow avoidance when manipulating _b and _a */
+    if ((a < b) && ((b - a) < n)) {
+        goto err;
+    }
+    if ((b < a) && ((a - b) < n)) {
+        goto err;
+    }
+    /*@ assert \separated((uint8_t*)a + (0 .. n-1), (uint8_t*)b + (0 .. n-1)); */
     res = SECURE_FALSE;
 err:
     return res;
 }
 
+/*@
+  // ISO C equivalent of memcpy
+  requires (empty_block(dest) || \valid(dest+(0..n-1)));
+  requires (empty_block(src) || \valid_read(src+(0..n-1)));
+  requires \initialized(src+(0..n-1));
+  requires separation: \separated(dest+(0..n-1),src+(0..n-1));
+  assigns ((uint8_t*)dest)[0 .. (n-1)] \from indirect:src, indirect:n;
+  assigns \result \from dest;
+  ensures memarea_equals(dest, src, n);
+  ensures \separated(\result, src);
+  ensures \result == dest;
+  */
+static inline uint8_t *__sentry_memcpy(uint8_t * restrict dest, const uint8_t* restrict src, size_t n)
+{
+    /*@
+      @ loop invariant 0 <= i <= n;
+      @ loop invariant \forall ℤ k; 0 <= k < i ==> dest[k] == src[k];
+      @ loop assigns i, dest[0 .. (n-1)];
+      @ loop variant n - i;
+      */
+     for (size_t i = 0; i < n; i++) {
+        dest[i] = src[i];
+    }
+    /*@ assert memarea_equals(dest, src, n); */
+    return dest;
+}
+
+ /*
+  * @brief Copy n first bytes from src to dest
+  *
+  * INFO: The C standard says that null argument(s) to string
+  * functions produce undefined behavior.Here such a case is trapped.
+  * The effective behavior conformance is implemented in __sentry_memcpy().
+  *
+  * This is a global warning for the POSIX and C99/C99 libstring:
+  * check your arguments before using it!
+  *
+  * Conforming to:
+  * POSIX.1-2001, POSIX.1-2008, C89, C99, SVr4, 4.3BSD.
+  */
 #ifndef __FRAMAC__
 static
 #endif
 void   *sentry_memcpy(void * restrict dest, const void* restrict src, size_t n)
 {
-    if (unlikely(!dest || !src)) {
+    if (unlikely(dest == NULL || src == NULL)) {
         goto err;
     }
-    if (unlikely(regions_overlaps(dest, src, n) == SECURE_TRUE)) {
+    /*@ assert \valid((uint8_t*)dest + (0 .. (n-1))); */
+    /*@ assert \valid_read((uint8_t*)src + (0 .. (n-1))); */
+    if (unlikely(__regions_overlaps((size_t)dest, (size_t)src, n) == SECURE_TRUE)) {
         goto err;
     }
 
-    uint32_t *s = (uint32_t*)src;
-    uint32_t *d = (uint32_t*)dest;
-
-    /* copy word by word */
-    while (n >= 4) {
-        *d = *s;
-        d++;
-        s++;
-        n -= 4;
-    }
-    /* if n is not word aligned, finishing with last bytes */
-    uint8_t *s8 = (uint8_t*)s;
-    uint8_t *d8 = (uint8_t*)d;
-    while (n) {
-        *d8 = *s8;
-        d8++;
-        s8++;
-        n--;
-    }
+    /*@ assert \separated((uint8_t*)dest + (0 .. n-1), (uint8_t*)src + (0 .. n-1)); */
+    /*@ assert \valid((uint8_t*)dest + (0 .. (n-1))); */
+    /*@ assert \valid_read((uint8_t*)dest + (0 .. (n-1))); */
+    /*@ assert \initialized((uint8_t*)src+(0..n-1)); */
+    __sentry_memcpy(dest, src, n);
+    /*@ assert \forall integer k; 0 <= k < n ==> ((uint8_t*)dest)[k] == ((uint8_t*)src)[k]; */
 err:
     return dest;
 }

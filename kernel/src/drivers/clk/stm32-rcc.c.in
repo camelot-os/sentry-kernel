@@ -468,15 +468,23 @@ kstatus_t rcc_get_bus_clock(bus_id_t busid, uint32_t *busclk)
      */
 
     /*@ assert \valid(busclk); */
-    /*@ assert bus_is_valid(busid); */
+    /* assert bus_is_valid(busid) fails, see above FIXME */
     switch (busid) {
         case BUS_APB1:
 #if defined(HAS_BUS_APB1_2)
-#pragma GCC diagnostic push
+#ifndef __FRAMAC__
+/*
+ * FIXME: GCC pragma not supported by Frama-C
+ * This should be removed ASAP with RCC update. This stays ugly with FIXME by now
+ */
+#pragma GCC  diagnostic push
 #pragma GCC diagnostic ignored "-Wswitch"
+#endif
         /* XXX: Invalid for bus enumeration, see above FIXME */
         case BUS_APB1 + 4:
+#ifndef __FRAMAC__
 #pragma GCC diagnostic pop
+#endif
 #endif
             *busclk = RCC_APB1_CLOCK_FREQUENCY;
             break;
