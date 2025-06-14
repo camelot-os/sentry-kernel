@@ -79,7 +79,6 @@ static inline char * __sentry_memset(char *s, int c, unsigned int n)
         s[i] = (c & 0xff);
         /*@ assert s[i] == (char)c; */
     }
-err:
     return s;
 }
 
