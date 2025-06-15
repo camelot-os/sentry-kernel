@@ -1,0 +1,287 @@
+/*
+ * Copyright (c) 2025 ANSSI
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+/dts-v1/;
+
+#include <st/h5/stm32h573.dtsi>
+#include <dt-bindings/pinctrl/stm32-pinctrl.h>
+#include <sentry.dtsi>
+
+/{
+	chosen {
+		sentry,debug_stdout = <&lpuart1>;
+        outpost,i2c_port = <&i2c1>;
+	};
+
+    reserved-memory {
+        tasks_code: memory@0800a000 {
+               reg = <0x0800a000 0x200000>;
+               compatible = "outpost,memory-pool";
+        };
+        tasks_ram: memory@20008000 {
+               reg = <0x20008000 0x280000>;
+               compatible = "outpost,memory-pool";
+        };
+	/* Adding shm for task 1*/
+    	shm_task1: memory@2000a000 {
+      		reg = <0x2000a000 0x512>;
+      		dma-pool; // DMA allowed from/to this SHM
+      		outpost,shm;
+      		outpost,no-map;
+      		outpost,label = <0xf00>;// shm label, unique
+      		outpost,owner = <0xc001f001>; // task label
+    	};
+	/* Adding shm for task 2*/
+    	shm_task2: memory@2000a200 {
+      		reg = <0x2000a200 0x512>;
+      		dma-pool; // DMA allowed from/to this SHM
+      		outpost,shm;
+      		outpost,no-map;
+      		outpost,label = <0xf01>;// shm label, unique
+      		outpost,owner = <0xc001f002>; // task label
+    	};
+    };
+
+	aliases {
+        pll = &pll1;
+    };
+
+	led0: led_0 {
+		compatible = "gpio-leds";
+		status = "disabled";
+	};
+
+	led1: led_1 {
+		compatible = "gpio-leds";
+		status = "disabled";
+	};
+
+	led2: led_2 {
+		compatible = "gpio-leds";
+		status = "disabled";
+	};
+
+	backlight: backlight {
+		compatible = "gpio-leds";
+		status = "disabled";
+	};
+
+	panel: panel {
+		compatible = "gpio-leds";
+		status = "disabled";
+	};
+
+	touch: touch_1 {
+		compatible = "gpio";
+		status = "disabled";
+	};
+
+	sram1: memory@20000000 {
+		compatible = "mmio-sram";
+		reg = <0x20000000 DT_SIZE_M(1)>;
+	};
+
+};
+
+&flash0 {
+	reg = <0x08000000 DT_SIZE_M(4)>;
+};
+
+&clk_lsi {
+	status = "okay";
+};
+
+&clk_hsi {
+	status = "okay";
+};
+
+&clk_hse {
+       status = "okay";
+};
+
+&pll1 {
+       status = "okay";
+};
+
+&pll3 {
+       status = "okay";
+};
+
+&flash {
+	wait-state = <4>; /* According to voltage supply and sysclock */
+	status = "okay";
+};
+
+&rcc {
+    clocks = <&pll1>;
+    clock-frequency = <DT_FREQ_M(160)>;
+	bus-prescalers = <0>, <2>, <0>, <0>;
+	bus-names = "ahb", "apb1", "apb2", "apb3";
+	status = "okay";
+};
+
+&exti {
+	events = <26>;
+	status = "okay";
+};
+
+&gpioa {
+	status = "okay";
+};
+
+&gpiob {
+	status = "okay";
+};
+
+&gpioc {
+	status = "okay";
+};
+
+&gpiod {
+	status = "okay";
+};
+
+&gpioe {
+	status = "okay";
+};
+
+&gpiof {
+	status = "okay";
+};
+
+&gpiog {
+	status = "okay";
+};
+
+&lpuart1{
+	status = "okay";
+	pinctrl-0 = <&lpuart1_tx_pc1>, <&lpuart1_rx_pc0>;
+};
+
+&pinctrl {
+	lpuart1_tx_pc1: lpuart1_tx_pc1  {
+		label = "usart_tx";
+		pinmux = <&gpioc 1 STM32_DT_PIN_MODE_ALTFUNC(8)>;
+		pincfg = <STM32_OTYPER_PUSH_PULL \
+				  STM32_OSPEEDR_VERY_HIGH_SPEED \
+				  STM32_PUPDR_NO_PULL>;
+	};
+
+	lpuart1_rx_pc0: lpuart1_rx_pc0  {
+		label = "usart_rx";
+		pinmux = <&gpioc 0 STM32_DT_PIN_MODE_ALTFUNC(8)>;
+		pincfg = <STM32_OTYPER_PUSH_PULL \
+				  STM32_OSPEEDR_VERY_HIGH_SPEED \
+				  STM32_PUPDR_NO_PULL>;
+	};
+
+    i2c1_scl_pb8: i2c_scl_pb8 {
+			label = "scl";
+            pinmux = <&gpiob 8 STM32_DT_PIN_MODE_ALTFUNC(4)>;
+            pincfg = <STM32_OTYPER_OPEN_DRAIN \
+                              STM32_OSPEEDR_VERY_HIGH_SPEED \
+                              STM32_PUPDR_PULL_UP>;
+    };
+
+    i2c1_sda_pb9: i2c_sda_pb9  {
+			label = "sda";
+            pinmux = <&gpiob 9 STM32_DT_PIN_MODE_ALTFUNC(4)>;
+            pincfg = <STM32_OTYPER_OPEN_DRAIN \
+                              STM32_OSPEEDR_VERY_HIGH_SPEED \
+                              STM32_PUPDR_PULL_UP>;
+    };
+
+	panel_reset_pf3: panel_reset_pf3 {
+		label = "panel_rst";
+		pinmux = <&gpiof 3 STM32_DT_PIN_MODE_OUTPUT>;
+		pincfg = <STM32_OTYPER_PUSH_PULL \
+				  STM32_OSPEEDR_LOW_SPEED \
+				  STM32_PUPDR_PULL_DOWN>;
+	};
+
+	backlight_pa9: backlight_pa9 {
+		label = "backlight";
+		pinmux = <&gpioa 9 STM32_DT_PIN_MODE_OUTPUT>;
+		pincfg = <STM32_OTYPER_PUSH_PULL \
+				  STM32_OSPEEDR_LOW_SPEED \
+				  STM32_PUPDR_NO_PULL>;
+	};
+
+	touch_rstn: touch_rstn  {
+			label = "touch_rst";
+            pinmux = <&gpiof 4 STM32_DT_PIN_MODE_OUTPUT>;
+            pincfg = <STM32_OTYPER_OPEN_DRAIN \
+                              STM32_OSPEEDR_LOW_SPEED \
+                              STM32_PUPDR_PULL_UP>;
+    };
+
+	touch_int_input: touch_int_input  {
+			label = "touch_int_input";
+            pinmux = <&gpiof 5 STM32_DT_PIN_MODE_INPUT>;
+            pincfg = <STM32_OTYPER_OPEN_DRAIN \
+                              STM32_OSPEEDR_LOW_SPEED \
+                              STM32_PUPDR_PULL_UP>;
+    };
+
+	touch_int_output: touch_int_output  {
+			label = "touch_int_output";
+            pinmux = <&gpiof 5 STM32_DT_PIN_MODE_OUTPUT>;
+            pincfg = <STM32_OTYPER_PUSH_PULL \
+                              STM32_OSPEEDR_LOW_SPEED \
+                              STM32_PUPDR_NO_PULL>;
+    };
+
+	led_pa5: led_pa5 {
+		pinmux = <&gpioa 5 STM32_DT_PIN_MODE_OUTPUT>;
+		pincfg = <STM32_OTYPER_PUSH_PULL \
+				  STM32_OSPEEDR_VERY_HIGH_SPEED \
+				  STM32_PUPDR_NO_PULL>;
+	};
+
+	led_pa6: led_pa6 {
+		pinmux = <&gpioa 6 STM32_DT_PIN_MODE_OUTPUT>;
+		pincfg = <STM32_OTYPER_PUSH_PULL \
+				  STM32_OSPEEDR_VERY_HIGH_SPEED \
+				  STM32_PUPDR_NO_PULL>;
+	};
+
+	led_pf7: led_pf7 {
+		pinmux = <&gpiof 7 STM32_DT_PIN_MODE_OUTPUT>;
+		pincfg = <STM32_OTYPER_PUSH_PULL \
+				  STM32_OSPEEDR_VERY_HIGH_SPEED \
+				  STM32_PUPDR_NO_PULL>;
+	};
+
+    spi3_miso_pc11: spi3_miso_pc11  {
+            pinmux = <&gpioc 11 STM32_DT_PIN_MODE_ALTFUNC(6)>;
+            pincfg = <STM32_OTYPER_PUSH_PULL \
+                              STM32_OSPEEDR_VERY_HIGH_SPEED \
+                              STM32_PUPDR_NO_PULL>;
+    };
+
+    spi3_mosi_pc12: spi3_mosi_pc12  {
+            pinmux = <&gpioc 12 STM32_DT_PIN_MODE_ALTFUNC(6)>;
+            pincfg = <STM32_OTYPER_PUSH_PULL \
+                              STM32_OSPEEDR_VERY_HIGH_SPEED \
+                              STM32_PUPDR_NO_PULL>;
+    };
+    spi3_sclk_pc10: spi3_sclk_pc10  {
+            pinmux = <&gpioc 10 STM32_DT_PIN_MODE_ALTFUNC(6)>;
+            pincfg = <STM32_OTYPER_PUSH_PULL \
+                              STM32_OSPEEDR_VERY_HIGH_SPEED \
+                              STM32_PUPDR_NO_PULL>;
+    };
+
+};
+
+&rng {
+	status = "okay";
+};
+
+// &syscfg {
+// 	status = "okay";
+// };
+
