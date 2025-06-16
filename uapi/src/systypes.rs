@@ -395,6 +395,7 @@ impl From<SHMPermission> for u32 {
 
 /// Sentry signals definition. Most of them are aligned on standard POSIX signals
 #[repr(C)]
+#[derive(Clone, PartialEq, Copy, Debug)]
 pub enum Signal {
     /// Abort signal
     Abort = 1,
