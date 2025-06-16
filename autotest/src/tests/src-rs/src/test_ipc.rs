@@ -9,9 +9,9 @@ use crate::test_start;
 use crate::test_suite_end;
 use crate::test_suite_start;
 use core::prelude::v1::Ok;
-use sentry_uapi::ffi_c::__sys_get_process_handle;
-use sentry_uapi::ffi_c::__sys_send_ipc;
-use sentry_uapi::ffi_c::__sys_wait_for_event;
+use sentry_uapi::syscall::get_process_handle;
+use sentry_uapi::syscall::send_ipc;
+use sentry_uapi::syscall::wait_for_event;
 use sentry_uapi::systypes::EventType;
 use sentry_uapi::systypes::Status;
 use sentry_uapi::systypes::{ExchangeHeader, TaskHandle};
@@ -36,19 +36,19 @@ fn test_ipc_send_toobig() -> bool {
     let mut handle: TaskHandle = 0;
     let len1 = CONFIG_SVC_EXCHANGE_AREA_LEN + 1;
     let len2 = 255;
-    ok &= check_eq!(__sys_get_process_handle(0xbabe), Status::Ok);
+    ok &= check_eq!(get_process_handle(0xbabe), Status::Ok);
     ok &= unsafe { copy_from_kernel(&mut (&mut handle as *mut _ as *mut u8)) } == Ok(Status::Ok);
     log_line!(USER_AUTOTEST_INFO, "sending invalid IPC size {}", len1);
-    ok &= check_eq!(__sys_send_ipc(handle, len1 as u8), Status::Invalid);
+    ok &= check_eq!(send_ipc(handle, len1 as u8), Status::Invalid);
     log_line!(USER_AUTOTEST_INFO, "sending invalid IPC size {}", len2);
-    ok &= check_eq!(__sys_send_ipc(handle, len2), Status::Invalid);
+    ok &= check_eq!(send_ipc(handle, len2), Status::Invalid);
     test_end!();
     ok
 }
 fn test_ipc_send_invalidtarget() -> bool {
     test_start!();
     log_line!(USER_AUTOTEST_INFO, "sending IPC to invalid target");
-    let ok = check_eq!(__sys_send_ipc(0xdead1001, 20), Status::Invalid);
+    let ok = check_eq!(send_ipc(0xdead1001, 20), Status::Invalid);
     test_end!();
     ok
 }
@@ -61,18 +61,15 @@ fn test_ipc_sendrecv() -> bool {
     let msg = b"hello it's autotest";
     let mut data = [0u8; CONFIG_SVC_EXCHANGE_AREA_LEN];
 
-    ok &= check_eq!(__sys_get_process_handle(0xbabe), Status::Ok);
+    ok &= check_eq!(get_process_handle(0xbabe), Status::Ok);
     ok &= unsafe { copy_from_kernel(&mut (&mut handle as *mut _ as *mut u8)) } == Ok(Status::Ok);
     log_line!(USER_AUTOTEST_INFO, "handle is {:#x}", handle);
     log_line!(USER_AUTOTEST_INFO, "sending IPC to myself");
     unsafe {
         ok &= copy_to_kernel(&(msg.as_ptr() as *mut u8)) == Ok(Status::Ok);
     }
-    ok &= check_eq!(__sys_send_ipc(handle, 20), Status::Ok);
-    ok &= check_eq!(
-        __sys_wait_for_event(EventType::Ipc as u8, timeout),
-        Status::Ok
-    );
+    ok &= check_eq!(send_ipc(handle, 20), Status::Ok);
+    ok &= check_eq!(wait_for_event(EventType::Ipc as u8, timeout), Status::Ok);
     ok &= unsafe { copy_from_kernel(data.as_mut_ptr()) == Ok(Status::Ok) };
     let header = unsafe { &*(data.as_ptr() as *const ExchangeHeader) };
     let content =
@@ -97,18 +94,18 @@ fn test_ipc_deadlock() -> bool {
     let mut handle: TaskHandle = 0;
     let msg = b"hello it's autotest";
 
-    ok &= check_eq!(__sys_get_process_handle(0xbabe), Status::Ok);
+    ok &= check_eq!(get_process_handle(0xbabe), Status::Ok);
     ok &= unsafe { copy_from_kernel(&mut (&mut handle as *mut _ as *mut u8)) } == Ok(Status::Ok);
     log_line!(USER_AUTOTEST_INFO, "sending IPC to myself");
     unsafe {
         ok &= copy_to_kernel(&(msg.as_ptr() as *mut u8)) == Ok(Status::Ok);
     }
-    ok &= check_eq!(__sys_send_ipc(handle, 20), Status::Ok);
+    ok &= check_eq!(send_ipc(handle, 20), Status::Ok);
     log_line!(
         USER_AUTOTEST_INFO,
         "sending another IPC, should lead to STATUS_DEADLK"
     );
-    ok &= check_eq!(__sys_send_ipc(handle, 20), Status::Deadlk);
+    ok &= check_eq!(send_ipc(handle, 20), Status::Deadlk);
     test_end!();
     ok
 }

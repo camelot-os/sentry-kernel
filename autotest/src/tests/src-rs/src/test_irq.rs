@@ -9,7 +9,7 @@ use crate::test_start;
 use crate::test_suite_end;
 use crate::test_suite_start;
 use core::prelude::v1::Ok;
-use sentry_uapi::ffi_c::__sys_wait_for_event;
+use sentry_uapi::syscall::wait_for_event;
 use sentry_uapi::systypes::EventType;
 use sentry_uapi::systypes::Status;
 use sentry_uapi::systypes::*;
@@ -107,7 +107,7 @@ fn test_irq_spawn_two_it() -> bool {
     enable_timer();
 
     let mut tab = [0u8; 128];
-    ok &= check_eq!(__sys_wait_for_event(EventType::Irq as u8, 0), Status::Ok);
+    ok &= check_eq!(wait_for_event(EventType::Irq as u8, 0), Status::Ok);
     ok &= unsafe { copy_from_kernel(&mut tab.as_mut_ptr()) } == Ok(Status::Ok);
     let irqn = u32::from_le_bytes([tab[8], tab[9], tab[10], tab[11]]);
     ok &= check_eq!(irqn, irq);
@@ -115,7 +115,7 @@ fn test_irq_spawn_two_it() -> bool {
     enable_timer_interrupt();
     enable_timer();
 
-    ok &= check_eq!(__sys_wait_for_event(EventType::Irq as u8, 0), Status::Ok);
+    ok &= check_eq!(wait_for_event(EventType::Irq as u8, 0), Status::Ok);
     ok &= unsafe { copy_from_kernel(&mut tab.as_mut_ptr()) } == Ok(Status::Ok);
     let irqn2 = u32::from_le_bytes([tab[8], tab[9], tab[10], tab[11]]);
     ok &= check_eq!(irqn2, irq);
@@ -132,7 +132,7 @@ fn test_irq_spawn_one_it() -> bool {
     enable_timer();
 
     let mut tab = [0u8; 128];
-    ok &= check_eq!(__sys_wait_for_event(EventType::Irq as u8, 0), Status::Ok);
+    ok &= check_eq!(wait_for_event(EventType::Irq as u8, 0), Status::Ok);
     ok &= unsafe { copy_from_kernel(&mut tab.as_mut_ptr()) } == Ok(Status::Ok);
 
     let irqn = u32::from_le_bytes([tab[8], tab[9], tab[10], tab[11]]);
@@ -158,7 +158,7 @@ fn test_irq_spawn_periodic() -> bool {
     let mut tab = [0u8; 128];
     for count in 0..5 {
         log_line!(USER_AUTOTEST_INFO, "interrupt count {} wait", count);
-        ok &= check_eq!(__sys_wait_for_event(EventType::Irq as u8, 0), Status::Ok);
+        ok &= check_eq!(wait_for_event(EventType::Irq as u8, 0), Status::Ok);
         ok &= unsafe { copy_from_kernel(&mut tab.as_mut_ptr()) } == Ok(Status::Ok);
         let irqn = u32::from_le_bytes([tab[8], tab[9], tab[10], tab[11]]);
         ok &= check_eq!(irqn, irq);
@@ -167,10 +167,7 @@ fn test_irq_spawn_periodic() -> bool {
         }
     }
 
-    ok &= check_eq!(
-        __sys_wait_for_event(EventType::Irq as u8, 2000),
-        Status::Timeout
-    );
+    ok &= check_eq!(wait_for_event(EventType::Irq as u8, 2000), Status::Timeout);
 
     test_end!();
     ok

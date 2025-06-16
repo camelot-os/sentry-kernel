@@ -12,9 +12,9 @@ use crate::test_start;
 use crate::test_suite_end;
 use crate::test_suite_start;
 use core::prelude::v1::Ok;
-use sentry_uapi::ffi_c::__sys_get_device_handle;
-use sentry_uapi::ffi_c::__sys_map_dev;
-use sentry_uapi::ffi_c::__sys_unmap_dev;
+use sentry_uapi::syscall::get_device_handle;
+use sentry_uapi::syscall::map_dev;
+use sentry_uapi::syscall::unmap_dev;
 use sentry_uapi::systypes::Status;
 use sentry_uapi::systypes::*;
 use sentry_uapi::*;
@@ -34,9 +34,9 @@ fn test_map_unmap_notmapped() -> bool {
     // This will fail if the i2c1 is not found
     let device = get_device_by_name("i2c1").expect("i2c1 device not found");
     let mut dev: DeviceHandle = 0;
-    let ok = check_eq!(__sys_get_device_handle(device.id as u8), Status::Ok)
+    let ok = check_eq!(get_device_handle(device.id as u8), Status::Ok)
         & unsafe { copy_from_kernel(&mut (&mut dev as *mut _ as *mut u8)) }
-        == Ok(Status::Ok) & check_eq!(__sys_unmap_dev(dev), Status::Invalid);
+        == Ok(Status::Ok) & check_eq!(unmap_dev(dev), Status::Invalid);
     test_end!();
     ok
 }
@@ -45,11 +45,11 @@ fn test_map_invalidmap() -> bool {
     test_start!();
     let device = get_device_by_name("i2c1").expect("i2c1 device not found");
     let mut dev: DeviceHandle = 0;
-    let ok = check_eq!(__sys_get_device_handle(device.id as u8), Status::Ok)
+    let ok = check_eq!(get_device_handle(device.id as u8), Status::Ok)
         & unsafe { copy_from_kernel(&mut (&mut dev as *mut _ as *mut u8)) }
         == Ok(Status::Ok);
     let invalid_dev = dev.wrapping_add(42);
-    let ok = ok & check_eq!(__sys_map_dev(invalid_dev), Status::Invalid);
+    let ok = ok & check_eq!(map_dev(invalid_dev), Status::Invalid);
     test_end!();
     ok
 }
@@ -58,11 +58,11 @@ fn test_map_mapunmap() -> bool {
     test_start!();
     let device = get_device_by_name("i2c1").expect("i2c1 device not found");
     let mut dev: DeviceHandle = 0;
-    let mut ok = check_eq!(__sys_get_device_handle(device.id as u8), Status::Ok)
+    let mut ok = check_eq!(get_device_handle(device.id as u8), Status::Ok)
         & unsafe { copy_from_kernel(&mut (&mut dev as *mut _ as *mut u8)) }
         == Ok(Status::Ok);
     log_line!(USER_AUTOTEST_INFO, "handle is {:#x}", dev);
-    ok &= check_eq!(__sys_map_dev(dev), Status::Ok);
+    ok &= check_eq!(map_dev(dev), Status::Ok);
 
     #[cfg(CONFIG_ARCH_MCU_STM32U5A5)]
     if ok {
@@ -79,7 +79,7 @@ fn test_map_mapunmap() -> bool {
     }
 
     log_line!(USER_AUTOTEST_INFO, "unmapping");
-    ok &= check_eq!(__sys_unmap_dev(dev), Status::Ok);
+    ok &= check_eq!(unmap_dev(dev), Status::Ok);
     test_end!();
     ok
 }

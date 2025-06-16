@@ -9,12 +9,12 @@ use crate::test_start;
 use crate::test_suite_end;
 use crate::test_suite_start;
 use core::prelude::v1::Ok;
-use sentry_uapi::ffi_c::__sys_get_process_handle;
-use sentry_uapi::ffi_c::__sys_get_shm_handle;
-use sentry_uapi::ffi_c::__sys_map_shm;
-use sentry_uapi::ffi_c::__sys_shm_get_infos;
-use sentry_uapi::ffi_c::__sys_shm_set_credential;
-use sentry_uapi::ffi_c::__sys_unmap_shm;
+use sentry_uapi::syscall::get_process_handle;
+use sentry_uapi::syscall::get_shm_handle;
+use sentry_uapi::syscall::map_shm;
+use sentry_uapi::syscall::shm_get_infos;
+use sentry_uapi::syscall::shm_set_credential;
+use sentry_uapi::syscall::unmap_shm;
 use sentry_uapi::systypes::SHMPermission;
 use sentry_uapi::systypes::ShmHandle;
 use sentry_uapi::systypes::Status;
@@ -44,10 +44,10 @@ fn test_shm_handle() -> bool {
     let shm1 = get_shm_by_name("shm_autotest_1").expect("shm_autotest_1 not found");
     let shm2 = get_shm_by_name("shm_autotest_2").expect("shm_autotest_2 not found");
     let shm3 = get_shm_by_name("shm_autotest_3").expect("shm_autotest_3 not found");
-    let ok = check_eq!(__sys_get_shm_handle(shm1.id), Status::Ok)
-        & check_eq!(__sys_get_shm_handle(shm2.id), Status::Ok)
-        & check_eq!(__sys_get_shm_handle(shm3.id), Status::Ok)
-        & check_eq!(__sys_get_shm_handle(0x42), Status::Invalid);
+    let ok = check_eq!(get_shm_handle(shm1.id), Status::Ok)
+        & check_eq!(get_shm_handle(shm2.id), Status::Ok)
+        & check_eq!(get_shm_handle(shm3.id), Status::Ok)
+        & check_eq!(get_shm_handle(0x42), Status::Invalid);
     test_end!();
     ok
 }
@@ -56,9 +56,9 @@ fn test_shm_unmap_notmapped() -> bool {
     test_start!();
     let shm1 = get_shm_by_name("shm_autotest_1").expect("shm_autotest_1 not found");
     let mut shm: ShmHandle = 0;
-    let ok = check_eq!(__sys_get_shm_handle(shm1.id), Status::Ok)
+    let ok = check_eq!(get_shm_handle(shm1.id), Status::Ok)
         & (unsafe { copy_from_kernel(&mut (&mut shm as *mut _ as *mut u8)) } == Ok(Status::Ok))
-        & check_eq!(__sys_unmap_shm(shm), Status::Invalid);
+        & check_eq!(unmap_shm(shm), Status::Invalid);
     test_end!();
     ok
 }
@@ -67,10 +67,10 @@ fn test_shm_invalidmap() -> bool {
     test_start!();
     let shm1 = get_shm_by_name("shm_autotest_1").expect("shm_autotest_1 not found");
     let mut shm: ShmHandle = 0;
-    let ok = check_eq!(__sys_get_shm_handle(shm1.id), Status::Ok)
+    let ok = check_eq!(get_shm_handle(shm1.id), Status::Ok)
         & (unsafe { copy_from_kernel(&mut (&mut shm as *mut _ as *mut u8)) } == Ok(Status::Ok));
     let invalid = shm + 42;
-    let ok = ok & check_eq!(__sys_map_shm(invalid), Status::Invalid);
+    let ok = ok & check_eq!(map_shm(invalid), Status::Invalid);
     test_end!();
     ok
 }
@@ -81,12 +81,12 @@ fn test_shm_mapdenied() -> bool {
     let mut myself: TaskHandle = 0;
     let perms = SHMPermission::Write | SHMPermission::Map;
 
-    let ok = check_eq!(__sys_get_process_handle(0xbabe), Status::Ok)
+    let ok = check_eq!(get_process_handle(0xbabe), Status::Ok)
         & (unsafe { copy_from_kernel(&mut (&mut myself as *mut _ as *mut u8)) } == Ok(Status::Ok))
-        & check_eq!(__sys_get_shm_handle(shm1.id), Status::Ok)
+        & check_eq!(get_shm_handle(shm1.id), Status::Ok)
         & (unsafe { copy_from_kernel(&mut (&mut shm as *mut _ as *mut u8)) } == Ok(Status::Ok))
-        & check_eq!(__sys_shm_set_credential(shm, myself, perms), Status::Ok)
-        & check_eq!(__sys_map_shm(shm), Status::Denied);
+        & check_eq!(shm_set_credential(shm, myself, perms), Status::Ok)
+        & check_eq!(map_shm(shm), Status::Denied);
     test_end!();
     ok
 }
@@ -97,9 +97,9 @@ fn test_shm_infos() -> bool {
     let mut shm: ShmHandle = 0;
     let mut infos = ShmInfos::default();
 
-    let ok = check_eq!(__sys_get_shm_handle(shm1.id), Status::Ok)
+    let ok = check_eq!(get_shm_handle(shm1.id), Status::Ok)
         & (unsafe { copy_from_kernel(&mut (&mut shm as *mut _ as *mut u8)) } == Ok(Status::Ok))
-        & check_eq!(__sys_shm_get_infos(shm), Status::Ok)
+        & check_eq!(shm_get_infos(shm), Status::Ok)
         & (unsafe { copy_from_kernel(&mut (&mut infos as *mut _ as *mut u8)) } == Ok(Status::Ok))
         & check_eq!(infos.label, shm1.id)
         & check_eq!(infos.handle, shm)
@@ -115,22 +115,22 @@ fn test_shm_creds_on_mapped() -> bool {
     let mut shm: ShmHandle = 0;
     let mut myself: TaskHandle = 0;
 
-    let ok = check_eq!(__sys_get_process_handle(0xbabe), Status::Ok)
+    let ok = check_eq!(get_process_handle(0xbabe), Status::Ok)
         & (unsafe { copy_from_kernel(&mut (&mut myself as *mut _ as *mut u8)) } == Ok(Status::Ok))
-        & check_eq!(__sys_get_shm_handle(shm1.id), Status::Ok)
+        & check_eq!(get_shm_handle(shm1.id), Status::Ok)
         & (unsafe { copy_from_kernel(&mut (&mut shm as *mut _ as *mut u8)) } == Ok(Status::Ok))
         & check_eq!(
-            __sys_shm_set_credential(shm, myself, SHMPermission::Map | SHMPermission::Write),
+            shm_set_credential(shm, myself, SHMPermission::Map | SHMPermission::Write),
             Status::Ok
         )
-        & check_eq!(__sys_map_shm(shm), Status::Ok)
+        & check_eq!(map_shm(shm), Status::Ok)
         & check_eq!(
-            __sys_shm_set_credential(shm, myself, SHMPermission::Write),
+            shm_set_credential(shm, myself, SHMPermission::Write),
             Status::Busy
         )
-        & check_eq!(__sys_unmap_shm(shm), Status::Ok)
+        & check_eq!(unmap_shm(shm), Status::Ok)
         & check_eq!(
-            __sys_shm_set_credential(shm, myself, SHMPermission::Write),
+            shm_set_credential(shm, myself, SHMPermission::Write),
             Status::Ok
         );
     test_end!();
@@ -142,12 +142,12 @@ fn test_shm_allows_idle() -> bool {
     let mut shm: ShmHandle = 0;
     let mut idle: TaskHandle = 0;
 
-    let ok = check_eq!(__sys_get_process_handle(0xcafe), Status::Ok)
+    let ok = check_eq!(get_process_handle(0xcafe), Status::Ok)
         & (unsafe { copy_from_kernel(&mut (&mut idle as *mut _ as *mut u8)) } == Ok(Status::Ok))
-        & check_eq!(__sys_get_shm_handle(shm1.id), Status::Ok)
+        & check_eq!(get_shm_handle(shm1.id), Status::Ok)
         & (unsafe { copy_from_kernel(&mut (&mut shm as *mut _ as *mut u8)) } == Ok(Status::Ok))
         & check_eq!(
-            __sys_shm_set_credential(shm, idle, SHMPermission::Transfer),
+            shm_set_credential(shm, idle, SHMPermission::Transfer),
             Status::Ok
         );
     test_end!();
@@ -161,12 +161,12 @@ fn test_shm_map_unmappable() -> bool {
     let mut myself: TaskHandle = 0;
     let perms = SHMPermission::Write;
 
-    let ok = check_eq!(__sys_get_process_handle(0xbabe), Status::Ok)
+    let ok = check_eq!(get_process_handle(0xbabe), Status::Ok)
         & (unsafe { copy_from_kernel(&mut (&mut myself as *mut _ as *mut u8)) } == Ok(Status::Ok))
-        & check_eq!(__sys_get_shm_handle(shm1.id), Status::Ok)
+        & check_eq!(get_shm_handle(shm1.id), Status::Ok)
         & (unsafe { copy_from_kernel(&mut (&mut shm as *mut _ as *mut u8)) } == Ok(Status::Ok))
-        & check_eq!(__sys_shm_set_credential(shm, myself, perms), Status::Ok)
-        & check_eq!(__sys_map_shm(shm), Status::Denied);
+        & check_eq!(shm_set_credential(shm, myself, perms), Status::Ok)
+        & check_eq!(map_shm(shm), Status::Denied);
     test_end!();
     ok
 }
@@ -178,12 +178,12 @@ fn test_shm_mapunmap() -> bool {
     let mut myself: TaskHandle = 0;
     let perms = SHMPermission::Write | SHMPermission::Map;
 
-    let ok = check_eq!(__sys_get_process_handle(0xbabe), Status::Ok)
+    let ok = check_eq!(get_process_handle(0xbabe), Status::Ok)
         & (unsafe { copy_from_kernel(&mut (&mut myself as *mut _ as *mut u8)) } == Ok(Status::Ok))
-        & check_eq!(__sys_get_shm_handle(shm1.id), Status::Ok)
+        & check_eq!(get_shm_handle(shm1.id), Status::Ok)
         & (unsafe { copy_from_kernel(&mut (&mut shm as *mut _ as *mut u8)) } == Ok(Status::Ok))
-        & check_eq!(__sys_shm_set_credential(shm, myself, perms), Status::Ok)
-        & check_eq!(__sys_map_shm(shm), Status::Ok);
+        & check_eq!(shm_set_credential(shm, myself, perms), Status::Ok)
+        & check_eq!(map_shm(shm), Status::Ok);
 
     if !ok {
         test_end!();
@@ -197,7 +197,7 @@ fn test_shm_mapunmap() -> bool {
         }
     }
 
-    let ok = ok & check_eq!(__sys_unmap_shm(shm), Status::Ok);
+    let ok = ok & check_eq!(unmap_shm(shm), Status::Ok);
     test_end!();
     ok
 }

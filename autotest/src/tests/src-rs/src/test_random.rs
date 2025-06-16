@@ -8,9 +8,9 @@ use crate::test_log::USER_AUTOTEST_INFO;
 use crate::test_start;
 use crate::test_suite_end;
 use crate::test_suite_start;
-use sentry_uapi::ffi_c::__sys_get_cycle;
-use sentry_uapi::ffi_c::__sys_get_random;
-use sentry_uapi::ffi_c::__sys_sched_yield;
+use sentry_uapi::syscall::get_cycle;
+use sentry_uapi::syscall::get_random;
+use sentry_uapi::syscall::sched_yield;
 use sentry_uapi::systypes::Precision;
 use sentry_uapi::systypes::Status;
 use sentry_uapi::*;
@@ -30,7 +30,7 @@ fn test_random_sequence() -> bool {
     let mut rng: u32 = 0;
     log_line!(USER_AUTOTEST_INFO, "get back random value from KRNG");
     for _ in 0..5 {
-        ok &= check_eq!(__sys_get_random(), Status::Ok);
+        ok &= check_eq!(get_random(), Status::Ok);
         ok &= unsafe { copy_from_kernel(&mut (&mut rng as *mut _ as *mut u8)) } == Ok(Status::Ok);
         log_line!(USER_AUTOTEST_INFO, "rng retrieved: {:#010x}", rng);
     }
@@ -45,17 +45,17 @@ fn test_random_duration() -> bool {
     let mut rng: u32 = 0;
     let mut idx: u32 = 0;
 
-    ok &= check_eq!(__sys_sched_yield(), Status::Ok);
-    ok &= check_eq!(__sys_get_cycle(Precision::Microseconds), Status::Ok);
+    ok &= check_eq!(sched_yield(), Status::Ok);
+    ok &= check_eq!(get_cycle(Precision::Microseconds), Status::Ok);
     ok &= unsafe { copy_from_kernel(&mut (&mut start as *mut _ as *mut u8)) } == Ok(Status::Ok);
 
     for _ in 0..=1000 {
-        ok &= check_eq!(__sys_get_random(), Status::Ok);
+        ok &= check_eq!(get_random(), Status::Ok);
         ok &= unsafe { copy_from_kernel(&mut (&mut rng as *mut _ as *mut u8)) } == Ok(Status::Ok);
         idx += 1;
     }
 
-    ok &= check_eq!(__sys_get_cycle(Precision::Microseconds), Status::Ok);
+    ok &= check_eq!(get_cycle(Precision::Microseconds), Status::Ok);
     ok &= unsafe { copy_from_kernel(&mut (&mut stop as *mut _ as *mut u8)) } == Ok(Status::Ok);
 
     if idx > 0 {

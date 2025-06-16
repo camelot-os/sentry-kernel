@@ -6,6 +6,7 @@ use crate::test_end;
 use crate::test_start;
 use crate::check_eq;
 use sentry_uapi::*;
+use sentry_uapi::syscall::get_process_handle;
 use sentry_uapi::systypes::Status;
 use core::prelude::v1::Ok;
 
@@ -45,7 +46,7 @@ fn test_gethandle() -> bool {
     }
     ok &= check_eq!(handle, 0);
 
-    ok &= check_eq!(__sys_get_process_handle(0xbabe), Status::Ok);
+    ok &= check_eq!(get_process_handle(0xbabe), Status::Ok);
     unsafe {
         ok &= copy_from_kernel(&mut handle as *mut _ as *mut u8, core::mem::size_of::<TaskHandle>()) == Ok(Status::Ok);
     }
