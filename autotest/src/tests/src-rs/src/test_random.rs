@@ -31,7 +31,7 @@ fn test_random_sequence() -> bool {
     log_line!(USER_AUTOTEST_INFO, "get back random value from KRNG");
     for _ in 0..5 {
         ok &= check_eq!(get_random(), Status::Ok);
-        ok &= unsafe { copy_from_kernel(&mut (&mut rng as *mut _ as *mut u8)) } == Ok(Status::Ok);
+        ok &= copy_from_kernel(&mut (&mut rng as *mut _ as *mut u8)) == Ok(Status::Ok);
         log_line!(USER_AUTOTEST_INFO, "rng retrieved: {:#010x}", rng);
     }
     test_end!();
@@ -47,16 +47,16 @@ fn test_random_duration() -> bool {
 
     ok &= check_eq!(sched_yield(), Status::Ok);
     ok &= check_eq!(get_cycle(Precision::Microseconds), Status::Ok);
-    ok &= unsafe { copy_from_kernel(&mut (&mut start as *mut _ as *mut u8)) } == Ok(Status::Ok);
+    ok &= copy_from_kernel(&mut (&mut start as *mut _ as *mut u8)) == Ok(Status::Ok);
 
     for _ in 0..=1000 {
         ok &= check_eq!(get_random(), Status::Ok);
-        ok &= unsafe { copy_from_kernel(&mut (&mut rng as *mut _ as *mut u8)) } == Ok(Status::Ok);
+        ok &= copy_from_kernel(&mut (&mut rng as *mut _ as *mut u8)) == Ok(Status::Ok);
         idx += 1;
     }
 
     ok &= check_eq!(get_cycle(Precision::Microseconds), Status::Ok);
-    ok &= unsafe { copy_from_kernel(&mut (&mut stop as *mut _ as *mut u8)) } == Ok(Status::Ok);
+    ok &= copy_from_kernel(&mut (&mut stop as *mut _ as *mut u8)) == Ok(Status::Ok);
 
     if idx > 0 {
         log_line!(

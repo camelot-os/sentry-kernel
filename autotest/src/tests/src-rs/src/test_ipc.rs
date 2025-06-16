@@ -37,7 +37,7 @@ fn test_ipc_send_toobig() -> bool {
     let len1 = CONFIG_SVC_EXCHANGE_AREA_LEN + 1;
     let len2 = 255;
     ok &= check_eq!(get_process_handle(0xbabe), Status::Ok);
-    ok &= unsafe { copy_from_kernel(&mut (&mut handle as *mut _ as *mut u8)) } == Ok(Status::Ok);
+    ok &= copy_from_kernel(&mut (&mut handle as *mut _ as *mut u8)) == Ok(Status::Ok);
     log_line!(USER_AUTOTEST_INFO, "sending invalid IPC size {}", len1);
     ok &= check_eq!(send_ipc(handle, len1 as u8), Status::Invalid);
     log_line!(USER_AUTOTEST_INFO, "sending invalid IPC size {}", len2);
@@ -62,15 +62,13 @@ fn test_ipc_sendrecv() -> bool {
     let mut data = [0u8; CONFIG_SVC_EXCHANGE_AREA_LEN];
 
     ok &= check_eq!(get_process_handle(0xbabe), Status::Ok);
-    ok &= unsafe { copy_from_kernel(&mut (&mut handle as *mut _ as *mut u8)) } == Ok(Status::Ok);
+    ok &= copy_from_kernel(&mut (&mut handle as *mut _ as *mut u8)) == Ok(Status::Ok);
     log_line!(USER_AUTOTEST_INFO, "handle is {:#x}", handle);
     log_line!(USER_AUTOTEST_INFO, "sending IPC to myself");
-    unsafe {
-        ok &= copy_to_kernel(&(msg.as_ptr() as *mut u8)) == Ok(Status::Ok);
-    }
+    ok &= copy_to_kernel(&(msg.as_ptr() as *mut u8)) == Ok(Status::Ok);
     ok &= check_eq!(send_ipc(handle, 20), Status::Ok);
     ok &= check_eq!(wait_for_event(EventType::Ipc as u8, timeout), Status::Ok);
-    ok &= unsafe { copy_from_kernel(data.as_mut_ptr()) == Ok(Status::Ok) };
+    ok &= copy_from_kernel(&mut data.as_mut_ptr()) == Ok(Status::Ok);
     let header = unsafe { &*(data.as_ptr() as *const ExchangeHeader) };
     let content =
         &data[core::mem::size_of::<ExchangeHeader>()..core::mem::size_of::<ExchangeHeader>() + 20];
@@ -95,11 +93,9 @@ fn test_ipc_deadlock() -> bool {
     let msg = b"hello it's autotest";
 
     ok &= check_eq!(get_process_handle(0xbabe), Status::Ok);
-    ok &= unsafe { copy_from_kernel(&mut (&mut handle as *mut _ as *mut u8)) } == Ok(Status::Ok);
+    ok &= copy_from_kernel(&mut (&mut handle as *mut _ as *mut u8)) == Ok(Status::Ok);
     log_line!(USER_AUTOTEST_INFO, "sending IPC to myself");
-    unsafe {
-        ok &= copy_to_kernel(&(msg.as_ptr() as *mut u8)) == Ok(Status::Ok);
-    }
+    ok &= copy_to_kernel(&(msg.as_ptr() as *mut u8)) == Ok(Status::Ok);
     ok &= check_eq!(send_ipc(handle, 20), Status::Ok);
     log_line!(
         USER_AUTOTEST_INFO,

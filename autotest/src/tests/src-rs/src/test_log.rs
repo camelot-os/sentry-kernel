@@ -1,13 +1,8 @@
 // SPDX-FileCopyrightText: 2025 ANSSI
 // SPDX-License-Identifier: Apache-2.0
 
-use core::ffi::c_char;
-//use core::fmt::{self, Write};
 use core::fmt;
-
-unsafe extern "C" {
-    fn printf(fmt: *const c_char, ...) -> i32;
-}
+use sentry_uapi::syscall::log;
 
 pub const USER_AUTOTEST: &str = "[AT]";
 pub const USER_AUTOTEST_INFO: &str = "[INFO      ]";
@@ -18,30 +13,34 @@ pub const USER_AUTOTEST_FAIL: &str = "[KO        ]";
 pub const USER_AUTOTEST_SUCCESS: &str = "[SUCCESS   ]";
 pub const USER_AUTOTEST_START_SUITE: &str = "[STARTSUITE]";
 pub const USER_AUTOTEST_END_SUITE: &str = "[ENDSUITE  ]";
+const SVC_EXCH_AREA_LEN: usize = 128;
+struct DebugPrint;
 
-// Rust Wrapper for printf,  UTF-8 / ASCII C-string ended by null
-pub fn c_log(prefix: &str, file: &str, line: u32, msg: &str) {
-    let _ = unsafe {
-        printf(
-            b"%s%s %s:%d: %s\n\0".as_ptr().cast(),
-            USER_AUTOTEST.as_ptr(),
-            prefix.as_ptr(),
-            file.as_ptr(),
-            line,
-            msg.as_ptr(),
-        )
-    };
-}
-
-// Convert &str statics into *const c_char
-trait AsCStr {
-    fn as_ptr(&self) -> *const c_char;
-}
-
-impl AsCStr for &str {
-    fn as_ptr(&self) -> *const c_char {
-        (*self).as_bytes().as_ptr().cast()
+impl fmt::Write for DebugPrint {
+    fn write_str(&mut self, s: &str) -> fmt::Result {
+        let max_length = s.len().min(SVC_EXCH_AREA_LEN);
+        unsafe { copy_from_user(s.as_ptr(), max_length) };
+        log(max_length);
+        Ok(())
     }
+}
+
+pub fn _print(args: fmt::Arguments) {
+    use core::fmt::Write;
+    DebugPrint.write_fmt(args).expect("Print failed");
+}
+
+#[macro_export]
+macro_rules! print {
+    ($($arg:tt)*) => {
+        $crate::test_log::_print(format_args!($($arg)*))
+    }
+}
+
+#[macro_export]
+macro_rules! println {
+    () => ($crate::print!("\n"));
+    ($($arg:tt)*) => ($crate::print!("{}\n", format_args!($($arg)*)))
 }
 
 // Macros
@@ -49,97 +48,56 @@ impl AsCStr for &str {
 #[macro_export]
 macro_rules! test_start {
     () => {
-        $crate::test_log::c_log(
-            $crate::test_log::USER_AUTOTEST_START,
-            core::module_path!(),
-            core::line!(),
-            "",
-        )
+        $crate::println!("[START     ] {}:{}", core::module_path!(), core::line!());
     };
 }
 
 #[macro_export]
 macro_rules! test_end {
     () => {
-        $crate::test_log::c_log(
-            $crate::test_log::USER_AUTOTEST_END,
-            core::module_path!(),
-            core::line!(),
-            "",
-        )
+        $crate::println!("[END       ] {}:{}", core::module_path!(), core::line!());
     };
 }
 
 #[macro_export]
 macro_rules! test_suite_start {
     ($msg:expr) => {
-        $crate::test_log::c_log(
-            $crate::test_log::USER_AUTOTEST_START_SUITE,
+        $crate::println!(
+            "[STARTSUITE] {}: {} @{}",
             core::module_path!(),
-            core::line!(),
             $msg,
-        )
+            core::line!()
+        );
     };
 }
 
 #[macro_export]
 macro_rules! test_suite_end {
     ($msg:expr) => {
-        $crate::test_log::c_log(
-            $crate::test_log::USER_AUTOTEST_END_SUITE,
+        $crate::println!(
+            "[ENDSUITE  ] {}: {} @{}",
             core::module_path!(),
-            core::line!(),
             $msg,
-        )
+            core::line!()
+        );
     };
 }
 
 #[macro_export]
 macro_rules! log_line {
-    ($prefix:expr, $fmt:expr $(, $arg:expr)* $(,)?) => {{
-        //use core::fmt::Write;
-        let mut buf = [0u8; 256];
-        let _ = write!(
-            &mut $crate::test_log::FmtBuf::new(&mut buf),
-            $fmt $(, $arg)*
-        );
-        $crate::test_log::c_log(
-            $prefix,
-            core::module_path!(),
-            core::line!(),
-            core::str::from_utf8(&buf).unwrap_or(""),
-        );
-    }};
-}
-
-pub struct FmtBuf<'a> {
-    buf: &'a mut [u8],
-    pos: usize,
-}
-
-impl<'a> FmtBuf<'a> {
-    pub fn new(buf: &'a mut [u8]) -> Self {
-        Self { buf, pos: 0 }
-    }
-}
-
-impl<'a> Write for FmtBuf<'a> {
-    fn write_str(&mut self, s: &str) -> fmt::Result {
-        let len = core::cmp::min(s.len(), self.buf.len().saturating_sub(self.pos));
-        self.buf[self.pos..self.pos + len].copy_from_slice(&s.as_bytes()[..len]);
-        self.pos += len;
-        Ok(())
-    }
+    ($prefix:expr, $fmt:expr $(, $arg:expr)* $(,)?) => {
+        $crate::println!("{} {}:{}: {}", $prefix, core::module_path!(), core::line!(), core::format_args!($fmt $(, $arg)*));
+    };
 }
 
 #[macro_export]
 macro_rules! check_eq {
     ($a:expr, $b:expr) => {{
         if $a == $b {
-            log_line!("[SUCCESS   ]", "{} == {}", $a, $b);
+            log_line!("[SUCCESS   ]", "{:?} == {:?}", $a, $b);
             true
         } else {
-            log_line!("[KO        ]", "{} != {}", $a, $b);
+            log_line!("[KO        ]", "{:?} != {:?}", $a, $b);
             false
         }
     }};

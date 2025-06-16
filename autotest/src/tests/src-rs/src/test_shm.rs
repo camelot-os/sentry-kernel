@@ -85,7 +85,7 @@ fn test_shm_mapdenied() -> bool {
         & (unsafe { copy_from_kernel(&mut (&mut myself as *mut _ as *mut u8)) } == Ok(Status::Ok))
         & check_eq!(get_shm_handle(shm1.id), Status::Ok)
         & (unsafe { copy_from_kernel(&mut (&mut shm as *mut _ as *mut u8)) } == Ok(Status::Ok))
-        & check_eq!(shm_set_credential(shm, myself, perms), Status::Ok)
+        & check_eq!(shm_set_credential(shm, myself, perms.into()), Status::Ok)
         & check_eq!(map_shm(shm), Status::Denied);
     test_end!();
     ok
@@ -120,17 +120,21 @@ fn test_shm_creds_on_mapped() -> bool {
         & check_eq!(get_shm_handle(shm1.id), Status::Ok)
         & (unsafe { copy_from_kernel(&mut (&mut shm as *mut _ as *mut u8)) } == Ok(Status::Ok))
         & check_eq!(
-            shm_set_credential(shm, myself, SHMPermission::Map | SHMPermission::Write),
+            shm_set_credential(
+                shm,
+                myself,
+                (SHMPermission::Map | SHMPermission::Write).into()
+            ),
             Status::Ok
         )
         & check_eq!(map_shm(shm), Status::Ok)
         & check_eq!(
-            shm_set_credential(shm, myself, SHMPermission::Write),
+            shm_set_credential(shm, myself, (SHMPermission::Write).into()),
             Status::Busy
         )
         & check_eq!(unmap_shm(shm), Status::Ok)
         & check_eq!(
-            shm_set_credential(shm, myself, SHMPermission::Write),
+            shm_set_credential(shm, myself, (SHMPermission::Write).into()),
             Status::Ok
         );
     test_end!();
@@ -147,7 +151,7 @@ fn test_shm_allows_idle() -> bool {
         & check_eq!(get_shm_handle(shm1.id), Status::Ok)
         & (unsafe { copy_from_kernel(&mut (&mut shm as *mut _ as *mut u8)) } == Ok(Status::Ok))
         & check_eq!(
-            shm_set_credential(shm, idle, SHMPermission::Transfer),
+            shm_set_credential(shm, idle, (SHMPermission::Transfer).into()),
             Status::Ok
         );
     test_end!();
@@ -165,7 +169,7 @@ fn test_shm_map_unmappable() -> bool {
         & (unsafe { copy_from_kernel(&mut (&mut myself as *mut _ as *mut u8)) } == Ok(Status::Ok))
         & check_eq!(get_shm_handle(shm1.id), Status::Ok)
         & (unsafe { copy_from_kernel(&mut (&mut shm as *mut _ as *mut u8)) } == Ok(Status::Ok))
-        & check_eq!(shm_set_credential(shm, myself, perms), Status::Ok)
+        & check_eq!(shm_set_credential(shm, myself, perms.into()), Status::Ok)
         & check_eq!(map_shm(shm), Status::Denied);
     test_end!();
     ok
@@ -182,7 +186,7 @@ fn test_shm_mapunmap() -> bool {
         & (unsafe { copy_from_kernel(&mut (&mut myself as *mut _ as *mut u8)) } == Ok(Status::Ok))
         & check_eq!(get_shm_handle(shm1.id), Status::Ok)
         & (unsafe { copy_from_kernel(&mut (&mut shm as *mut _ as *mut u8)) } == Ok(Status::Ok))
-        & check_eq!(shm_set_credential(shm, myself, perms), Status::Ok)
+        & check_eq!(shm_set_credential(shm, myself, perms.into()), Status::Ok)
         & check_eq!(map_shm(shm), Status::Ok);
 
     if !ok {

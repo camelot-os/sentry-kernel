@@ -36,14 +36,14 @@ fn test_cycles_duration() -> bool {
 
     ok &= check_eq!(sched_yield(), Status::Ok);
     ok &= check_eq!(get_cycle(Precision::Microseconds), Status::Ok);
-    ok &= unsafe { copy_from_kernel(&mut (&mut start as *mut _ as *mut u8)) } == Ok(Status::Ok);
+    ok &= copy_from_kernel(&mut (&mut start as *mut _ as *mut u8)) == Ok(Status::Ok);
     for _ in 0..=1000 {
         let _ = get_cycle(Precision::Microseconds);
         idx += 1;
     }
 
     ok &= check_eq!(get_cycle(Precision::Microseconds), Status::Ok);
-    ok &= unsafe { copy_from_kernel(&mut (&mut stop as *mut _ as *mut u8)) } == Ok(Status::Ok);
+    ok &= copy_from_kernel(&mut (&mut stop as *mut _ as *mut u8)) == Ok(Status::Ok);
 
     log_line!(
         USER_AUTOTEST_INFO,
@@ -53,15 +53,15 @@ fn test_cycles_duration() -> bool {
 
     ok &= check_eq!(sched_yield(), Status::Ok);
     ok &= check_eq!(get_cycle(Precision::Microseconds), Status::Ok);
-    ok &= unsafe { copy_from_kernel(&mut (&mut start as *mut _ as *mut u8)) } == Ok(Status::Ok);
+    ok &= copy_from_kernel(&mut (&mut start as *mut _ as *mut u8)) == Ok(Status::Ok);
 
     for _ in 0..=1000 {
         ok &= check_eq!(get_cycle(Precision::Microseconds), Status::Ok);
-        ok &= unsafe { copy_from_kernel(&mut (&mut micro as *mut _ as *mut u8)) } == Ok(Status::Ok);
+        ok &= copy_from_kernel(&mut (&mut micro as *mut _ as *mut u8)) == Ok(Status::Ok);
     }
 
     ok &= check_eq!(get_cycle(Precision::Microseconds), Status::Ok);
-    ok &= unsafe { copy_from_kernel(&mut (&mut stop as *mut _ as *mut u8)) } == Ok(Status::Ok);
+    ok &= copy_from_kernel(&mut (&mut stop as *mut _ as *mut u8)) == Ok(Status::Ok);
 
     log_line!(
         USER_AUTOTEST_INFO,
@@ -79,13 +79,13 @@ fn test_cycles_precision() -> bool {
     let mut nano: u64 = 0;
 
     let milli_st = get_cycle(Precision::Milliseconds);
-    ok &= unsafe { copy_from_kernel(&mut (&mut milli as *mut _ as *mut u8)) } == Ok(Status::Ok);
+    ok &= copy_from_kernel(&mut (&mut milli as *mut _ as *mut u8)) == Ok(Status::Ok);
 
     let micro_st = get_cycle(Precision::Microseconds);
-    ok &= unsafe { copy_from_kernel(&mut (&mut micro as *mut _ as *mut u8)) } == Ok(Status::Ok);
+    ok &= copy_from_kernel(&mut (&mut micro as *mut _ as *mut u8)) == Ok(Status::Ok);
 
     let nano_st = get_cycle(Precision::Nanoseconds);
-    ok &= unsafe { copy_from_kernel(&mut (&mut nano as *mut _ as *mut u8)) } == Ok(Status::Ok);
+    ok &= copy_from_kernel(&mut (&mut nano as *mut _ as *mut u8)) == Ok(Status::Ok);
 
     let cycle_st = get_cycle(Precision::Cycle);
 

@@ -108,17 +108,17 @@ fn test_irq_spawn_two_it() -> bool {
 
     let mut tab = [0u8; 128];
     ok &= check_eq!(wait_for_event(EventType::Irq as u8, 0), Status::Ok);
-    ok &= unsafe { copy_from_kernel(&mut tab.as_mut_ptr()) } == Ok(Status::Ok);
+    ok &= copy_from_kernel(&mut tab.as_mut_ptr()) == Ok(Status::Ok);
     let irqn = u32::from_le_bytes([tab[8], tab[9], tab[10], tab[11]]);
-    ok &= check_eq!(irqn, irq);
+    ok &= check_eq!(irqn, irq as u32);
 
     enable_timer_interrupt();
     enable_timer();
 
     ok &= check_eq!(wait_for_event(EventType::Irq as u8, 0), Status::Ok);
-    ok &= unsafe { copy_from_kernel(&mut tab.as_mut_ptr()) } == Ok(Status::Ok);
+    ok &= copy_from_kernel(&mut tab.as_mut_ptr()) == Ok(Status::Ok);
     let irqn2 = u32::from_le_bytes([tab[8], tab[9], tab[10], tab[11]]);
-    ok &= check_eq!(irqn2, irq);
+    ok &= check_eq!(irqn2, irq as u32);
 
     test_end!();
     ok
@@ -133,11 +133,11 @@ fn test_irq_spawn_one_it() -> bool {
 
     let mut tab = [0u8; 128];
     ok &= check_eq!(wait_for_event(EventType::Irq as u8, 0), Status::Ok);
-    ok &= unsafe { copy_from_kernel(&mut tab.as_mut_ptr()) } == Ok(Status::Ok);
+    ok &= copy_from_kernel(&mut tab.as_mut_ptr()) == Ok(Status::Ok);
 
     let irqn = u32::from_le_bytes([tab[8], tab[9], tab[10], tab[11]]);
     let source = u32::from_le_bytes([tab[4], tab[5], tab[6], tab[7]]);
-    ok &= check_eq!(irqn, irq);
+    ok &= check_eq!(irqn, irq as u32);
     unsafe {
         ok &= check_eq!(source, HANDLE);
     }
@@ -159,9 +159,9 @@ fn test_irq_spawn_periodic() -> bool {
     for count in 0..5 {
         log_line!(USER_AUTOTEST_INFO, "interrupt count {} wait", count);
         ok &= check_eq!(wait_for_event(EventType::Irq as u8, 0), Status::Ok);
-        ok &= unsafe { copy_from_kernel(&mut tab.as_mut_ptr()) } == Ok(Status::Ok);
+        ok &= copy_from_kernel(&mut tab.as_mut_ptr()) == Ok(Status::Ok);
         let irqn = u32::from_le_bytes([tab[8], tab[9], tab[10], tab[11]]);
-        ok &= check_eq!(irqn, irq);
+        ok &= check_eq!(irqn, irq as u32);
         if count < 4 {
             enable_timer_interrupt();
         }
