@@ -35,8 +35,8 @@ fn test_map_unmap_notmapped() -> bool {
     let device = get_device_by_name("i2c1").expect("i2c1 device not found");
     let mut dev: DeviceHandle = 0;
     let ok = check_eq!(get_device_handle(device.id as u8), Status::Ok)
-        & unsafe { copy_from_kernel(&mut (&mut dev as *mut _ as *mut u8)) }
-        == Ok(Status::Ok) & check_eq!(unmap_dev(dev), Status::Invalid);
+        && copy_from_kernel(&mut (&mut dev as *mut _ as *mut u8)) 
+        == Ok(Status::Ok) && check_eq!(unmap_dev(dev), Status::Invalid);
     test_end!();
     ok
 }
@@ -46,7 +46,7 @@ fn test_map_invalidmap() -> bool {
     let device = get_device_by_name("i2c1").expect("i2c1 device not found");
     let mut dev: DeviceHandle = 0;
     let ok = check_eq!(get_device_handle(device.id as u8), Status::Ok)
-        & unsafe { copy_from_kernel(&mut (&mut dev as *mut _ as *mut u8)) }
+        && copy_from_kernel(&mut (&mut dev as *mut _ as *mut u8))
         == Ok(Status::Ok);
     let invalid_dev = dev.wrapping_add(42);
     let ok = ok & check_eq!(map_dev(invalid_dev), Status::Invalid);
@@ -59,12 +59,12 @@ fn test_map_mapunmap() -> bool {
     let device = get_device_by_name("i2c1").expect("i2c1 device not found");
     let mut dev: DeviceHandle = 0;
     let mut ok = check_eq!(get_device_handle(device.id as u8), Status::Ok)
-        & unsafe { copy_from_kernel(&mut (&mut dev as *mut _ as *mut u8)) }
+        && copy_from_kernel(&mut (&mut dev as *mut _ as *mut u8)) 
         == Ok(Status::Ok);
     log_line!(USER_AUTOTEST_INFO, "handle is {:#x}", dev);
     ok &= check_eq!(map_dev(dev), Status::Ok);
 
-    #[cfg(CONFIG_ARCH_MCU_STM32U5A5)]
+    //#[cfg(CONFIG_ARCH_MCU_STM32U5A5)]
     if ok {
         log_line!(USER_AUTOTEST_INFO, "device mapped, checking registers");
         let base = device.baseaddr;

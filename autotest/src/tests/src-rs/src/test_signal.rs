@@ -22,6 +22,7 @@ struct ExchangeEvent {
     data: [u8; 64],
 }
 
+
 fn test_signal_sendrecv() -> bool {
     test_start!();
 

@@ -125,7 +125,7 @@ fn test_dma_start_n_wait_stream() -> bool {
 
     let mut shm1: ShmHandle = 0;
     let mut info1 = ShmInfos::default();
-    ok &= check_eq!(get_shm_handle(shm1.id), Status::Ok);
+    ok &= check_eq!(get_shm_handle(shm1), Status::Ok);
     ok &= copy_from_kernel(&mut (&mut shm1 as *mut _ as *mut u8)) == Ok(Status::Ok);
     ok &= check_eq!(
         shm_set_credential(shm1, myself, SHMPermission::Write | SHMPermission::Map),
@@ -140,13 +140,13 @@ fn test_dma_start_n_wait_stream() -> bool {
 
     let mut shm2: ShmHandle = 0;
     let mut info2 = ShmInfos::default();
-    ok &= check_eq!(get_shm_handle(shm2.id), Status::Ok);
+    ok &= check_eq!(get_shm_handle(shm2), Status::Ok);
     ok &= copy_from_kernel(&mut (&mut shm2 as *mut _ as *mut u8)) == Ok(Status::Ok);
     ok &= check_eq!(
         shm_set_credential(
             shm2,
             myself,
-            (SHMPermission::Write | SHMPermission::Map).inti()
+            SHMPermission::Write as u32 | SHMPermission::Map as u32
         ),
         Status::Ok
     );
@@ -181,7 +181,7 @@ fn test_dma_get_info() -> bool {
     let mut shm: ShmHandle = 0;
     let mut infos = ShmInfos::default();
 
-    ok &= check_eq!(get_shm_handle(shm.id), Status::Ok);
+    ok &= check_eq!(get_shm_handle(shm), Status::Ok);
     ok &= copy_from_kernel(&mut (&mut shm as *mut _ as *mut u8)) == Ok(Status::Ok);
     ok &= check_eq!(shm_get_infos(shm), Status::Ok);
     ok &= copy_from_kernel(&mut (&mut infos as *mut _ as *mut u8)) == Ok(Status::Ok);

@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use core::fmt;
+use sentry_uapi::copy_to_kernel;
 use sentry_uapi::syscall::log;
 
 pub const USER_AUTOTEST: &str = "[AT]";
@@ -19,7 +20,7 @@ struct DebugPrint;
 impl fmt::Write for DebugPrint {
     fn write_str(&mut self, s: &str) -> fmt::Result {
         let max_length = s.len().min(SVC_EXCH_AREA_LEN);
-        unsafe { copy_from_user(s.as_ptr(), max_length) };
+        copy_to_kernel(s.as_ptr());
         log(max_length);
         Ok(())
     }
