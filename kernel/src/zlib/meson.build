@@ -13,7 +13,7 @@ zlib_c_args = []
 # in autotest mode, the library includes e-ACSL annotations in order to allow runtime assertions
 # to be validated by Frama-C e-acsl plugin through the autotest application test framework
 # in nominal (debug or prod mode), the library is built without e-ACSL annotations
-if kconfig_data.get('CONFIG_BUILD_TARGET_AUTOTEST', 0) == 1
+if kconfig_data.get('CONFIG_AUTOTEST_ENABLE_EACSL', 0) == 1
     e_acsl_harden = find_program('e-acsl-gcc.sh', required: true)
 
     string_acsl_annoted_c = custom_target('string_hardened',
