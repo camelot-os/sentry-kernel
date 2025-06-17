@@ -2,10 +2,17 @@
 // SPDX-FileCopyrightText: 2025 ANSSI
 // SPDX-License-Identifier: Apache-2.0
 
+{% macro device_get_owner(device) -%}
+{% if device["outpost,owner"] -%}
+{{ "0x%x"|format(device["outpost,owner"]) }}
+{% else -%}
+{{ "0x%x"|format(0) }}
+{% endif -%}
+{% endmacro -%}
+
 #![allow(non_upper_case_globals)]
 use sentry_uapi::systypes::DevInfo;
 use sentry_uapi::systypes::ShmInfo;
-
 
 /// Liste des identifiants symboliques des périphériques
 pub enum DeviceID {
@@ -15,14 +22,6 @@ pub enum DeviceID {
     {% endif -%}
     {% endfor %}
 }
-
-{% macro device_get_owner(device) -%}
-{% if device["outpost,owner"] -%}
-{{ "0x%x"|format(device["outpost,owner"]) }}
-{% else -%}
-{{ "0x%x"|format(0) }}
-{% endif -%}
-{% endmacro -%}
 
 /// Tableau de descripteurs de périphériques
 pub static DEVICES: &[DevInfo] = &[
@@ -50,12 +49,12 @@ pub static DEVICES: &[DevInfo] = &[
         ],
         num_ios: {% if device["pinctrl-0"] %}{{ device["pinctrl-0"] | length }}{% else %}0{% endif %},
         ios: [
-            {% set numio = device["pinctrl-0"] | length if device["pinctrl-0"] else 0 %}
+            {% set pinctrl = device["pinctrl-0"] if device["pinctrl-0"] is defined else [] %}
             {% for io_idx in range(8) %}
-            {% if device["pinctrl-0"] and io_idx < device["pinctrl-0"] | length %}
-            {% set io = device["pinctrl-0"][io_idx] %}
+            {% if pinctrl and io_idx < pinctrl | length %}
+            {% set io = pinctrl[io_idx] %}
             {
-                {% set ns.io_gpio_port = 0 %}
+                {% set ns = namespace(io_gpio_port=0) %}
                 {% set gpio_ports = dts.get_compatible("st,stm32-gpio") %}
                 {% for port in gpio_ports if port.status == "okay" %}
                 {% if port.label == io.pinmux[0].label %}
@@ -88,7 +87,6 @@ pub static DEVICE_NAMES: &[&str] = &[
     {% endif -%}
     {% endfor %}
 ];
-
 
 /// Liste des segments de mémoire partagée disponibles (SHMS)
 pub static SHMS: &[ShmInfo] = &[
