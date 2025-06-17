@@ -17,6 +17,10 @@ if meson.is_subproject()
 warning('!!! Are you sure you want to build the Sentry kernel as a subproject ?')
 endif
 
+# potential overriden link-time arguments, for e.g. if adding e-ACSL and symbols substitution in
+# various kernel libraries. Defaulting to empty list.
+target_link_args = []
+
 # sources, generated and effective
 sentry_header_set = ssmod.source_set()
 sentry_header_set.add(kconfig_h)
@@ -26,6 +30,9 @@ sentry_linker_script_path = files()
 
 # populated in src
 sentry_ldscript_template = files()
+
+sentry_dts_file = fs.name(dts_in)
+sentry_dts_args = '-DDTS_FILE="@0@"'.format(sentry_dts_file)
 
 # sentry header set is populated in the include dir
 # BSP is driver related headers. Drivers exported header are only used by
@@ -61,8 +68,6 @@ sentry_linker_args = [
 
 sentry_map_file = '@0@.map'.format(meson.project_name())
 
-sentry_dts_file = fs.name(dts_in)
-sentry_dts_args = '-DDTS_FILE="@0@"'.format(sentry_dts_file)
 
 sentry_elf = executable(
     meson.project_name(),
@@ -82,7 +87,13 @@ sentry_elf = executable(
         external_deps
     ],
     c_args: [ target_arch_args, global_build_args, sentry_dts_args ],
-    link_args: [ '-lgcc', target_arch_args, sentry_linker_args, '-Wl,-Map=@0@'.format(sentry_map_file)],
+    link_args: [
+        target_link_args,
+        '-lgcc',
+        target_arch_args,
+        sentry_linker_args,
+        '-Wl,-Map=@0@'.format(sentry_map_file),
+    ],
     link_language: 'c',
     link_depends: [ sentry_ldscript ],
     install: true,
