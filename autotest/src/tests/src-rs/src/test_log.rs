@@ -20,9 +20,8 @@ struct DebugPrint;
 impl fmt::Write for DebugPrint {
     fn write_str(&mut self, s: &str) -> fmt::Result {
         let max_length = s.len().min(SVC_EXCH_AREA_LEN);
-        // TO BE CHECKED ! 
-        copy_to_kernel(&(s.as_ptr() as *mut u8))
-            .expect("Failed to copy to kernel");
+        // TO BE CHECKED !
+        copy_to_kernel(&(s.as_ptr() as *mut u8)).expect("Failed to copy to kernel");
         log(max_length);
         Ok(())
     }
