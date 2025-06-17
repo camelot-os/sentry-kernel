@@ -18,9 +18,9 @@ use sentry_uapi::syscall::unmap_shm;
 use sentry_uapi::systypes::SHMPermission;
 use sentry_uapi::systypes::ShmHandle;
 use sentry_uapi::systypes::Status;
+use sentry_uapi::systypes::shm::ShmInfo;
 use sentry_uapi::systypes::*;
 use sentry_uapi::*;
-use sentry_uapi::systypes::shm::ShmInfo;
 
 pub fn test_shm() -> bool {
     test_suite_start!("sys_map_shm");
@@ -96,7 +96,13 @@ fn test_shm_infos() -> bool {
     test_start!();
     let shm1 = get_shm_by_name("shm_autotest_1").expect("shm_autotest_1 not found");
     let mut shm: ShmHandle = 0;
-    let mut infos = ShmInfos::default();
+    let mut infos = ShmInfo {
+        label: 0 as u32,
+        handle: 0 as u32,
+        base: 0 as usize,
+        len: 0 as usize,
+        perms: 0 as u32,
+    };
 
     let ok = check_eq!(get_shm_handle(shm1.handle), Status::Ok)
         & (copy_from_kernel(&mut (&mut shm as *mut _ as *mut u8)) == Ok(Status::Ok))

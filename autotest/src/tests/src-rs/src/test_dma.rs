@@ -29,6 +29,7 @@ use sentry_uapi::systypes::Status;
 use sentry_uapi::systypes::StreamHandle;
 use sentry_uapi::systypes::TaskHandle;
 use sentry_uapi::systypes::dma::*;
+use sentry_uapi::systypes::shm::ShmInfo;
 use sentry_uapi::*;
 
 pub fn test_dma() -> bool {
@@ -124,11 +125,21 @@ fn test_dma_start_n_wait_stream() -> bool {
     ok &= copy_from_kernel(&mut (&mut myself as *mut _ as *mut u8)) == Ok(Status::Ok);
 
     let mut shm1: ShmHandle = 0;
-    let mut info1 = ShmInfos::default();
+    let mut info1 = ShmInfo {
+        label: 0 as u32,
+        handle: 0 as u32,
+        base: 0 as usize,
+        len: 0 as usize,
+        perms: 0 as u32,
+    };
     ok &= check_eq!(get_shm_handle(shm1), Status::Ok);
     ok &= copy_from_kernel(&mut (&mut shm1 as *mut _ as *mut u8)) == Ok(Status::Ok);
     ok &= check_eq!(
-        shm_set_credential(shm1, myself, SHMPermission::Write | SHMPermission::Map),
+        shm_set_credential(
+            shm1,
+            myself,
+            SHMPermission::Write as u32 | SHMPermission::Map as u32
+        ),
         Status::Ok
     );
     ok &= check_eq!(map_shm(shm1), Status::Ok);
@@ -139,7 +150,13 @@ fn test_dma_start_n_wait_stream() -> bool {
     }
 
     let mut shm2: ShmHandle = 0;
-    let mut info2 = ShmInfos::default();
+    let mut info2 = ShmInfo {
+        label: 0 as u32,
+        handle: 0 as u32,
+        base: 0 as usize,
+        len: 0 as usize,
+        perms: 0 as u32,
+    };
     ok &= check_eq!(get_shm_handle(shm2), Status::Ok);
     ok &= copy_from_kernel(&mut (&mut shm2 as *mut _ as *mut u8)) == Ok(Status::Ok);
     ok &= check_eq!(
@@ -177,9 +194,32 @@ fn test_dma_get_info() -> bool {
     test_start!();
     let mut ok = true;
     let mut streamh: StreamHandle = 0;
-    let mut stream_info = GpdmaStreamConfig::default();
+    let mut stream_info = GpdmaStreamConfig {
+        channel: 0 as u16,
+        stream: 0 as u16,
+        controller: 0 as u16,
+        transfer_type: 0 as u16,
+        source: 0 as usize,
+        dest: 0 as usize,
+        transfer_len: 0 as usize,
+        circular_source: false,
+        circular_dest: false,
+        interrupts: 0 as u8,
+        is_triggered: false,
+        trigger: 0 as u8,
+        priority: 0 as u8,
+        transfer_mode: 0 as u8,
+        src_beat_len: 0 as u8,
+        dest_beat_len: 0 as u8,
+    };
     let mut shm: ShmHandle = 0;
-    let mut infos = ShmInfos::default();
+    let mut infos = ShmInfo {
+        label: 0 as u32,
+        handle: 0 as u32,
+        base: 0 as usize,
+        len: 0 as usize,
+        perms: 0 as u32,
+    };
 
     ok &= check_eq!(get_shm_handle(shm), Status::Ok);
     ok &= copy_from_kernel(&mut (&mut shm as *mut _ as *mut u8)) == Ok(Status::Ok);
@@ -202,8 +242,8 @@ fn test_dma_get_info() -> bool {
     ok &= check_eq!(stream_info.transfer_len, 42);
     ok &= check_eq!(stream_info.source, 0);
     ok &= check_eq!(stream_info.dest, infos.base);
-    ok &= check_eq!(stream_info.circular_source, 1);
-    ok &= check_eq!(stream_info.circular_dest, 0);
+    ok &= check_eq!(stream_info.circular_source, false);
+    ok &= check_eq!(stream_info.circular_dest, true);
     ok &= check_eq!(stream_info.priority as u32, GpdmaPriority::Medium as u32);
     test_end!();
     ok
