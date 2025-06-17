@@ -31,7 +31,5 @@ autotest_test_lib = static_library('testlib_rust',
     rust_abi: 'c',
     rust_args: global_rust_build_args,
     override_options: [uapi_rust_std],
-    #extra_files: uapi_modules,
-    dependencies: stm32_timer_dts_dtsgen_dep,
     install: false,
 )
