@@ -9,6 +9,9 @@ devices_dtsgen_rs = dtsgen.process(devices_template_rs)
 # lib.rs must be called
 testlib_rust_sourceset.add(files('src/lib.rs'))
 
+sentry_uapi = subproject('../../../../uapi')
+sentry_uapi_dep = sentry_uapi.get_variable('sentry_uapi_dep')
+
 # Depends on configs in Kconfig
 testlib_rust_sourceset.add(when: 'CONFIG_TEST_CYCLES', if_true: files('src/test_cycles.rs'))
 testlib_rust_sourceset.add(when: 'CONFIG_TEST_DMA', if_true: files('src/test_dma.rs'))
@@ -31,5 +34,7 @@ autotest_test_lib = static_library('testlib_rust',
     rust_abi: 'c',
     rust_args: global_rust_build_args,
     override_options: [uapi_rust_std],
+    dependencies: [sentry_uapi_dep],
     install: false,
 )
+
