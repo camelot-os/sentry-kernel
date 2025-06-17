@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025 ANSSI
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::devices::{DEVICE_NAMES, DEVICES, SHM_NAMES, SHMS};
+use crate::devices_dt::{DEVICE_NAMES, DEVICES, SHM_NAMES, SHMS};
 use sentry_uapi::systypes::dev::DevInfo;
 use sentry_uapi::systypes::shm::ShmInfo;
 
