@@ -77,7 +77,8 @@ pub fn init_timer() -> Status {
     unsafe { timer_init() }
 }
 
-pub fn test_irq() -> bool {
+#[unsafe(no_mangle)]
+pub extern "C" fn test_irq() -> bool {
     test_suite_start!("sys_irq");
     let mut ok = true;
 

@@ -15,7 +15,8 @@ use sentry_uapi::systypes::Precision;
 use sentry_uapi::systypes::Status;
 use sentry_uapi::*;
 
-pub fn test_random() -> bool {
+#[unsafe(no_mangle)]
+pub extern "C" fn test_random() -> bool {
     test_suite_start!("sys_get_random");
     let mut ok = true;
     ok &= test_random_sequence();

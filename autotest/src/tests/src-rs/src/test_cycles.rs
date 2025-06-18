@@ -16,7 +16,8 @@ use sentry_uapi::systypes::Precision;
 use sentry_uapi::systypes::Status;
 use sentry_uapi::*;
 
-pub fn test_cycles() -> bool {
+#[unsafe(no_mangle)]
+pub extern "C" fn test_cycles() -> bool {
     test_suite_start!("sys_cycles");
     let mut ok = true;
     ok &= test_cycles_duration();

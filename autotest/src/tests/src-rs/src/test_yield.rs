@@ -13,6 +13,7 @@ fn test_yield_multiple_times() {
     }
 }
 
-pub fn test_yield() {
+#[unsafe(no_mangle)]
+pub extern "C" fn test_yield() {
     test_yield_multiple_times();
 }

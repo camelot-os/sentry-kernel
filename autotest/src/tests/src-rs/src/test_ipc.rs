@@ -19,7 +19,8 @@ use sentry_uapi::*;
 
 const CONFIG_SVC_EXCHANGE_AREA_LEN: usize = 128; // Should be imported from config
 
-pub fn test_ipc() -> bool {
+#[unsafe(no_mangle)]
+pub extern "C" fn test_ipc() -> bool {
     test_suite_start!("sys_ipc");
     let mut ok = true;
     ok &= test_ipc_sendrecv();

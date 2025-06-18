@@ -44,8 +44,8 @@ fn test_signal_sendrecv() -> bool {
     }
 
     log_line!(USER_AUTOTEST_INFO, "handle is {:#x}", handle);
-    for sig_val in (Signal::Abort as u32)..=(Signal::Usr2 as u32) {
-        let sig = unsafe { core::mem::transmute::<u32, Signal>(sig_val) };
+    for sig_val in (Signal::Abort as u8)..=(Signal::Usr2 as u8) {
+        let sig = unsafe { core::mem::transmute::<u8, Signal>(sig_val) };
         log_line!(
             USER_AUTOTEST_INFO,
             "sending signal {} to myself",
@@ -89,7 +89,8 @@ fn test_signal_sendrecv() -> bool {
     test_end!();
     ok
 }
-pub fn test_signal() -> bool {
+#[unsafe(no_mangle)]
+pub extern "C" fn test_signal() -> bool {
     test_suite_start!("sys_signal");
     let mut ok = true;
 

@@ -53,7 +53,7 @@ autotest_elf = executable(
     name_suffix: 'elf',
     sources: [ autotest_sources, autotest_headers ],
     include_directories: [ uapi_inc, autotest_inc ],
-    dependencies: [ sentry_c_uapi_dep, autotest_test_dep ],
+    dependencies: [ autotest_test_dep ],
     c_args: [ target_arch_args, global_build_args, userspace_args ],
     link_args: [ '-lgcc', target_arch_args, autotest_linker_args, '-Wl,-Map=@0@'.format(autotest_map_file)],
     link_language: 'c',

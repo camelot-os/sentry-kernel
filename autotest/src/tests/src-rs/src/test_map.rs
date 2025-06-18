@@ -19,7 +19,8 @@ use sentry_uapi::systypes::Status;
 use sentry_uapi::systypes::*;
 use sentry_uapi::*;
 
-pub fn test_map() -> bool {
+#[unsafe(no_mangle)]
+pub extern "C" fn test_map() -> bool {
     test_suite_start!("sys_map");
     let mut ok = true;
     ok &= test_map_mapunmap();

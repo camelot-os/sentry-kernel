@@ -11,7 +11,8 @@ use sentry_uapi::systypes::{SleepDuration, SleepMode, DeviceHandle};
 use core::prelude::v1::Ok;
 use sentry_uapi::syscall::{get_device_handle, gpio_configure, gpio_set, gpio_toggle, sleep};
 
-pub fn test_gpio() -> bool {
+#[unsafe(no_mangle)]
+pub extern "C" fn test_gpio() -> bool {
     test_suite_start!("sys_gpio");
     let mut ok = true;
 
@@ -68,7 +69,7 @@ fn test_gpio_toggle() -> bool {
         test_end!();
         ok
     }
-    
+
     fn test_gpio_invalid_io() -> bool {
         test_start!();
         let mut dev: DeviceHandle = 0;
@@ -80,7 +81,7 @@ fn test_gpio_toggle() -> bool {
         test_end!();
         ok
     }
-    
+
     fn test_gpio_invalid_devh() -> bool {
         test_start!();
         let dev: DeviceHandle = 1;
@@ -88,4 +89,3 @@ fn test_gpio_toggle() -> bool {
         test_end!();
         ok
     }
-    

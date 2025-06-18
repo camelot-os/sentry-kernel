@@ -22,7 +22,8 @@ use sentry_uapi::systypes::shm::ShmInfo;
 use sentry_uapi::systypes::*;
 use sentry_uapi::*;
 
-pub fn test_shm() -> bool {
+#[unsafe(no_mangle)]
+pub extern "C" fn test_shm() -> bool {
     test_suite_start!("sys_map_shm");
     let mut ok = true;
 

@@ -32,7 +32,8 @@ use sentry_uapi::systypes::dma::*;
 use sentry_uapi::systypes::shm::ShmInfo;
 use sentry_uapi::*;
 
-pub fn test_dma() -> bool {
+#[unsafe(no_mangle)]
+pub extern "C" fn test_dma() -> bool {
     let mut all_ok = true;
     test_suite_start!("sys_dma");
 

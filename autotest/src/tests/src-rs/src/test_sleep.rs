@@ -45,7 +45,8 @@ fn test_sleep_duration() {
     }
 }
 
-pub fn test_sleep() {
+#[unsafe(no_mangle)]
+pub extern "C" fn test_sleep() {
     test_sleep_return();
     test_sleep_duration();
 }

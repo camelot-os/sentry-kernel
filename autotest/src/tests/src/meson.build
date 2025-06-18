@@ -39,5 +39,6 @@ autotest_test_lib = static_library('testlib',
     include_directories: [ testlib_inc, uapi_inc, autotest_inc ],
     c_args: [ target_arch_args, global_build_args ],
     install: false,
+    link_with: [ uapi_lib ],
     dependencies: [testlib_sourceset_config.dependencies(), external_deps ],
 )

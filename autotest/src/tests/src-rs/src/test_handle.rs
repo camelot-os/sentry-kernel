@@ -27,7 +27,8 @@ impl KTaskHandle {
     }
 }
 
-pub fn test_handle() -> bool {
+#[unsafe(no_mangle)]
+pub extern "C" fn test_handle() -> bool {
     test_suite_start!("sys_get_handle");
     let ok = test_gethandle();
     test_suite_end!("sys_get_handle");
