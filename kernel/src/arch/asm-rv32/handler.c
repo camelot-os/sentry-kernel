@@ -75,6 +75,7 @@ stack_frame_t *handle_trap(stack_frame_t *frame)
   uint32_t mcause = CSR_READ(mcause);
   uint32_t mtval = CSR_READ(mtval);
   uint32_t user_pc = CSR_READ(mepc);
+  Status statuscode;
 
   stack_frame_t *newframe = frame;
 
@@ -87,7 +88,8 @@ stack_frame_t *handle_trap(stack_frame_t *frame)
     switch (mcause)
     {
     case MCAUSE_MSWINT:
-      // TODO
+      demap_task_protected_area();
+      newframe = svc_handler(frame);
       break;
     case MCAUSE_MTIMER:
       // Disable machine-mode timer interrupts
@@ -101,7 +103,11 @@ stack_frame_t *handle_trap(stack_frame_t *frame)
       // TODO
       break;
     case MCAUSE_CNTOVF:
-      // TODO
+      hardfault_handler(frame);
+      /*@ assert \false; */
+      break;
+    default:
+      // Should not happen
       hardfault_handler(frame);
       /*@ assert \false; */
       break;
@@ -110,9 +116,49 @@ stack_frame_t *handle_trap(stack_frame_t *frame)
   else
   {
     /* Exceptions */
-    // TODO
+    switch (mcause)
+    {
+    case MCAUSE_UCALL:
+    case MCAUSE_MCALL:
+    case MCAUSE_BREAKPT:
+      demap_task_protected_area();
+      newframe = svc_handler(frame);
+      break;
+    default:
+      hardfault_handler(frame);
+      /*@ assert \false; */
+      break;
+    }
   }
 
+  /* the next job may not be the previous one */
+  next = sched_get_current();
+  if (likely(mgr_task_is_userspace_spawned()))
+  {
+    mgr_mm_map_task(next);
+  }
+  /*
+   * get back target syscall return code, if in comming back to a previously preempted syscall
+   */
+
+  if (likely(mgr_task_get_sysreturn(next, &statuscode) == K_STATUS_OKAY))
+  {
+    /* a syscall return code as been previously set in this context and not cleared
+     * by the handler. This means that the next job has been preempted during a syscall,
+     * whatever the reason is. We then get back the current syscall value now and update it
+     *
+     * It is to note here that a statuscode of type STATUS_NON_SENSE must not happend as it
+     * means that a syscall that do not know synchronously its own return code has not seen
+     * its return value being updated in the meantime **before** coming back to the job
+     */
+    if (unlikely(statuscode == STATUS_NON_SENSE))
+    {
+      __do_panic();
+    }
+    newframe->a0 = statuscode;
+    /* clearing the sysreturn. next job is no more syscall-preempted */
+    mgr_task_clear_sysreturn(next);
+  }
   return newframe;
 }
 
@@ -128,9 +174,9 @@ stack_frame_t *handle_trap(stack_frame_t *frame)
 __attribute__((naked, used)) void save_context(void)
 {
   asm volatile(
-      "csrrw sp, mscratch, sp\n" // Store SP in mscratch
-      "addi sp, sp, -4 * 31\n"   // Allocate stack storage space
-      "sw ra,  4 * 0(sp)\n"      // Store context on stack
+      "csrw mscratch, sp\n"    // Store SP in mscratch
+      "addi sp, sp, -4 * 31\n" // Allocate stack storage space
+      "sw ra,  4 * 0(sp)\n"    // Store context on stack
       "sw gp,  4 * 1(sp)\n"
       "sw tp,  4 * 2(sp)\n"
       "sw t0,  4 * 3(sp)\n"
@@ -161,7 +207,9 @@ __attribute__((naked, used)) void save_context(void)
       "sw s10, 4 * 28(sp)\n"
       "sw s11, 4 * 29(sp)\n"
       "csrr a0, mscratch\n" // Set a0 to stack pointer
-      "sw a0, 4 * 30(sp)\n");
+      "sw a0, 4 * 30(sp)\n"
+      "mv a0, sp\n"
+      "call handle_trap\n");
 }
 
 /**
@@ -215,7 +263,6 @@ __attribute__((aligned(4))) void
 Default_Handler(void)
 {
   save_context();
-  asm volatile("call handle_trap");
   restore_context();
 }
 
@@ -247,7 +294,8 @@ Reset_Handler(void)
   uint32_t global_pointer = 0;
 
   // Set the stack pointer
-  asm volatile ("la sp, _bootupstack\n");
+  asm volatile("la gp, _global_pointer");
+  asm volatile("la sp, _bootupstack");
 
   // TODO: Set global pointer
   // global_pointer = _sdata + ((_edata - _sdata) / 2);

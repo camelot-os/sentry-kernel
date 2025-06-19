@@ -179,6 +179,7 @@ SECTIONS {
         . = . + 2048;
         /* top of bootup MSP stack (2k tack) */
         _bootupstack = .;
+        _global_pointer = .;
         . = ALIGN(4);
     } > {{ kernelram_section }}
 

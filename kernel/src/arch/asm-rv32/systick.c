@@ -42,15 +42,17 @@ uint64_t systime_get_jiffies(void)
     return jiffies;
 }
 
+/**
+ * @brief Set timecmp
+ */
 static inline void systick_set_timecmp(uint32_t interval)
 {
-  // Setting the timer
   asm volatile (
-    "li t0, 500000 \r\n" // Arbitrary timer value
-    "lw t1, 0(%0) \r\n"
-    "sw t0, 0(t1)" // Set timer comper value
-      :
-      : "r" (MTIMERCMP_ADDR) // Address of mtimercmp
+    "li t0, -1 \r\n"
+    "sw t0, 0(%0) \r\n"
+    "sw %1, 4(%0) \r\n"
+    "sw %2, 0(%0)"
+    :: "r" (MTIMERCMP_ADDR), "r" (0), "r" (interval)
   );
 }
 
