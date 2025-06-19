@@ -5,7 +5,7 @@
 [package]
 name = "sentry-uapi"
 version = "0.4.2"
-edition = "2024"
+edition = "2021"
 license = "Apache-2.0"
 description = "Sentry kernel user API implementation"
 categories = ["os", "no-std"]
