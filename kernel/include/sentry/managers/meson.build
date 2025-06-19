@@ -9,6 +9,7 @@ managers_header_set.add(files(
   'device.h',
   'interrupt.h',
   'io.h',
+  'memory_types.h',
   'memory.h',
   'security.h',
   'task.h',

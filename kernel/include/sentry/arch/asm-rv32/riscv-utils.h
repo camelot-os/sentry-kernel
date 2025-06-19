@@ -23,10 +23,11 @@ extern "C" {
 #define CSR_ZERO_ADDR(reg_addr)                    \
     asm volatile ("csrw %0, zero" ::"I"(reg_addr));
 
-#define CSR_WRITE_ADDR(reg_addr, value) ({                     \
-    uint32_t __tmp = (value);                                  \
-    asm volatile ("csrw %0, %1" :: "I"(reg_addr), "r"(__tmp)); \
-  })
+#define CSR_WRITE_ADDR(reg, value) ({                         \
+  if (__builtin_constant_p(value) && (unsigned long)(value) < 32) \
+    __asm__ volatile ("csrw " #reg ", %0" :: "i"(value)); \
+  else \
+    __asm__ volatile ("csrw " #reg ", %0" :: "r"(value)); })
 
 #define CSR_READ_ADDR(reg_addr)                                \
   ({                                                           \
