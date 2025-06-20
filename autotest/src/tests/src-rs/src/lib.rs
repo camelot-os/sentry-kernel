@@ -19,7 +19,7 @@ mod test_sleep;
 mod test_yield;
 
 #[unsafe(no_mangle)]
-pub fn autotest() {
+pub fn autotest_rust() {
     test_ipc::test_ipc();
     test_irq::test_irq();
     test_map::test_map();
