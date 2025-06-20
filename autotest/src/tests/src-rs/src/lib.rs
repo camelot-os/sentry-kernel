@@ -4,6 +4,7 @@
 #![no_std]
 #![no_main]
 
+mod devices_dt;
 mod devices_utils;
 mod test_cycles;
 mod test_dma;

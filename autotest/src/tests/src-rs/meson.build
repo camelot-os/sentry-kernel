@@ -2,13 +2,20 @@
 # SPDX-License-Identifier: Apache-2.0
 
 testlib_rust_sourceset = ssmod.source_set()
-devices_template_rs = files(['devices-dt.rs.in'])
+devices_template_rs = files(['devices_dt.rs.in'])
 
 devices_dtsgen_rs = custom_target('devices_dtsgen_rs_gen',
     input: devices_template_rs,
     output: '@BASENAME@',
     command: [ dts2src, '-d', dts.full_path() , '-t', '@INPUT@', '@OUTPUT@' ],
     depends: [ dts ],
+)
+
+testlib_rust_sourceset.add(
+    files(
+        'src/test_log.rs',
+        'src/test_handle.rs',
+        )
 )
 
 # Depends on configs in Kconfig

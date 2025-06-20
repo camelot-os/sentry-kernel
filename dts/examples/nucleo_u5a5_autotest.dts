@@ -37,7 +37,7 @@
 		};
 
 		autotest_ram: autotest_memory@20008000 {
-			reg = <0x20008000 0x1000>;
+			reg = <0x20008000 0x2000>;
 			compatible = "outpost,memory-pool";
 		};
 

@@ -16,6 +16,7 @@ use sentry_uapi::systypes::*;
 use sentry_uapi::*;
 static mut HANDLE: DeviceHandle = 0;
 
+
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
 pub struct Stm32TimerDesc {
@@ -29,28 +30,28 @@ pub struct Stm32TimerDesc {
 }
 
 unsafe extern "C" {
-    pub fn timer_get_irqn() -> i32;
+    pub fn timer_get_irqn() -> i8;
 }
-pub fn get_timer_irqn() -> i32 {
+pub fn get_timer_irqn() -> i8 {
     unsafe { timer_get_irqn() }
 }
 
 unsafe extern "C" {
-    pub fn timer_enable_interrupt();
+    pub fn timer_enable_interrupt() -> i32;
 }
 pub fn enable_timer_interrupt() -> i32 {
     unsafe { timer_enable_interrupt() }
 }
 
 unsafe extern "C" {
-    pub fn timer_enable();
+    pub fn timer_enable() -> i32;
 }
 pub fn enable_timer() -> i32 {
     unsafe { timer_enable() }
 }
 
 unsafe extern "C" {
-    pub fn timer_set_periodic();
+    pub fn timer_set_periodic() -> i32;
 }
 pub fn set_periodic_timer() -> i32 {
     unsafe { timer_set_periodic() }
@@ -71,9 +72,9 @@ pub fn unmap_timer(handle: DeviceHandle) -> Status {
 }
 
 unsafe extern "C" {
-    pub fn timer_init();
+    pub fn timer_init() -> i32;
 }
-pub fn init_timer() -> Status {
+pub fn init_timer() -> i32 {
     unsafe { timer_init() }
 }
 
@@ -81,9 +82,8 @@ pub fn init_timer() -> Status {
 pub extern "C" fn test_irq() -> bool {
     test_suite_start!("sys_irq");
     let mut ok = true;
-
     unsafe {
-        timer_map(&mut HANDLE);
+        timer_map(&raw mut HANDLE);
     }
     init_timer();
 
@@ -140,7 +140,7 @@ fn test_irq_spawn_one_it() -> bool {
     let source = u32::from_le_bytes([tab[4], tab[5], tab[6], tab[7]]);
     ok &= check_eq!(irqn, irq as u32);
     unsafe {
-        ok &= check_eq!(source, HANDLE);
+        ok &= check_eq!(source, unsafe { HANDLE });
     }
 
     test_end!();
