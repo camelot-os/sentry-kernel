@@ -1,0 +1,86 @@
+diff --git a/gmp-acsl.h b/gmp-acsl.h
+new file mode 100644
+index 0000000..c69b64f
+--- /dev/null
++++ b/gmp-acsl.h
+@@ -0,0 +1,43 @@
++#define __gmp_fprintf gmp_fprintf
++#define __gmpz_add mpz_add
++#define __gmpz_and mpz_and
++#define __gmpz_clear mpz_clear
++#define __gmpz_cmp mpz_cmp
++#define __gmpz_com mpz_com
++#define __gmpz_fits_slong_p mpz_fits_slong_p
++#define __gmpz_fits_ulong_p mpz_fits_ulong_p
++#define __gmpz_get_si mpz_get_si
++#define __gmpz_get_ui mpz_get_ui
++#define __gmpz_import mpz_import
++#define __gmpz_init mpz_init
++#define __gmpz_init_set mpz_init_set
++#define __gmpz_init_set_si mpz_init_set_si
++#define __gmpz_init_set_str mpz_init_set_str
++#define __gmpz_init_set_ui mpz_init_set_ui
++#define __gmpz_ior mpz_ior
++#define __gmpz_mul mpz_mul
++#define __gmpz_mul_2exp mpz_mul_2exp
++#define __gmpz_neg mpz_neg
++#define __gmpz_set mpz_set
++#define __gmpz_set_q mpz_set_q
++#define __gmpz_set_si mpz_set_si
++#define __gmpz_set_ui mpz_set_ui
++#define __gmpz_sub mpz_sub
++#define __gmpz_tdiv_q mpz_tdiv_q
++#define __gmpz_tdiv_q_2exp mpz_tdiv_q_2exp
++#define __gmpz_tdiv_r mpz_tdiv_r
++#define __gmpz_xor mpz_xor
++#define __gmpq_add mpq_add
++#define __gmpq_clear mpq_clear
++#define __gmpq_cmp mpq_cmp
++#define __gmpq_div mpq_div
++#define __gmpq_get_d mpq_get_d
++#define __gmpq_init mpq_init
++#define __gmpq_mul mpq_mul
++#define __gmpq_set mpq_set
++#define __gmpq_set_d mpq_set_d
++#define __gmpq_set_si mpq_set_si
++#define __gmpq_set_str mpq_set_str
++#define __gmpq_set_ui mpq_set_ui
++#define __gmpq_set_z mpq_set_z
++#define __gmpq_sub mpq_sub
+diff --git a/meson.build b/meson.build
+new file mode 100644
+index 0000000..36907a7
+--- /dev/null
++++ b/meson.build
+@@ -0,0 +1,31 @@
++project(
++    'gmp',
++    'c',
++    license: 'LGPLv3',
++    meson_version: '>=1.0.0',
++    default_options: ['c_std=c11'],
++)
++
++fs = import('fs')
++
++gmp_inc = include_directories('.')
++
++# cpp-based symbol aliasing for e-acsl generated code
++gmp_eacsl_h = files('gmp-acsl.h')
++
++gmp_sources = files(
++  'mini-gmp.c',
++)
++
++libgmp = static_library(
++  'gmp',
++  sources: [ gmp_sources ],
++  install: false,
++  native: false,
++)
++
++gmp_dep = declare_dependency(
++  link_with: libgmp,
++  include_directories: gmp_inc,
++  compile_args: [ '-include', fs.name(gmp_eacsl_h) ],
++)
