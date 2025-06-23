@@ -17,10 +17,6 @@ choice
 
 endchoice
 
-config AUTOTEST_ENABLE_EACSL
-    bool "Enable e-ACSL runtime assertion in kernel build"
-    default n
-
 config AUTOTEST_TIMER_DRIVER
     bool
     default n
