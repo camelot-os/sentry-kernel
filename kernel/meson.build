@@ -21,6 +21,20 @@ endif
 # various kernel libraries. Defaulting to empty list.
 target_link_args = []
 
+
+# if EACSL is enabled, we need to use the mini-gmp library at kernel level:
+# headers resolution and library linking support
+# automatic aliasing of the gmp functions to e-acsl required ones is done
+# using the gmp_acsl_h header variable, included in the same way config.h is included
+if kconfig_data.get('CONFIG_SECU_ENABLE_EACSL', 0) == 1
+    gmp_proj = subproject('mini-gmp',
+         default_options: 'c_args=-Os'
+    )
+    gmp_dep = gmp_proj.get_variable('gmp_dep')
+    gmp_eacsl_h = gmp_proj.get_variable('gmp_eacsl_h')
+    external_deps += gmp_dep
+endif
+
 # sources, generated and effective
 sentry_header_set = ssmod.source_set()
 sentry_header_set.add(kconfig_h)
@@ -67,7 +81,6 @@ sentry_linker_args = [
 ]
 
 sentry_map_file = '@0@.map'.format(meson.project_name())
-
 
 sentry_elf = executable(
     meson.project_name(),

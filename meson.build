@@ -195,6 +195,7 @@ with_tests = get_option('with_tests')
 with_tools = get_option('with_tools')
 with_proof = get_option('with_proof')
 with_sbom_opt = get_option('with_sbom')
+with_eacsl = kconfig_data.get('CONFIG_SECU_ENABLE_EACSL', 0) == 1
 
 if with_idle_opt or with_autotest
     with_uapi_opt = true
@@ -288,6 +289,7 @@ summary(
         'unit tests': with_tests,
         'formal proof': with_proof,
         'sbom': with_sbom_opt,
+        'e-ACSL runtime asertions': with_eacsl,
     },
     bool_yn: true,
     section: 'Targets',
