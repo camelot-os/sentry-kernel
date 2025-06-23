@@ -1,18 +1,14 @@
-# SPDX-FileCopyrightText: 2023-2024 Ledger SAS
-# SPDX-License-Identifier: Apache-2.0
-
-if BUILD_TARGET_AUTOTEST
-
 menu "Autotest configuration"
+depends on BUILD_TARGET_AUTOTEST
 
 choice
-    bool "Test library implementation"
+    prompt "Test library implementation"
     default AUTOTEST_TESTLIB_C
 
-    config AUTOTEST_TESTLIB_C
+config AUTOTEST_TESTLIB_C
     bool "C11 test library using the FFI-C UAPI interface"
 
-    config AUTOTEST_TESTLIB_RUST
+config AUTOTEST_TESTLIB_RUST
     bool "Rust test library using the native Rust UAPI interface"
 
 endchoice
@@ -21,56 +17,142 @@ config AUTOTEST_TIMER_DRIVER
     bool
     default n
 
-config TEST_YIELD
-    bool "yield test suite"
-    default y
+# ----------------------------
+#        C Autotests
+# ----------------------------
+menu "C autotests"
 
-config TEST_HANDLES
-    bool "handles access test suite"
-    default y
+config TEST_C_YIELD
+    bool "yield test suite (C)"
+    depends on AUTOTEST_TESTLIB_C
+    default y if BUILD_TARGET_AUTOTEST
 
-config TEST_SIGNALS
-    bool "Signal snd/receive test suite"
-    default y
+config TEST_C_HANDLES
+    bool "handles access test suite (C)"
+    depends on AUTOTEST_TESTLIB_C
+    default y if BUILD_TARGET_AUTOTEST
 
-config TEST_IPC
-    bool "IPC snd/receive test suite"
-    default y
+config TEST_C_SIGNALS
+    bool "Signal send/receive test suite (C)"
+    depends on AUTOTEST_TESTLIB_C
+    default y if BUILD_TARGET_AUTOTEST
 
-config TEST_RANDOM
-    bool "KRNG test suite"
-    default y
+config TEST_C_IPC
+    bool "IPC send/receive test suite (C)"
+    depends on AUTOTEST_TESTLIB_C
+    default y if BUILD_TARGET_AUTOTEST
 
-config TEST_CYCLES
-    bool "Cycle measurement test suite"
-    default y
+config TEST_C_RANDOM
+    bool "KRNG test suite (C)"
+    depends on AUTOTEST_TESTLIB_C
+    default y if BUILD_TARGET_AUTOTEST
 
-config TEST_SLEEP
-    bool "Various slepping mode test suite"
-    default y
+config TEST_C_CYCLES
+    bool "Cycle measurement test suite (C)"
+    depends on AUTOTEST_TESTLIB_C
+    default y if BUILD_TARGET_AUTOTEST
 
-config TEST_GPIO
-    bool "GPIO kernel API test suite"
-    default n
+config TEST_C_SLEEP
+    bool "Various sleeping mode test suite (C)"
+    depends on AUTOTEST_TESTLIB_C
+    default y if BUILD_TARGET_AUTOTEST
 
-config TEST_DEVICES
-    bool "devices (un)mapping and access API test suite"
-    default n
+config TEST_C_GPIO
+    bool "GPIO kernel API test suite (C)"
+    depends on AUTOTEST_TESTLIB_C
+    default y if BUILD_TARGET_AUTOTEST
 
-config TEST_SHM
-    bool "Shared memory manipulation test suite"
-    default y
+config TEST_C_DEVICES
+    bool "Devices (un)mapping and access API test suite (C)"
+    depends on AUTOTEST_TESTLIB_C
+    default y if BUILD_TARGET_AUTOTEST
 
-config TEST_DMA
-    bool "Direct Memory Access test suite"
-    select TEST_SHM
-    default n
+config TEST_C_SHM
+    bool "Shared memory manipulation test suite (C)"
+    depends on AUTOTEST_TESTLIB_C
+    default y if BUILD_TARGET_AUTOTEST
 
-config TEST_IRQ
-    bool "User interrupts test suite, need timer support at autotest level"
+config TEST_C_DMA
+    bool "Direct Memory Access test suite (C)"
+    depends on AUTOTEST_TESTLIB_C
+    select TEST_C_SHM
+    default y if BUILD_TARGET_AUTOTEST
+
+config TEST_C_IRQ
+    bool "User interrupts test suite (C)"
+    depends on AUTOTEST_TESTLIB_C
     select AUTOTEST_TIMER_DRIVER
-    default n
+    default y if BUILD_TARGET_AUTOTEST
 
 endmenu
 
-endif
+# ----------------------------
+#       Rust Autotests
+# ----------------------------
+menu "Rust autotests"
+
+config TEST_RUST_YIELD
+    bool "yield test suite (Rust)"
+    depends on AUTOTEST_TESTLIB_RUST
+    default y if BUILD_TARGET_AUTOTEST
+
+config TEST_RUST_HANDLES
+    bool "handles access test suite (Rust)"
+    depends on AUTOTEST_TESTLIB_RUST
+    default y if BUILD_TARGET_AUTOTEST
+
+config TEST_RUST_SIGNALS
+    bool "Signal send/receive test suite (Rust)"
+    depends on AUTOTEST_TESTLIB_RUST
+    default y if BUILD_TARGET_AUTOTEST
+
+config TEST_RUST_IPC
+    bool "IPC send/receive test suite (Rust)"
+    depends on AUTOTEST_TESTLIB_RUST
+    default y if BUILD_TARGET_AUTOTEST
+
+config TEST_RUST_RANDOM
+    bool "KRNG test suite (Rust)"
+    depends on AUTOTEST_TESTLIB_RUST
+    default y if BUILD_TARGET_AUTOTEST
+
+config TEST_RUST_CYCLES
+    bool "Cycle measurement test suite (Rust)"
+    depends on AUTOTEST_TESTLIB_RUST
+    default y if BUILD_TARGET_AUTOTEST
+
+config TEST_RUST_SLEEP
+    bool "Various sleeping mode test suite (Rust)"
+    depends on AUTOTEST_TESTLIB_RUST
+    default y if BUILD_TARGET_AUTOTEST
+
+config TEST_RUST_GPIO
+    bool "GPIO kernel API test suite (Rust)"
+    depends on AUTOTEST_TESTLIB_RUST
+    default y if BUILD_TARGET_AUTOTEST
+
+config TEST_RUST_DEVICES
+    bool "Devices (un)mapping and access API test suite (Rust)"
+    depends on AUTOTEST_TESTLIB_RUST
+    default y if BUILD_TARGET_AUTOTEST
+
+config TEST_RUST_SHM
+    bool "Shared memory manipulation test suite (Rust)"
+    depends on AUTOTEST_TESTLIB_RUST
+    default y if BUILD_TARGET_AUTOTEST
+
+config TEST_RUST_DMA
+    bool "Direct Memory Access test suite (Rust)"
+    depends on AUTOTEST_TESTLIB_RUST
+    select TEST_RUST_SHM
+    default y if BUILD_TARGET_AUTOTEST
+
+config TEST_RUST_IRQ
+    bool "User interrupts test suite (Rust)"
+    depends on AUTOTEST_TESTLIB_RUST
+    select AUTOTEST_TIMER_DRIVER
+    default y if BUILD_TARGET_AUTOTEST
+
+endmenu
+
+endmenu
