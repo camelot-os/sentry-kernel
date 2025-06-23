@@ -1,0 +1,13 @@
+# SPDX-FileCopyrightText: 2023 - 2024 Ledger SAS
+# SPDX-License-Identifier: Apache-2.0
+
+[toolchain]
+channel = "@channel@"
+components = [ "rustfmt", "clippy" ]
+targets = [ "@target@" ]
+profile = "minimal"
+
+# This toolchain will be automatically installed when using meson
+# because it will invoke `rustc --version` on configure to detect
+# the compiler version, and rustc will check this that it has the
+# elements described in this file.

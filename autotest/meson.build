@@ -1,6 +1,21 @@
 # SPDX-FileCopyrightText: 2023 - 2025 Ledger SAS
 # SPDX-License-Identifier: Apache-2.0
 
+# Set rust toolchain config entry according to kconfig
+# Note:
+#   configuration_file is done at top level meson.build in order to generate
+#   rust-toolchain.toml at build root directory.
+rust_toolchain_in = files('src/tests/src-rs/rust-toolchain.toml.in')
+rust_toolchain_config = configuration_data()
+rust_toolchain_config.set('channel', get_option('rust-channel'))
+rust_toolchain_config.set('target', kconfig_data.get_unquoted('CONFIG_RUSTC_TARGET'))
+
+global_rust_build_args = [
+    '@' + fs.parent(kconfig_rustargs) / fs.name(kconfig_rustargs),
+    target_rustargs,
+    '-C', 'lto=true', '-C', 'relocation-model=pic', '-C', 'link-args=--emit-relocs'
+]
+
 if not with_autotest
     subdir_done()
 endif
