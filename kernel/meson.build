@@ -27,8 +27,13 @@ target_link_args = []
 # automatic aliasing of the gmp functions to e-acsl required ones is done
 # using the gmp_acsl_h header variable, included in the same way config.h is included
 if kconfig_data.get('CONFIG_SECU_ENABLE_EACSL', 0) == 1
-    gmp_proj = subproject('mini-gmp',
-         default_options: 'c_args=-Os'
+
+    global_target_c_args_str = ','.join(target_arch_args)
+
+    message('Building Sentry kernel with e-ACSL support, using @0@'.format(global_target_c_args_str))
+    gmp_proj = subproject(
+        'mini-gmp',
+        default_options: [ 'c_std=c11', 'extra_c_args=@0@'.format(global_target_c_args_str)],
     )
     gmp_dep = gmp_proj.get_variable('gmp_dep')
     gmp_eacsl_h = gmp_proj.get_variable('gmp_eacsl_h')
@@ -97,6 +102,7 @@ sentry_elf = executable(
         sentry_sched_dep,
         sentry_managers_dep,
         sentry_syscall_dep,
+        sentry_eacsl_dep,
         external_deps
     ],
     c_args: [ target_arch_args, global_build_args, sentry_dts_args ],

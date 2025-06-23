@@ -49,21 +49,22 @@ index 0000000..c69b64f
 +#define __gmpq_sub mpq_sub
 diff --git a/meson.build b/meson.build
 new file mode 100644
-index 0000000..36907a7
+index 0000000..d6d8150
 --- /dev/null
 +++ b/meson.build
-@@ -0,0 +1,31 @@
+@@ -0,0 +1,33 @@
 +project(
 +    'gmp',
 +    'c',
 +    license: 'LGPLv3',
-+    meson_version: '>=1.0.0',
-+    default_options: ['c_std=c11'],
++    meson_version: '>=1.4.0',
 +)
 +
 +fs = import('fs')
 +
 +gmp_inc = include_directories('.')
++
++message('args are @0@'.format(get_option('extra_c_args')))
 +
 +# cpp-based symbol aliasing for e-acsl generated code
 +gmp_eacsl_h = files('gmp-acsl.h')
@@ -75,6 +76,7 @@ index 0000000..36907a7
 +libgmp = static_library(
 +  'gmp',
 +  sources: [ gmp_sources ],
++  c_args: get_option('extra_c_args').split(','),
 +  install: false,
 +  native: false,
 +)
@@ -84,3 +86,10 @@ index 0000000..36907a7
 +  include_directories: gmp_inc,
 +  compile_args: [ '-include', fs.name(gmp_eacsl_h) ],
 +)
+diff --git a/meson.options b/meson.options
+new file mode 100644
+index 0000000..9120bce
+--- /dev/null
++++ b/meson.options
+@@ -0,0 +1 @@
++option('extra_c_args', type: 'string', value: '', description: 'extra C args to include')
