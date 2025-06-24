@@ -2,6 +2,27 @@
 # SPDX-License-Identifier: Apache-2.0
 
 testlib_rust_sourceset = ssmod.source_set()
+#autotest_libfile = files('src/lib.rs')
+
+add_languages('rust', native: false, required: true)
+
+# Set rust toolchain config entry according to kconfig
+# Note:
+#   configuration_file is done at top level meson.build in order to generate
+#   rust-toolchain.toml at build root directory.
+rust_toolchain_in = files('rust-toolchain.toml.in')
+rust_toolchain_config = configuration_data()
+rust_toolchain_config.set('channel', get_option('rust-channel'))
+rust_toolchain_config.set('target', kconfig_data.get_unquoted('CONFIG_RUSTC_TARGET'))
+
+global_rust_build_args = [
+    '@' + fs.parent(kconfig_rustargs) / fs.name(kconfig_rustargs),
+    target_rustargs,
+    '-C', 'lto=true', '-C', 'relocation-model=pic', '-C', 'link-args=--emit-relocs'
+]
+rust_edition = '2024'
+autotest_rust_std = 'rust_std=' + rust_edition
+
 devices_template_rs = files(['devices_dt.rs.in'])
 
 devices_dtsgen_rs = custom_target('devices_dtsgen_rs_gen',
@@ -50,7 +71,7 @@ autotest_test_lib = static_library('testlib_rust',
         '--extern', 'kconfig=' + meson.source_root() / 'subprojects' / 'kconfig' / 'rust' / 'kconfig',
         '--extern', 'kconfig_import=' + meson.source_root() / 'subprojects' / 'kconfig' / 'rust' / 'kconfig_import',
     ],
-    override_options: [uapi_rust_std],
+    override_options: [autotest_rust_std],
     #link_with: [uapi_rlib, kconfig, kconfig_import],
     link_with: [uapi_rlib],
     install: false,
