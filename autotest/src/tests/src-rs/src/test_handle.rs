@@ -9,6 +9,10 @@ use sentry_uapi::*;
 use sentry_uapi::syscall::get_process_handle;
 use sentry_uapi::systypes::Status;
 use core::prelude::v1::Ok;
+use crate::test_suite_start;
+use sentry_uapi::systypes::TaskHandle;
+use crate::test_suite_end;
+use crate::test_log::USER_AUTOTEST_INFO;
 
 #[repr(C, packed)]
 #[derive(Debug, Copy, Clone)]
@@ -38,25 +42,20 @@ fn test_gethandle() -> bool {
     test_start!();
     let mut handle: TaskHandle = 0;
     let mut ok = true;
-
-    unsafe {
-        ok &= copy_to_kernel(&mut handle as *mut _ as *mut u8, core::mem::size_of::<TaskHandle>()) == Ok(Status::Ok);
-    }
-    unsafe {
-        ok &= copy_from_kernel(&mut handle as *mut _ as *mut u8, core::mem::size_of::<TaskHandle>()) == Ok(Status::Ok);
-    }
+    ok &= copy_to_kernel(&mut (&mut handle as *mut _ as *mut u8)) == Ok(Status::Ok);
+    ok &= copy_from_kernel(&mut (&mut handle as *mut _ as *mut u8)) == Ok(Status::Ok);
     ok &= check_eq!(handle, 0);
 
     ok &= check_eq!(get_process_handle(0xbabe), Status::Ok);
-    unsafe {
-        ok &= copy_from_kernel(&mut handle as *mut _ as *mut u8, core::mem::size_of::<TaskHandle>()) == Ok(Status::Ok);
-    }
-    log_line!("received handle: {:#x}", handle);
+  
+    ok &= copy_from_kernel(&mut (&mut handle as *mut _ as *mut u8)) == Ok(Status::Ok);
+
+    log_line!(USER_AUTOTEST_INFO, "received handle: {:#x}", handle);
 
     let khandle = KTaskHandle::from_raw(handle);
-    log_line!("handle rerun = {:#x}", khandle.rerun);
-    log_line!("handle id = {:#x}", khandle.id);
-    log_line!("handle family = {:#x}", khandle.family);
+    //log_line!(USER_AUTOTEST_INFO, "handle rerun = {:#x}", khandle.rerun);
+    log_line!(USER_AUTOTEST_INFO, "handle id = {:#x}", khandle.id);
+    log_line!(USER_AUTOTEST_INFO, "handle family = {:#x}", khandle.family);
 
     test_end!();
     ok
