@@ -15,6 +15,7 @@ testlib_rust_sourceset.add(
     files(
         'src/test_log.rs',
         'src/test_handle.rs',
+        'src/devices_utils.rs',
         )
 )
 
