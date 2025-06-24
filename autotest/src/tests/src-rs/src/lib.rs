@@ -3,6 +3,7 @@
 
 #![no_std]
 #![no_main]
+#[allow(dead_code)]
 
 mod devices_dt;
 mod devices_utils;
@@ -18,11 +19,11 @@ mod test_signal;
 mod test_sleep;
 mod test_yield;
 mod test_gpio;
-use kconfig;
+//use kconfig;
 
 #[unsafe(no_mangle)]
-pub fn autotest() {
-    kconfig_import::import_dotconfig_from_script();
+pub fn autotest_rust() {
+    //kconfig_import::import_dotconfig_from_script();
 
     #[cfg(CONFIG_TEST_IPC)]
     test_ipc::test_ipc();
