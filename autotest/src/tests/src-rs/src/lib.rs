@@ -19,6 +19,7 @@ mod test_signal;
 mod test_sleep;
 mod test_yield;
 mod test_gpio;
+mod test_handle;
 //use kconfig;
 
 #[unsafe(no_mangle)]
