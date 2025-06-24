@@ -124,9 +124,8 @@ fn test_irq_spawn_one_it() -> bool {
     let irqn = u32::from_le_bytes([tab[8], tab[9], tab[10], tab[11]]);
     let source = u32::from_le_bytes([tab[4], tab[5], tab[6], tab[7]]);
     ok &= check_eq!(irqn, irq as u32);
-    unsafe {
-        ok &= check_eq!(source, unsafe { HANDLE });
-    }
+    ok &= check_eq!(source, unsafe { HANDLE });
+    
 
     test_end!();
     ok
