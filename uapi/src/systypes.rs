@@ -395,6 +395,7 @@ impl From<SHMPermission> for u32 {
 
 /// Sentry signals definition. Most of them are aligned on standard POSIX signals
 #[repr(C)]
+#[derive(Clone, PartialEq, Copy, Debug)]
 pub enum Signal {
     /// Abort signal
     Abort = 1,
@@ -711,9 +712,9 @@ pub mod dev {
     #[derive(Debug, Copy, Clone)]
     pub struct InterruptInfo {
         /// interrupt number
-        pub num: u16,
+        pub it_num: u16,
         /// interrupt controler identifier
-        pub controller: u8,
+        pub it_controler: u8,
     }
 
     #[test]
@@ -731,7 +732,7 @@ pub mod dev {
             concat!("Alignment of ", stringify!(InterruptInfo))
         );
         assert_eq!(
-            unsafe { ::std::ptr::addr_of!((*ptr).num) as usize - ptr as usize },
+            unsafe { ::std::ptr::addr_of!((*ptr).it_num) as usize - ptr as usize },
             0usize,
             concat!(
                 "Offset of field: ",
@@ -741,7 +742,7 @@ pub mod dev {
             )
         );
         assert_eq!(
-            unsafe { ::std::ptr::addr_of!((*ptr).controller) as usize - ptr as usize },
+            unsafe { ::std::ptr::addr_of!((*ptr).it_controler) as usize - ptr as usize },
             2usize,
             concat!(
                 "Offset of field: ",
@@ -753,21 +754,15 @@ pub mod dev {
     }
 
     #[repr(C)]
-    #[derive(Debug, Copy, Clone)]
+    #[derive(Copy, Clone, Debug)]
     pub struct IoInfo {
-        /// GPIO port identifier, declared in DTS
         pub port: u8,
-        /// GPIO pin identifier, declared in DTS
         pub pin: u8,
         pub mode: u8,
-        /// GPIO AF identifier, declared in DTS
         pub af: u8,
-        /// GPIO ppull config, declared in DTS
         pub ppull: u8,
-        /// GPIO speed config, declared in DTS
         pub speed: u8,
-        // GPIO pupdr config, declared in DTS
-        pub pupdr: u32,
+        pub pupdr: u8,
     }
     #[test]
     fn test_layout_io_info() {
@@ -862,6 +857,7 @@ pub mod dev {
     pub struct DevInfo {
         pub id: u32,
         /// mappable device. Direct-IO (LED...) are not
+        /// Not parsed from the DTS, useless ?
         pub mappable: bool,
         /// for mappable devices, base address
         pub baseaddr: usize,
