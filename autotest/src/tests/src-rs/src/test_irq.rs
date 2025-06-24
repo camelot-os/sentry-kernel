@@ -17,18 +17,6 @@ use sentry_uapi::*;
 static mut HANDLE: DeviceHandle = 0;
 
 
-#[repr(C)]
-#[derive(Debug, Copy, Clone)]
-pub struct Stm32TimerDesc {
-    pub base_addr: u32,
-    pub size: usize,
-    pub clk_msk: u32,
-    pub label: u8,
-    pub irqn: u8,
-    pub counter: u16,
-    pub prescaler: u16,
-}
-
 unsafe extern "C" {
     pub fn timer_get_irqn() -> i8;
 }
@@ -82,18 +70,15 @@ pub fn init_timer() -> i32 {
 pub extern "C" fn test_irq() -> bool {
     test_suite_start!("sys_irq");
     let mut ok = true;
-    unsafe {
-        timer_map(&raw mut HANDLE);
-    }
+    map_timer(&raw mut HANDLE);
     init_timer();
 
     ok &= test_irq_spawn_one_it();
     ok &= test_irq_spawn_two_it();
     ok &= test_irq_spawn_periodic();
 
-    unsafe {
-        timer_unmap(HANDLE);
-    }
+    unmap_timer(unsafe {HANDLE} );
+
 
     test_suite_end!("sys_irq");
     ok
