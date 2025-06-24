@@ -30,10 +30,13 @@ if kconfig_data.get('CONFIG_SECU_ENABLE_EACSL', 0) == 1
 
     global_target_c_args_str = ','.join(target_arch_args)
 
-    message('Building Sentry kernel with e-ACSL support, using @0@'.format(global_target_c_args_str))
-    gmp_proj = subproject(
-        'mini-gmp',
-        default_options: [ 'c_std=c11', 'extra_c_args=@0@'.format(global_target_c_args_str)],
+    message('Building Sentry kernel with e-ACSL support')
+    gmp_proj = subproject('mini-gmp',
+        default_options: [
+            'c_std=c11',
+            'extra_c_args=@0@'.format(global_target_c_args_str),
+        ],
+        required: true,
     )
     gmp_dep = gmp_proj.get_variable('gmp_dep')
     gmp_eacsl_h = gmp_proj.get_variable('gmp_eacsl_h')

@@ -9,8 +9,9 @@ eacsl_lib = static_library('eacsl',
     include_directories: [ kernel_inc ],
     c_args: [ target_arch_args, global_build_args ],
     dependencies: [
-        external_deps
-    ]   ,
+        external_deps,
+        sentry_arch_dep,
+    ],
     install: false,
 )
 
