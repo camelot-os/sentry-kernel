@@ -105,8 +105,8 @@ get back the source and the signal identifier, and deduce the action to take.
 IPC handle
 ~~~~~~~~~~
 
-IPC handles are ephemeral handles that are used when receiving and IPC message.
-These handles hold the IPC lenght and source, allowing the task to get back
+IPC handles are ephemeral handles that are used when receiving an IPC message.
+These handles hold the IPC length and source, allowing the task to get back
 the IPC message from its own :ref:`SVC Exhcange <svc_exchange>` area and
 process it. This handle is a reception handle only. Sending IPC is done by
 passing the IPC message length and the target task handle to the `SendIPC`
