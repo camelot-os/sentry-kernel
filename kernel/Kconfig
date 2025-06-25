@@ -9,7 +9,7 @@ rsource 'src/managers/Kconfig'
 menu "Build mode"
 
 config STANDALONE_MODE
-	bool "Standardone mode"
+	bool "Standalone mode"
 	help
 	  Allows standalone mode. No external task is built, Sentry only
 	  execute itself and its own services and platform init.
