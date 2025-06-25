@@ -1,0 +1,39 @@
+// SPDX-FileCopyrightText: 2025 ANSSI
+// SPDX-License-Identifier: Apache-2.0
+
+/**
+ * Retrieve address of `mtimer` and `mtimercmp` from dts.
+ *
+ * Assume that the dts contains a mtimer node with the two registers in order.
+ *
+ * Example from opentitan_earlgrey.dts:
+ *  mtimer: timer@40100110 {
+ *    compatible = "riscv,machine-timer";
+ *    reg = <0x40100110 0x8 0x40100118 0x8>;
+ *    reg-names = "mtime", "mtimecmp";
+ *    interrupts-extended = <&hlic 7>;
+ *  };
+ */
+
+/*
+ * XXX:
+ *  !!!! Generated header, DO NOT EDIT !!!!
+ */
+
+#ifndef MTIMER_H
+#define MTIMER_H
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+{%- set mtimer = dts.soc.mtimer %}
+
+#define MTIMER_ADDR {{mtimer.reg[0]}}
+#define MTIMERCMP_ADDR {{mtimer.reg[2]}}
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif /* MTIMER_H */

@@ -17,6 +17,8 @@ extern "C" {
 #include <sentry/arch/asm-x86_64/thread.h>
 #elif defined(__i386__)
 #include <sentry/arch/asm-i386/thread.h>
+#elif defined(CONFIG_ARCH_RV32)
+#include <sentry/arch/asm-rv32/thread.h>
 #else
 #error "unsupported architecture!"
 #endif

@@ -4,24 +4,43 @@
 #ifndef ARM_SEMIHOSTING_H
 #define ARM_SEMIHOSTING_H
 
-#define SYS_FILE_MODE_READ              0
-#define SYS_FILE_MODE_READBINARY        1
-#define SYS_FILE_MODE_READWRITE         2
-#define SYS_FILE_MODE_READWRITEBINARY   3
-#define SYS_FILE_MODE_WRITE             4
-#define SYS_FILE_MODE_WRITEBINARY       5
-#define SYS_FILE_MODE_WRITEREAD         6
-#define SYS_FILE_MODE_WRITEREADBINARY   7
-#define SYS_FILE_MODE_APPEND            8
-#define SYS_FILE_MODE_APPENDBINARY      9
-#define SYS_FILE_MODE_APPENDREAD        10
-#define SYS_FILE_MODE_APPENDREADBINARY  11
+/**
+ * @brief Make a Thumb mode semihosting system call
+ *
+ * @param op semihosting call operation code
+ * @param argv argument array
+ *
+ * Semihosting call is automagically catch by debugger if enable in its side.
+ * In thumb mode, every time the CPU break on "0xAB" breakpoint (thumb opcode `0xbeab`)
+ * debugger will fetch `r0` (op) and `r1` (argv) registers and execute the corresponding system call
+ * in the host environment.
+ *
+ * The second automagically trick here is that arm eabi defined that the first arg is in `r0`
+ * and the second in `r1`. So, there is **nothing** to do but preventing the compiler to trim
+ * these away. So, this function is **never** inlined and non optimized.
+ *
+ * Debugger will then write `r0` with syscall return code, so, there is **nothing** (again) to do
+ * but return (i.e. branching to link register).
+ *
+ * For all these reason, there is no need for prolog nor epilog, thus this is a naked function.
+ *
+ * @warning do not use this without enabling semihosting on debugger side, otherwise
+ *          core will hang until reset.
+ *
+ * @return host executed call return code
+ */
 
-
-int arm_semihosting_open(const char* filename, int length, int mode);
-int arm_semihosting_close(int file);
-int arm_semihosting_writec(char c);
-int arm_semihosting_write0(const char* s);
-int arm_semihosting_write(int file, const char* buffer, int length);
+__attribute__((noinline, naked, optimize("-O0")))
+static int semihosting_call(int op __UNUSED, int* argv __UNUSED)
+{
+#ifndef __FRAMAC__
+    asm inline (
+        "bkpt #0xAB     \n\t\
+         bx lr          \n\t\
+        ");
+#else
+    return 0;
+#endif/*!__FRAMAC__*/
+}
 
 #endif /* ARM_SEMIHOSTING_H */
