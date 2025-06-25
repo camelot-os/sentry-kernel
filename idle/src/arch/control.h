@@ -6,6 +6,8 @@
 
 #if defined(CONFIG_ARCH_ARM_CORTEX_M)
 # include "asm-cortex-m/control.h"
+#elif defined(CONFIG_ARCH_RV32)
+# include "riscv32/control.h"
 #else
 # error "target arch not supported"
 #endif
