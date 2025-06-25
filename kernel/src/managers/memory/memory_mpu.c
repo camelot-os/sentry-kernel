@@ -9,19 +9,7 @@
 #include <sentry/arch/asm-generic/interrupt.h>
 #include <sentry/arch/asm-generic/membarriers.h>
 #include <sentry/arch/asm-generic/panic.h>
-
-
-#if defined(__arm__) || defined(__FRAMAC__)
-#include <sentry/arch/asm-cortex-m/core.h>
-#include <sentry/arch/asm-cortex-m/mpu.h>
-#include <sentry/arch/asm-cortex-m/handler.h>
-#elif defined(__x86_64__)
-// TODO add core,mmu and handler headers (or minimum to compile)
-#elif defined(__i386__)
-// TODO add core,mmu and handler headers (or minimum to compile)
-#else
-#error "unsupported architecture!"
-#endif
+#include <sentry/arch/asm-generic/memory.h>
 
 #include <sentry/managers/debug.h>
 #include <sentry/managers/device.h>
