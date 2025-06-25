@@ -6,6 +6,8 @@
 #include <sentry/managers/device.h>
 #include <sentry/sched.h>
 
+#include <sentry/arch/asm-generic/panic.h>
+
 
 stack_frame_t *gate_get_devhandle(stack_frame_t *frame, uint8_t devid)
 {

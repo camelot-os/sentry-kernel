@@ -6,6 +6,7 @@
 #include <sentry/managers/interrupt.h>
 #include <sentry/managers/task.h>
 #include <sentry/arch/asm-generic/interrupt.h>
+#include <sentry/arch/asm-generic/panic.h>
 #include <sentry/sched.h>
 
 /**
