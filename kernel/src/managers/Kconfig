@@ -79,6 +79,20 @@ config DEBUG_COLORS
 	  Activate ANSI coloration on serial console for kernel debugging
 	  output. Userspace log is not impacted
 
+config DEBUG_LOGO
+	bool "Display kernel logo on startup"
+	default y
+	help
+	  Display the kernel logo on startup, if the console supports it.
+	  This is only available for debug output on usart.
+
+config DEBUG_LOGO_COLORED
+	bool "Display kernel logo in color"
+	default n
+	help
+	  Display the kernel logo in color, if the console supports it.
+	  This is only available for debug output on usart.
+
 if DEBUG_COLORS
 
 choice
