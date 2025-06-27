@@ -90,9 +90,7 @@ static inline uint8_t __ioread8(size_t addr)
 {
     uint8_t val;
 
-    asm volatile(
-        "lbu %0, %1" : "=r" (val) : "Qo" (*(volatile uint8_t *)addr) : "memory"
-    );
+    asm volatile("lbu %0, 0(%1)" : "=r" (val) : "r" (addr));
 
     return val;
 }
@@ -112,9 +110,7 @@ static inline uint16_t __ioread16(size_t addr)
 {
     uint16_t val;
 
-    asm volatile(
-        "lhu %0, %1" : "=r" (val) : "Qo" (*(volatile uint16_t *)addr) : "memory"
-    );
+    asm volatile("lhu %0, 0(%1)" : "=r" (val) : "r" (addr));
 
     return val;
 }
@@ -134,9 +130,7 @@ static inline uint32_t __ioread32(size_t addr)
 {
     uint32_t val;
 
-    asm volatile(
-        "lw %0, %1" : "=r" (val) : "Qo" (*(volatile uint32_t *)addr) : "memory"
-    );
+    asm volatile ("lw %0, 0(%1)"  : "=r"(val) : "r" (addr));
 
     return val;
 }
