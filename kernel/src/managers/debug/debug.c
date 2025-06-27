@@ -10,7 +10,7 @@
 #include <sentry/arch/asm-cortex-m/semihosting.h>
 #endif
 #include "log.h"
-
+#include "logo.h"
 /**
  * @brief probe the debug backend
  *
@@ -31,6 +31,7 @@ kstatus_t mgr_debug_init(void)
 #endif
     dbgbuffer_flush();
 #if CONFIG_DEBUG_OUTPUT_USART
+    logo_print();
 end:
 #endif
     return status;
