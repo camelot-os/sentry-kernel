@@ -8,6 +8,7 @@
 #include <sentry/managers/device.h>
 #include <sentry/managers/io.h>
 #include <sentry/managers/security.h>
+#include <sentry/arch/asm-generic/panic.h>
 #include <sentry/sched.h>
 
 /** XXX: using io manager API instead */

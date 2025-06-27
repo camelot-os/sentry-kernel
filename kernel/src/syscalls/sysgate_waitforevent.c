@@ -7,6 +7,7 @@
 #include <sentry/sched.h>
 #include <uapi/types.h>
 #include <uapi/dma.h>
+#include <sentry/arch/asm-generic/panic.h>
 
 
 static inline void gate_waitforevent_populate_dma(taskh_t current, dmah_t dma, gpdma_chan_state_t event)

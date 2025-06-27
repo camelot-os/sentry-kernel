@@ -22,6 +22,8 @@
 #include <sentry/arch/asm-x86_64/io.h>
 #elif defined(__i386__)
 #include <sentry/arch/asm-i386/io.h>
+#elif defined(CONFIG_ARCH_RV32)
+#include <sentry/arch/asm-rv32/io.h>
 #else
 #error "unsupported architecture"
 #endif
@@ -61,6 +63,14 @@ extern "C" {
   *  can't be both declared).
   * In the same time, long & u32 are not the same
   */
+#define iowrite(reg, T) _Generic((T),   \
+              size_t:   iowrite32,      \
+              uint32_t: iowrite32,      \
+              uint16_t: iowrite16,      \
+              uint8_t:  iowrite8        \
+        ) (reg, T)
+#elif defined(CONFIG_ARCH_RV32)
+/** @brief Generic iowrite interface that implicitely handle multiple sizes */
 #define iowrite(reg, T) _Generic((T),   \
               size_t:   iowrite32,      \
               uint32_t: iowrite32,      \

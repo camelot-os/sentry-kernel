@@ -1,0 +1,7 @@
+# SPDX-FileCopyrightText: 2025 ANSSI
+# SPDX-License-Identifier: Apache-2.0
+
+CONFIG_STANDALONE_MODE=y
+CONFIG_ARCH_RISCV=y
+CONFIG_ARCH_RV32=y
+CONFIG_RUSTC_TARGET="riscv32imc-unknown-none-elf"

@@ -31,7 +31,7 @@ extern size_t _idle;
 
 
 /**
- * @def table of tasks, polulated at boot time during metadata analysis
+ * @def table of tasks, populated at boot time during metadata analysis
  *
  * contains all dynamic content of tasks (current sp, state...)
  * This table is sorted based on the task label (taskh_t id field) for binary search.
@@ -388,7 +388,9 @@ void __attribute__((noreturn)) mgr_task_start(void)
     pr_info("spawning thread, pc=%p, sp=%p", pc, sp);
     mgr_task_set_userspace_spawned();
     /*
-     * idle thread is started as privileged thread and drop right to user immediately at entry point
+     * On Arm: idle thread is started as privileged thread and drop right to
+     *      user immediately at entry point
+     * On RISC-V: idle thread is started in U-mode
      */
     __platform_spawn_thread(pc, sp, THREAD_MODE_KERNEL);
     __builtin_unreachable();
