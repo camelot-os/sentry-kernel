@@ -14,6 +14,10 @@ bsp_header_set.add(files(
     'syscfg/syscfg.h',
 ))
 
+if kconfig_data.get('CONFIG_WITH_SMP_SUPPORT', 0) == 1
+bsp_header_set.add(files('smp/smp.h'))
+endif
+
 # FIXME:
 # Those might not be exposed here but htere is a limitation w/ meson generator
 # as generated files may consume driver header

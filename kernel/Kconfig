@@ -58,6 +58,35 @@ config BUILD_TARGET_AUTOTEST
 	select SECU_LOOP_DBLE_IDX
 endchoice
 
+config WITH_SMP_SUPPORT
+    bool "Support for SMP architecture"
+    default n
+    help
+      In SMP mode, the kernel can be spawned in parallel in multiple cores at the
+      same time. As a consequence:
+      - the initialization is differenciated between core 0 and other cores, core 0
+        being responsible for the initialisation of system-wide data (e.g. task listing)
+      - depending on the selected scheduling policy, task (or jobs) are assigned to cores.
+        All task being single threaded, there is no parallelism constraint at task level,
+        their core-assignation being dependent of the selected scheduler
+      - all kernel code after bootup must be reentrant, using hardware SMP-related locks
+        if needed for system-wide impacting codes (e.g. using spin locking)
+
+if WITH_SMP_SUPPORT
+
+config SMP_CORES_NUMBER
+    int "number of SMP cores"
+    default 1
+    help
+      Define the number of cores in the SMP architecture.
+      Such an information is required in order to dimension some data (e.g. scheduling backend
+      when using per-core scheduling FIFO) and also permits to automatically hang any core being
+      out of the cores range (e.g. if this config is set to 2, but 3 cores are started at bootup,
+      the kernel init sequence will automatically hold forever on third core)
+
+endif
+
+
 config WITH_JTAG_CONNECTED
 	bool "Built for target with JTAG connected, active auto-breakpoints"
 	default n

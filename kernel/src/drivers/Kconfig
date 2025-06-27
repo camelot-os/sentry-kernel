@@ -5,4 +5,6 @@ menu "Drivers"
 
 rsource 'usart/Kconfig'
 
+rsource 'smp/Kconfig'
+
 endmenu
