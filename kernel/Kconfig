@@ -86,6 +86,14 @@ config SMP_CORES_NUMBER
 
 endif
 
+config WITH_UF2
+	bool "Build Sentry as UF2 image"
+	default n
+	help
+	  Build Sentry as a UF2 image, that can be flashed on a Raspberry Pi Pico or
+	  other compatible devices. This is useful for development and testing purposes.
+	  The resulting file will be named `sentry-kernel.uf2` in the build directory.
+
 
 config WITH_JTAG_CONNECTED
 	bool "Built for target with JTAG connected, active auto-breakpoints"
