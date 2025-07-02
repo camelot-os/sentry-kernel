@@ -9,7 +9,7 @@ macro_rules! syscall0 {
                 "svc #{}",
                 const ($id as u8),
                 lateout("r0") res,
-                options(nomem, preserves_flags)
+                options(preserves_flags)
             );
         }
         res
@@ -23,7 +23,7 @@ macro_rules! syscall1 {
                 "svc #{}",
                 const ($id as u8),
                 inlateout("r0") $arg0 => res,
-                options(nomem, preserves_flags)
+                options(preserves_flags)
             ); }
         res
     }}
@@ -37,7 +37,7 @@ macro_rules! syscall2 {
                 const ($id as u8),
                 inlateout("r0") $arg0 => res,
                 in("r1") $arg1,
-                options(nomem, preserves_flags)
+                options(preserves_flags)
             ); }
         res
     }}
@@ -52,7 +52,7 @@ macro_rules! syscall3 {
                 inlateout("r0") $arg0 => res,
                 in("r1") $arg1,
                 in("r2") $arg2,
-                options(nomem, preserves_flags)
+                options(preserves_flags)
             ); }
         res
     }}
