@@ -6,14 +6,14 @@ if BUILD_TARGET_AUTOTEST
 menu "Autotest configuration"
 
 choice
-    bool "Test library implementation"
-    default AUTOTEST_TESTLIB_C
+    bool "Test application implementation"
+    default AUTOTEST_C
 
-    config AUTOTEST_TESTLIB_C
-    bool "C11 test library using the FFI-C UAPI interface"
+    config AUTOTEST_C
+    bool "C11 test application using the FFI-C UAPI interface"
 
-    config AUTOTEST_TESTLIB_RUST
-    bool "Rust test library using the native Rust UAPI interface"
+    config AUTOTEST_RUST
+    bool "Rust test application using the native Rust UAPI interface"
 
 endchoice
 
