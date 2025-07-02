@@ -8,6 +8,8 @@
 mod print;
 mod tests;
 
+extern crate sentry_uapi;
+
 use sentry_uapi::syscall;
 
 ///  Canari variable, as defined in LLVM & GCC compiler documentation, in order to
