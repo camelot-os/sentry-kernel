@@ -23,6 +23,11 @@ autotest_ldscript = custom_target('autotest_ldscript',
     output: '@BASENAME@',
     command: [ dts2src, '-d', dts.full_path() , '-t', '@INPUT@', '@OUTPUT@' ],
     depends: [ dts ],
+    # XXX: rustc requires compile-time the linker script file, even if used only
+    # at link time.
+    # This is a workaround to avoid the need for explicit call to this target
+    # before building the autotest task.
+    build_by_default: true,
 )
 
 autotest_linker_args = [
