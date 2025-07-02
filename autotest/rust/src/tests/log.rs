@@ -1,9 +1,6 @@
 // SPDX-FileCopyrightText: 2025 ANSSI
+// SPDX-FileCopyrightText: 2025 H2Lab
 // SPDX-License-Identifier: Apache-2.0
-
-use core::fmt;
-use sentry_uapi::copy_to_kernel;
-use sentry_uapi::syscall::log;
 
 pub const USER_AUTOTEST: &str = "[AT]";
 pub const USER_AUTOTEST_INFO: &str = "[INFO      ]";
@@ -14,38 +11,6 @@ pub const USER_AUTOTEST_FAIL: &str = "[KO        ]";
 pub const USER_AUTOTEST_SUCCESS: &str = "[SUCCESS   ]";
 pub const USER_AUTOTEST_START_SUITE: &str = "[STARTSUITE]";
 pub const USER_AUTOTEST_END_SUITE: &str = "[ENDSUITE  ]";
-const SVC_EXCH_AREA_LEN: usize = 128;
-struct DebugPrint;
-
-impl fmt::Write for DebugPrint {
-    fn write_str(&mut self, s: &str) -> fmt::Result {
-        let max_length = s.len().min(SVC_EXCH_AREA_LEN);
-        // TO BE CHECKED !
-        copy_to_kernel(&(s.as_ptr() as *mut u8)).expect("Failed to copy to kernel");
-        log(max_length);
-        Ok(())
-    }
-}
-
-pub fn _print(args: fmt::Arguments) {
-    use core::fmt::Write;
-    DebugPrint.write_fmt(args).expect("Print failed");
-}
-
-#[macro_export]
-macro_rules! print {
-    ($($arg:tt)*) => {
-        $crate::test_log::_print(format_args!($($arg)*))
-    }
-}
-
-#[macro_export]
-macro_rules! println {
-    () => ($crate::print!("\n"));
-    ($($arg:tt)*) => ($crate::print!("{}\n", format_args!($($arg)*)))
-}
-
-// Macros
 
 #[macro_export]
 macro_rules! test_start {

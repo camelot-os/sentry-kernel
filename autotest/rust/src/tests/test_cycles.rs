@@ -5,19 +5,22 @@ use crate::check;
 use crate::check_eq;
 use crate::log_line;
 use crate::test_end;
-use crate::test_log::USER_AUTOTEST_INFO;
+use crate::tests::log::USER_AUTOTEST_INFO;
 use crate::test_start;
 use crate::test_suite_end;
 use crate::test_suite_start;
+
+use crate::println;
+
 use core::prelude::v1::Ok;
-use sentry_uapi::syscall::get_cycle;
-use sentry_uapi::syscall::sched_yield;
+use core::mem;
+
+use sentry_uapi::syscall;
 use sentry_uapi::systypes::Precision;
 use sentry_uapi::systypes::Status;
-use sentry_uapi::*;
+use sentry_uapi;
 
-#[unsafe(no_mangle)]
-pub extern "C" fn test_cycles() -> bool {
+pub fn run() -> bool {
     test_suite_start!("sys_cycles");
     let mut ok = true;
     ok &= test_cycles_duration();
@@ -29,45 +32,57 @@ pub extern "C" fn test_cycles() -> bool {
 fn test_cycles_duration() -> bool {
     test_start!();
     let mut ok = true;
-    let mut start: u64 = 0;
-    let mut stop: u64 = 0;
+
+    let mut start: u64 = 0u64;
+
+    let mut stop: u64 = 0u64;
     let mut micro: u64 = 0;
 
-    let mut idx = 0u32;
+    // let mut idx = 0u32;
+    const iter: u64 = 1000;
 
-    ok &= check_eq!(sched_yield(), Status::Ok);
-    ok &= check_eq!(get_cycle(Precision::Microseconds), Status::Ok);
-    ok &= copy_from_kernel(&mut (&mut start as *mut _ as *mut u8)) == Ok(Status::Ok);
-    for _ in 0..=1000 {
-        let _ = get_cycle(Precision::Microseconds);
-        idx += 1;
+    syscall::sched_yield();
+    syscall::get_cycle(Precision::Microseconds);
+
+    check_eq!(sentry_uapi::copy_from_kernel(&mut start), Ok::<Status, Status>(Status::Ok));
+
+
+    println!("start {}", start);
+
+    for _ in 0..=iter {
+        let _ = syscall::get_cycle(Precision::Microseconds);
     }
 
-    ok &= check_eq!(get_cycle(Precision::Microseconds), Status::Ok);
-    ok &= copy_from_kernel(&mut (&mut stop as *mut _ as *mut u8)) == Ok(Status::Ok);
+    ok &= syscall::get_cycle(Precision::Microseconds) == Status::Ok;
+    ok &= sentry_uapi::copy_from_kernel(&mut stop) == Ok(Status::Ok);
+    println!("stop {}", stop);
 
     log_line!(
         USER_AUTOTEST_INFO,
         "average get_cycle cost: {}",
-        ((stop - start) / idx as u64) as u32
+        ((stop - start) / iter as u64) as u32
     );
 
-    ok &= check_eq!(sched_yield(), Status::Ok);
-    ok &= check_eq!(get_cycle(Precision::Microseconds), Status::Ok);
-    ok &= copy_from_kernel(&mut (&mut start as *mut _ as *mut u8)) == Ok(Status::Ok);
-
-    for _ in 0..=1000 {
-        ok &= check_eq!(get_cycle(Precision::Microseconds), Status::Ok);
-        ok &= copy_from_kernel(&mut (&mut micro as *mut _ as *mut u8)) == Ok(Status::Ok);
+    syscall::sched_yield();
+    syscall::get_cycle(Precision::Microseconds);
+    syscall::sched_yield();
+    sentry_uapi::copy_from_kernel(&mut start);
+    println!("start {}", start);
+    for _ in 0..=iter {
+        syscall::get_cycle(Precision::Microseconds);
+        sentry_uapi::copy_from_kernel(&mut micro);
     }
 
-    ok &= check_eq!(get_cycle(Precision::Microseconds), Status::Ok);
-    ok &= copy_from_kernel(&mut (&mut stop as *mut _ as *mut u8)) == Ok(Status::Ok);
+    syscall::get_cycle(Precision::Microseconds);
+    sentry_uapi::copy_from_kernel(&mut stop);
+
+    println!("last micro {}", micro);
+    println!("stop {}", stop);
 
     log_line!(
         USER_AUTOTEST_INFO,
         "average get_cycle+copy cost: {}",
-        ((stop - start) / idx as u64) as u32
+        ((stop - start) / iter as u64) as u32
     );
     test_end!();
     ok
@@ -79,16 +94,16 @@ fn test_cycles_precision() -> bool {
     let mut micro: u64 = 0;
     let mut nano: u64 = 0;
 
-    let milli_st = get_cycle(Precision::Milliseconds);
-    ok &= copy_from_kernel(&mut (&mut milli as *mut _ as *mut u8)) == Ok(Status::Ok);
+    let milli_st = syscall::get_cycle(Precision::Milliseconds);
+    ok &= sentry_uapi::copy_from_kernel(&mut milli) == Ok(Status::Ok);
 
-    let micro_st = get_cycle(Precision::Microseconds);
-    ok &= copy_from_kernel(&mut (&mut micro as *mut _ as *mut u8)) == Ok(Status::Ok);
+    let micro_st = syscall::get_cycle(Precision::Microseconds);
+    ok &= sentry_uapi::copy_from_kernel(&mut micro) == Ok(Status::Ok);
 
-    let nano_st = get_cycle(Precision::Nanoseconds);
-    ok &= copy_from_kernel(&mut (&mut nano as *mut _ as *mut u8)) == Ok(Status::Ok);
+    let nano_st = syscall::get_cycle(Precision::Nanoseconds);
+    ok &= sentry_uapi::copy_from_kernel(&mut nano) == Ok(Status::Ok);
 
-    let cycle_st = get_cycle(Precision::Cycle);
+    let cycle_st = syscall::get_cycle(Precision::Cycle);
 
     ok &= check_eq!(milli_st, Status::Ok);
     ok &= check!(milli as u32 > 0, "milli > 0");

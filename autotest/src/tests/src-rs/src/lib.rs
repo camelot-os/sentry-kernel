@@ -32,11 +32,11 @@ mod test_yield;
 #[cfg(CONFIG_TEST_GPIO)]
 mod test_gpio;
 
-use kconfig;
+// use kconfig;
 
 #[unsafe(no_mangle)]
 pub fn autotest() {
-    kconfig_import::import_dotconfig_from_script();
+    // kconfig_import::import_dotconfig_from_script();
 
     #[cfg(CONFIG_TEST_IPC)]
     test_ipc::test_ipc();

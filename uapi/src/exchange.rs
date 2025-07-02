@@ -7,6 +7,7 @@
 use crate::systypes::shm::ShmInfo;
 use crate::systypes::{ExchangeHeader, Status};
 use core::ptr::*;
+use core::mem;
 
 const EXCHANGE_AREA_LEN: usize = 128; // TODO: replace by CONFIG-defined value
 
@@ -15,7 +16,7 @@ const EXCHANGE_AREA_LEN: usize = 128; // TODO: replace by CONFIG-defined value
 #[unsafe(link_section = ".svcexchange")]
 static mut EXCHANGE_AREA: [u8; EXCHANGE_AREA_LEN] = [0u8; EXCHANGE_AREA_LEN];
 
-#[repr(align(4))]
+#[repr(align(8))]
 pub struct ExchangeAligned(pub [u8; 128]);
 #[unsafe(no_mangle)]
 pub static mut EXCHANGE_AREA_TEST: ExchangeAligned = ExchangeAligned([0u8; 128]);
@@ -88,23 +89,23 @@ impl SentryExchangeable for crate::systypes::shm::ShmInfo {
 ///
 macro_rules! impl_exchangeable {
     ($t:ty) => {
+        #[allow(static_mut_refs)]
         impl SentryExchangeable for $t {
             fn from_kernel(&mut self) -> Result<Status, Status> {
-                let (prefix, aligned, _) = unsafe { EXCHANGE_AREA_TEST.0.align_to::<$t>() };
-                if !prefix.is_empty() {
-                    return Err(Status::Critical);
-                }
+                // let (prefix, aligned, _) = unsafe { EXCHANGE_AREA.align_to::<$t>() };
+                // if !prefix.is_empty() {
+                //     return Err(Status::Critical);
+                // }
 
-                let first = aligned.first().ok_or(Status::Invalid)?;
-                unsafe {
-                    core::ptr::copy_nonoverlapping(first, self as *mut $t, 1);
-                }
-                Ok(Status::Ok)
+                // let first = aligned.first().ok_or(Status::Invalid)?;
+                let mut u8_slice: &mut [u8] =
+                unsafe { core::slice::from_raw_parts_mut(addr_of_mut!(*self) as *mut u8, core::mem::size_of::<$t>()) as &mut [u8] };
+                copy_from_kernel(&mut u8_slice)
             }
 
             #[cfg(test)]
             fn to_kernel(&self) -> Result<Status, Status> {
-                let (prefix, aligned, _) = unsafe { EXCHANGE_AREA_TEST.0.align_to_mut::<$t>() };
+                let (prefix, aligned, _) = unsafe { EXCHANGE_AREA.align_to_mut::<$t>() };
                 if !prefix.is_empty() {
                     return Err(Status::Critical);
                 }
@@ -446,6 +447,42 @@ mod tests {
     fn back_to_back_c_string() {
         let src: &[u8] = &[42, 1, 3, 5, 12];
         let mut dst: &mut [u8] = &mut [0, 0, 0, 0, 0];
+        assert_eq!(src.to_kernel(), Ok(Status::Ok));
+        assert_eq!(dst.from_kernel(), Ok(Status::Ok));
+        assert_eq!(src, dst);
+    }
+
+    #[test]
+    fn back_to_back_u8() {
+        let src: u8 = 42;
+        let mut dst = 0;
+        assert_eq!(src.to_kernel(), Ok(Status::Ok));
+        assert_eq!(dst.from_kernel(), Ok(Status::Ok));
+        assert_eq!(src, dst);
+    }
+
+    #[test]
+    fn back_to_back_u16() {
+        let src: u16 = 42;
+        let mut dst = 0;
+        assert_eq!(src.to_kernel(), Ok(Status::Ok));
+        assert_eq!(dst.from_kernel(), Ok(Status::Ok));
+        assert_eq!(src, dst);
+    }
+
+    #[test]
+    fn back_to_back_u32() {
+        let src: u32 = 42;
+        let mut dst = 0;
+        assert_eq!(src.to_kernel(), Ok(Status::Ok));
+        assert_eq!(dst.from_kernel(), Ok(Status::Ok));
+        assert_eq!(src, dst);
+    }
+
+    #[test]
+    fn back_to_back_u64() {
+        let src: u64 = 42;
+        let mut dst = 0;
         assert_eq!(src.to_kernel(), Ok(Status::Ok));
         assert_eq!(dst.from_kernel(), Ok(Status::Ok));
         assert_eq!(src, dst);
