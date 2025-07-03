@@ -33,6 +33,16 @@ __attribute__((optimize("-fno-stack-protector")))
 #endif
 __attribute__((noreturn)) void _entrypoint(void)
 {
+#ifdef CONFIG_HAS_SMP_SUPPORT
+    size_t cpuid = 0;
+    smp_get_cpuid(&cpuid);
+    if (unlikely(cpuid >= SMP_CORES_NUMBER)) {
+        do {
+            /* XXX: should enter sleep mode ideally here */
+            wait_for_event();
+        }
+    }
+#endif
     /* early init phase */
     mgr_interrupt_early_init();
     /* platform init phase */
