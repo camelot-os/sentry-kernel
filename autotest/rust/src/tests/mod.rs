@@ -3,6 +3,8 @@
 
 pub mod log;
 
+#[cfg(CONFIG_TEST_SLEEP)]
+pub mod test_sleep;
 #[cfg(CONFIG_TEST_YIELD)]
 pub mod test_yield;
 #[cfg(CONFIG_TEST_CYCLES)]
