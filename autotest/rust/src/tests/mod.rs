@@ -3,5 +3,7 @@
 
 pub mod log;
 
+#[cfg(CONFIG_TEST_YIELD)]
+pub mod test_yield;
 #[cfg(CONFIG_TEST_CYCLES)]
 pub mod test_cycles;
