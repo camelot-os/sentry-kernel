@@ -33,6 +33,8 @@ pub extern "C" fn autotest(_thread_id: u32, seed: u32) -> ! {
     println!("{}", testmsg);
     println!("AUTOTEST START");
 
+    #[cfg(CONFIG_TEST_RANDOM)]
+    tests::test_random::run();
     #[cfg(CONFIG_TEST_SLEEP)]
     tests::test_sleep::run();
     #[cfg(CONFIG_TEST_YIELD)]
