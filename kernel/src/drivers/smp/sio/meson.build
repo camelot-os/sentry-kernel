@@ -11,5 +11,5 @@ sio_prv_headers = files(
     'sio_private.h',
 )
 
-bsp_source_set.add(when: 'CONFIG_HAS_SIO', if_true: sio_drv_sources)
-bsp_private_header_set.add(when: 'CONFIG_HAS_SIO', if_true: sio_prv_headers)
+bsp_source_set.add(sio_drv_sources)
+bsp_private_header_set.add(sio_prv_headers)
