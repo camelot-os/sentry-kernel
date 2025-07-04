@@ -36,13 +36,13 @@ pub fn run() -> bool {
 fn test_gpio_on() -> bool {
     test_start!();
     let mut dev: DeviceHandle = 0;
+    let mut ok = true;
     let device = get_device_by_name("led0").expect("LED0 device not found");
-    let ok = check_eq!(get_device_handle(device.id as u8), Status::Ok)
-        & (copy_from_kernel(&mut (&mut dev as *mut _ as *mut u8)) == Ok(Status::Ok));
+    let mut status = get_device_handle(device.id as u8);
+    let _ = copy_from_kernel(&mut dev);
     log_line!("USER_AUTOTEST_INFO", "handle is {:#x}", dev);
-    let ok = ok
-        & check_eq!(gpio_configure(dev, 0), Status::Ok)
-        & check_eq!(gpio_set(dev, 0, true), Status::Ok);
+    ok &= check_eq!(gpio_configure(dev, 0), Status::Ok);
+    ok &= check_eq!(gpio_set(dev, 0, true), Status::Ok);
     test_end!();
     ok
 }
