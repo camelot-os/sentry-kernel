@@ -3,7 +3,14 @@
 
 pub mod log;
 
-
+#[cfg(CONFIG_TEST_DEVICES)]
+#[cfg(CONFIG_TEST_GPIO)]
+mod devices_dt;
+#[cfg(CONFIG_TEST_DEVICES)]
+#[cfg(CONFIG_TEST_GPIO)]
+mod devices_utils;
+#[cfg(CONFIG_TEST_GPIO)]
+pub mod test_gpio;
 #[cfg(CONFIG_TEST_RANDOM)]
 pub mod test_random;
 #[cfg(CONFIG_TEST_SIGNALS)]
