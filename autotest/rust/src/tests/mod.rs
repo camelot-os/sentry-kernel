@@ -14,3 +14,5 @@ pub mod test_sleep;
 pub mod test_yield;
 #[cfg(CONFIG_TEST_CYCLES)]
 pub mod test_cycles;
+#[cfg(CONFIG_TEST_IPC)]
+pub mod test_ipc;

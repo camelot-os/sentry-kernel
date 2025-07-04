@@ -43,6 +43,8 @@ pub extern "C" fn autotest(_thread_id: u32, seed: u32) -> ! {
     tests::test_yield::run();
     #[cfg(CONFIG_TEST_CYCLES)]
     tests::test_cycles::run();
+    #[cfg(CONFIG_TEST_IPC)]
+    tests::test_ipc::run();
 
     syscall::exit(0);
     panic!();
