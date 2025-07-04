@@ -52,15 +52,6 @@ config ARCH_ARM_CORTEX_M35P
 	bool
 	select ARCH_ARM_ARMV8MML
 
-config HAS_DCACHE
-	bool
-
-config HAS_ICACHE
-	bool
-
-config HAS_FPU
-	bool
-
 config HAS_FPU_VFPV3
 	bool
 
@@ -97,12 +88,6 @@ config HAS_NVIC
 config THUMB
 	bool
 
-config LITTLE_ENDIAN
-	bool
-
-config BIG_ENDIAN
-	bool
-
 config HAS_DWT
 	bool
 
@@ -118,6 +103,19 @@ config HAS_FLASH_DUAL_BANK
 config SOC_FAMILY_STM32
 	bool
 	select LITTLE_ENDIAN
+
+# this very name can be set in both ARM and RISC-V mode, as the corresponding
+# Arch-specific Kconfig files are never included in the same configuration
+config SOC_SUBFAMILY_RP23XX
+	bool
+	select ARCH_ARM_CORTEX_M33
+	select SOC_FAMILY_RPI_PICO
+	select HAS_FPU
+	select HAS_FPU_FPV5
+	select HAS_MPU
+	select HAS_MPU_PMSA_V8
+	help
+	  RP23XX subfamily, in ARM mode, is based on Cortex-M33
 
 config SOC_SUBFAMILY_STM32F4
 	bool
@@ -237,6 +235,7 @@ config ARCH_SOCNAME
 	default "STM32U5A9" if ARCH_MCU_STM32U5A9
 	default "STM32U5FX" if ARCH_MCU_STM32U5FX
 	default "STM32U5GX" if ARCH_MCU_STM32U5GX
+	default "RP2350" if ARCH_MCU_RP2350
 
 # User-accessible selectors
 
@@ -283,6 +282,10 @@ config ARCH_MCU_STM32U5A5
 config ARCH_MCU_STM32U5A9
 	bool "STM32U5A9"
 	select SOC_SUBFAMILY_STM32U59_Ax
+
+config ARCH_MCU_RP2350
+	bool "RP2350"
+	select SOC_SUBFAMILY_RP23XX
 
 endchoice
 
