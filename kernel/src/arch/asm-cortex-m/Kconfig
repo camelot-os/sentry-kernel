@@ -5,6 +5,8 @@
 # target SoC.
 # The target SoC define the core technology, and thus the core features
 
+menu "ARM configuration"
+
 config ARCH_ARM_ARMV7M
 	bool
 	select HAS_NVIC
@@ -52,15 +54,6 @@ config ARCH_ARM_CORTEX_M35P
 	bool
 	select ARCH_ARM_ARMV8MML
 
-config HAS_DCACHE
-	bool
-
-config HAS_ICACHE
-	bool
-
-config HAS_FPU
-	bool
-
 config HAS_FPU_VFPV3
 	bool
 
@@ -70,21 +63,11 @@ config HAS_FPU_VFPV4
 config HAS_FPU_FPV5
 	bool
 
-config HAS_MPU
-	bool
-
 config HAS_MPU_PMSA_V7
 	bool
 
 config HAS_MPU_PMSA_V8
 	bool
-
-config NUM_MPU_REGIONS
-	int "number of MPU regions"
-	depends on HAS_MPU
-	default 8
-	help
-	  Number of MPU region, this is vendor defined, 8 by default.
 
 # TODO Add secure MPU feature
 
@@ -95,21 +78,6 @@ config HAS_NVIC
 	bool
 
 config THUMB
-	bool
-
-config LITTLE_ENDIAN
-	bool
-
-config BIG_ENDIAN
-	bool
-
-config HAS_DWT
-	bool
-
-config HAS_RNG
-	bool
-
-config HAS_GPDMA
 	bool
 
 config HAS_FLASH_DUAL_BANK
@@ -342,11 +310,6 @@ config ISA_CFLAGS
 	string
 	default "-mthumb" if THUMB
 
-config ENDIANNESS_CFLAGS
-	string
-	default "-mlittle-endian" if LITTLE_ENDIAN
-	default "-mbig-endian" if BIG_ENDIAN
-
 config RUSTC_TARGET
 	string
 	default "thumbv7m-none-eabi" if ARCH_ARM_ARMV7M && !ARCH_ARM_ARMV7EM
@@ -355,7 +318,4 @@ config RUSTC_TARGET
 	default "thumbv8m.main-none-eabi" if ARCH_ARM_ARMV8MML && !FPU_HARDFP_ABI
 	default "thumbv8m.main-none-eabihf" if ARCH_ARM_ARMV8MML && FPU_HARDFP_ABI
 
-config SYSTICK_HZ
-	int "systick initial period configuration"
-	range 0 10000
-	default 1000
+endmenu

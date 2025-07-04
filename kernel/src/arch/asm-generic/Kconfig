@@ -1,0 +1,50 @@
+# SPDX-FileCopyrightText: 2025 ANSSI
+# SPDX-License-Identifier: Apache-2.0
+
+menu "Generic architecture configuration"
+
+config HAS_DCACHE
+	bool "Use data cache"
+
+config HAS_ICACHE
+	bool "Use instruction cache"
+
+config HAS_FPU
+	bool "Has a floating point unit"
+
+config HAS_MPU
+	bool "Has a MPU"
+
+config NUM_MPU_REGIONS
+	int "number of MPU regions"
+	depends on HAS_MPU
+	default 8
+	help
+	  Number of MPU region, this is vendor defined, 8 by default.
+
+config LITTLE_ENDIAN
+	bool "Is little endian"
+
+config BIG_ENDIAN
+	bool "Is big endian"
+
+config ENDIANNESS_CFLAGS
+	string
+	default "-mlittle-endian" if LITTLE_ENDIAN
+	default "-mbig-endian" if BIG_ENDIAN
+
+config HAS_DWT
+	bool
+
+config HAS_RNG
+	bool
+
+config HAS_GPDMA
+	bool
+
+config SYSTICK_HZ
+	int "systick initial period configuration"
+	range 0 10000
+	default 1000
+
+endmenu

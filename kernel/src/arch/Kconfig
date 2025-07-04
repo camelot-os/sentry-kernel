@@ -1,4 +1,5 @@
 # SPDX-FileCopyrightText: 2023-2024 Ledger SAS
+# SPDX-FileCopyrightText: 2025 ANSSI
 # SPDX-License-Identifier: Apache-2.0
 
 menu "Platform support"
@@ -6,17 +7,30 @@ menu "Platform support"
 config ARCH_ARM
 	bool
 
+config ARCH_RISCV
+	bool
+
 choice
 	prompt "Target arch selection"
+
 config ARCH_ARM_CORTEX_M
 	bool "ARM Cortex-M target & SoCs"
 	select ARCH_ARM
 
+config ARCH_RV32
+	bool "RISC-V 32 bit target & SoCs"
+	select ARCH_RISCV
+
 endchoice
+
+rsource 'asm-generic/Kconfig'
 
 if ARCH_ARM_CORTEX_M
 rsource 'asm-cortex-m/Kconfig'
 endif
 
+if ARCH_RV32
+rsource 'asm-rv32/Kconfig'
+endif
 
 endmenu

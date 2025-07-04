@@ -3,13 +3,15 @@
 
 # list of statically defined headers
 arch_header_set.add(files(
-    'interrupt.h',
-    'membarriers.h',
-    'platform.h',
-    'sync.h',
     'handler-svc-lut.h',
+    'interrupt.h',
     'layout.h',
+    'membarriers.h',
+    'memory.h',
     'panic.h',
+    'platform.h',
+    'semihosting.h',
+    'sync.h',
     'thread.h',
     'tick.h',
 ))
