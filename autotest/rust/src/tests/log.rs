@@ -15,14 +15,14 @@ pub const USER_AUTOTEST_END_SUITE: &str = "[ENDSUITE  ]";
 #[macro_export]
 macro_rules! test_start {
     () => {
-        $crate::println!("[START     ] {}:{}", core::module_path!(), core::line!());
+        $crate::println!("[AT][START     ] {}:{}", core::module_path!(), core::line!());
     };
 }
 
 #[macro_export]
 macro_rules! test_end {
     () => {
-        $crate::println!("[END       ] {}:{}", core::module_path!(), core::line!());
+        $crate::println!("[AT][END       ] {}:{}", core::module_path!(), core::line!());
     };
 }
 
@@ -30,7 +30,7 @@ macro_rules! test_end {
 macro_rules! test_suite_start {
     ($msg:expr) => {
         $crate::println!(
-            "[STARTSUITE] {}: {} @{}",
+            "[AT][STARTSUITE] {}: {} @{}",
             core::module_path!(),
             $msg,
             core::line!()
@@ -42,7 +42,7 @@ macro_rules! test_suite_start {
 macro_rules! test_suite_end {
     ($msg:expr) => {
         $crate::println!(
-            "[ENDSUITE  ] {}: {} @{}",
+            "[AT][ENDSUITE  ] {}: {} @{}",
             core::module_path!(),
             $msg,
             core::line!()
@@ -61,10 +61,10 @@ macro_rules! log_line {
 macro_rules! check_eq {
     ($a:expr, $b:expr) => {{
         if $a == $b {
-            log_line!("[SUCCESS   ]", "{:?} == {:?}", $a, $b);
+            log_line!("[AT][SUCCESS   ]", "{:?} == {:?}", $a, $b);
             true
         } else {
-            log_line!("[KO        ]", "{:?} != {:?}", $a, $b);
+            log_line!("[AT][KO        ]", "{:?} != {:?}", $a, $b);
             false
         }
     }};
@@ -74,10 +74,10 @@ macro_rules! check_eq {
 macro_rules! check {
     ($cond:expr, $msg:literal $(, $arg:expr)* $(,)?) => {{
         if $cond {
-            log_line!("[SUCCESS   ]", $msg $(, $arg)*);
+            log_line!("[AT][SUCCESS   ]", $msg $(, $arg)*);
             true
         } else {
-            log_line!("[KO        ]", $msg $(, $arg)*);
+            log_line!("[AT][KO        ]", $msg $(, $arg)*);
             false
         }
     }};
