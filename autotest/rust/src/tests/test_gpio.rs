@@ -6,10 +6,7 @@ use crate::test_end;
 use crate::test_start;
 use crate::check_eq;
 use sentry_uapi::*;
-use sentry_uapi::systypes::Status;
-use sentry_uapi::systypes::{SleepDuration, SleepMode, DeviceHandle};
 use core::prelude::v1::Ok;
-use sentry_uapi::syscall::{get_device_handle, gpio_configure, gpio_set, gpio_toggle, sleep};
 use crate::test_suite_start;
 use crate::test_suite_end;
 use crate::tests::devices_utils::get_device_by_name;
@@ -22,9 +19,9 @@ pub fn run() -> bool {
 
     ok &= test_gpio_toggle();
     ok &= test_gpio_off();
-    sleep(SleepDuration::ArbitraryMs(1000), SleepMode::Deep);
+    syscall::sleep(systypes::SleepDuration::ArbitraryMs(1000), systypes::SleepMode::Deep);
     ok &= test_gpio_on();
-    sleep(SleepDuration::ArbitraryMs(1000), SleepMode::Deep);
+    syscall::sleep(systypes::SleepDuration::ArbitraryMs(1000), systypes::SleepMode::Deep);
     ok &= test_gpio_off();
     ok &= test_gpio_invalid_io();
     ok &= test_gpio_invalid_devh();
@@ -35,49 +32,49 @@ pub fn run() -> bool {
 
 fn test_gpio_on() -> bool {
     test_start!();
-    let mut dev: DeviceHandle = 0;
+    let mut dev: systypes::DeviceHandle = 0;
     let mut ok = true;
     let device = get_device_by_name("led0").expect("LED0 device not found");
-    let mut status = get_device_handle(device.id as u8);
+    let mut status = syscall::get_device_handle(device.id as u8);
     let _ = copy_from_kernel(&mut dev);
     log_line!("USER_AUTOTEST_INFO", "handle is {:#x}", dev);
-    ok &= check_eq!(gpio_configure(dev, 0), Status::Ok);
-    ok &= check_eq!(gpio_set(dev, 0, true), Status::Ok);
+    ok &= check_eq!(syscall::gpio_configure(dev, 0), systypes::Status::Ok);
+    ok &= check_eq!(syscall::gpio_set(dev, 0, true), systypes::Status::Ok);
     test_end!();
     ok
 }
 
 fn test_gpio_off() -> bool {
     test_start!();
-    let mut dev: DeviceHandle = 0;
+    let mut dev: systypes::DeviceHandle = 0;
     let device = get_device_by_name("led0").expect("LED0 device not found");
-    let mut status = get_device_handle(device.id as u8);
+    let mut status = syscall::get_device_handle(device.id as u8);
     let _ = copy_from_kernel(&mut dev);
     let mut ok = true;
 
     log_line!("USER_AUTOTEST_INFO", "handle is {:#x}", dev);
-    ok &= check_eq!(gpio_configure(dev, 0), Status::Ok);
-    ok &= check_eq!(gpio_set(dev, 0, false), Status::Ok);
+    ok &= check_eq!(syscall::gpio_configure(dev, 0), systypes::Status::Ok);
+    ok &= check_eq!(syscall::gpio_set(dev, 0, false), systypes::Status::Ok);
     test_end!();
     ok
 }
 
 fn test_gpio_toggle() -> bool {
     test_start!();
-    let mut dev: DeviceHandle = 0;
+    let mut dev: systypes::DeviceHandle = 0;
     let mut data = [0u8; CONFIG_SVC_EXCHANGE_AREA_LEN];
-    let mut status = Status::Invalid;
+    let mut status = systypes::Status::Invalid;
     let mut ok = true;
 
     let device = get_device_by_name("led0").expect("LED0 device not found");
-    status = get_device_handle(device.id as u8);
+    status = syscall::get_device_handle(device.id as u8);
     let _ = copy_from_kernel(&mut dev);
 
-    check_eq!(status, Status::Ok);
-    check_eq!(gpio_configure(dev, 0), Status::Ok);
+    check_eq!(status, systypes::Status::Ok);
+    check_eq!(syscall::gpio_configure(dev, 0), systypes::Status::Ok);
         for _ in 0..10 {
-            ok &= check_eq!(gpio_toggle(dev, 0), Status::Ok);
-            sleep(SleepDuration::ArbitraryMs(250), SleepMode::Deep);
+            ok &= check_eq!(syscall::gpio_toggle(dev, 0), systypes::Status::Ok);
+            syscall::sleep(systypes::SleepDuration::ArbitraryMs(250), systypes::SleepMode::Deep);
         }
         test_end!();
         ok
@@ -85,25 +82,25 @@ fn test_gpio_toggle() -> bool {
 
     fn test_gpio_invalid_io() -> bool {
         test_start!();
-        let mut dev: DeviceHandle = 0;
-        let mut status = Status::Invalid;
+        let mut dev: systypes::DeviceHandle = 0;
+        let mut status = systypes::Status::Invalid;
         let mut ok = true;
         let device = get_device_by_name("led0").expect("LED0 device not found");
 
-        status = get_device_handle(device.id as u8);
+        status = syscall::get_device_handle(device.id as u8);
         let _ = copy_from_kernel(&mut dev);
 
-        ok &= check_eq!(gpio_configure(dev, 4), Status::Invalid);
-        ok &= check_eq!(gpio_configure(dev, 8), Status::Invalid);
-        ok &= check_eq!(gpio_configure(dev, 250), Status::Invalid);
+        ok &= check_eq!(syscall::gpio_configure(dev, 4), systypes::Status::Invalid);
+        ok &= check_eq!(syscall::gpio_configure(dev, 8), systypes::Status::Invalid);
+        ok &= check_eq!(syscall::gpio_configure(dev, 250), systypes::Status::Invalid);
         test_end!();
         ok
     }
 
     fn test_gpio_invalid_devh() -> bool {
         test_start!();
-        let dev: DeviceHandle = 1;
-        let ok = check_eq!(gpio_configure(dev, 1), Status::Invalid);
+        let dev: systypes::DeviceHandle = 1;
+        let ok = check_eq!(syscall::gpio_configure(dev, 1), systypes::Status::Invalid);
         test_end!();
         ok
     }
