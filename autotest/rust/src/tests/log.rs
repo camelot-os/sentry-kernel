@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 
-pub const USER_AUTOTEST_INFO: &str = "[INFO      ]";
+pub const USER_AUTOTEST_INFO: &str = "[AT][INFO      ]";
 
 
 #[macro_export]

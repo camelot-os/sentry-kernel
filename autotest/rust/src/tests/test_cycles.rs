@@ -10,8 +10,6 @@ use crate::test_start;
 use crate::test_suite_end;
 use crate::test_suite_start;
 
-use crate::println;
-
 use core::prelude::v1::Ok;
 
 use sentry_uapi::syscall;
@@ -45,16 +43,12 @@ fn test_cycles_duration() -> bool {
 
     check_eq!(sentry_uapi::copy_from_kernel(&mut start), Ok::<Status, Status>(Status::Ok));
 
-
-    println!("start {}", start);
-
     for _ in 0..=iter {
         let _ = syscall::get_cycle(Precision::Microseconds);
     }
 
     ok &= syscall::get_cycle(Precision::Microseconds) == Status::Ok;
     ok &= sentry_uapi::copy_from_kernel(&mut stop) == Ok(Status::Ok);
-    println!("stop {}", stop);
 
     log_line!(
         USER_AUTOTEST_INFO,
@@ -66,7 +60,6 @@ fn test_cycles_duration() -> bool {
     let _ = syscall::get_cycle(Precision::Microseconds);
     let _ = syscall::sched_yield();
     let _ = sentry_uapi::copy_from_kernel(&mut start);
-    println!("start {}", start);
     for _ in 0..=iter {
         let _ = syscall::get_cycle(Precision::Microseconds);
         let _ = sentry_uapi::copy_from_kernel(&mut micro);
@@ -74,9 +67,6 @@ fn test_cycles_duration() -> bool {
 
     let _ = syscall::get_cycle(Precision::Microseconds);
     let _ = sentry_uapi::copy_from_kernel(&mut stop);
-
-    println!("last micro {}", micro);
-    println!("stop {}", stop);
 
     log_line!(
         USER_AUTOTEST_INFO,
