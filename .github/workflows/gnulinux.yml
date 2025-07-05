@@ -184,7 +184,7 @@ jobs:
       - name: Setup Rust toolchain
         uses: dtolnay/rust-toolchain@nightly
         with:
-          toolchain: stable
+          toolchain: 1.86.0
           targets: thumbv7m-none-eabi,thumbv7em-none-eabi,thumbv7em-none-eabihf
           components: clippy,rustfmt
       - name: deploy local deps
@@ -266,7 +266,7 @@ jobs:
       - name: Setup Rust toolchain
         uses: dtolnay/rust-toolchain@nightly
         with:
-          toolchain: stable
+          toolchain: 1.86.0
       - name: deploy local deps
         run: |
           pip install -r requirements.txt
