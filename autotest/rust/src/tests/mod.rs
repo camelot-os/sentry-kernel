@@ -24,4 +24,4 @@ pub mod test_cycles;
 #[cfg(CONFIG_TEST_IPC)]
 pub mod test_ipc;
 #[cfg(CONFIG_TEST_HANDLES)]
-pub mod test_handle;
+pub mod test_gethandle;

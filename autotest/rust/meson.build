@@ -36,7 +36,7 @@ autotest_elf = executable(
             'tests': [
                 'src/tests/mod.rs',
                 'src/tests/log.rs',
-                'src/tests/test_handle.rs',
+                'src/tests/test_gethandle.rs',
                 'src/tests/test_random.rs',
                 'src/tests/test_yield.rs',
                 'src/tests/test_signal.rs',
