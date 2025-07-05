@@ -14,7 +14,7 @@ use sentry_uapi::systypes::Status;
 use sentry_uapi::copy_from_kernel;
 
 fn test_random_sequence() {
-    let mut status: Status = Status::Invalid;
+    let mut status: Status;
     let mut rng: u32 = 0;
 
     test_start!();

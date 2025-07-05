@@ -13,7 +13,6 @@ use crate::test_suite_start;
 use crate::println;
 
 use core::prelude::v1::Ok;
-use core::mem;
 
 use sentry_uapi::syscall;
 use sentry_uapi::systypes::Precision;
@@ -39,10 +38,10 @@ fn test_cycles_duration() -> bool {
     let mut micro: u64 = 0;
 
     // let mut idx = 0u32;
-    const iter: u64 = 1000;
+    let iter: u64 = 1000;
 
-    syscall::sched_yield();
-    syscall::get_cycle(Precision::Microseconds);
+    let _ = syscall::sched_yield();
+    let _ = syscall::get_cycle(Precision::Microseconds);
 
     check_eq!(sentry_uapi::copy_from_kernel(&mut start), Ok::<Status, Status>(Status::Ok));
 
@@ -63,18 +62,18 @@ fn test_cycles_duration() -> bool {
         ((stop - start) / iter as u64) as u32
     );
 
-    syscall::sched_yield();
-    syscall::get_cycle(Precision::Microseconds);
-    syscall::sched_yield();
-    sentry_uapi::copy_from_kernel(&mut start);
+    let _ = syscall::sched_yield();
+    let _ = syscall::get_cycle(Precision::Microseconds);
+    let _ = syscall::sched_yield();
+    let _ = sentry_uapi::copy_from_kernel(&mut start);
     println!("start {}", start);
     for _ in 0..=iter {
-        syscall::get_cycle(Precision::Microseconds);
-        sentry_uapi::copy_from_kernel(&mut micro);
+        let _ = syscall::get_cycle(Precision::Microseconds);
+        let _ = sentry_uapi::copy_from_kernel(&mut micro);
     }
 
-    syscall::get_cycle(Precision::Microseconds);
-    sentry_uapi::copy_from_kernel(&mut stop);
+    let _ = syscall::get_cycle(Precision::Microseconds);
+    let _ = sentry_uapi::copy_from_kernel(&mut stop);
 
     println!("last micro {}", micro);
     println!("stop {}", stop);

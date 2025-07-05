@@ -2,15 +2,9 @@
 // SPDX-FileCopyrightText: 2025 H2Lab
 // SPDX-License-Identifier: Apache-2.0
 
-pub const USER_AUTOTEST: &str = "[AT]";
+
 pub const USER_AUTOTEST_INFO: &str = "[INFO      ]";
-pub const USER_AUTOTEST_EXEC: &str = "[EXE       ]";
-pub const USER_AUTOTEST_START: &str = "[START     ]";
-pub const USER_AUTOTEST_END: &str = "[END       ]";
-pub const USER_AUTOTEST_FAIL: &str = "[KO        ]";
-pub const USER_AUTOTEST_SUCCESS: &str = "[SUCCESS   ]";
-pub const USER_AUTOTEST_START_SUITE: &str = "[STARTSUITE]";
-pub const USER_AUTOTEST_END_SUITE: &str = "[ENDSUITE  ]";
+
 
 #[macro_export]
 macro_rules! test_start {

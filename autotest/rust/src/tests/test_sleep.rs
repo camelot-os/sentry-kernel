@@ -8,7 +8,6 @@ use crate::test_start;
 use crate::test_end;
 use crate::test_suite_end;
 use crate::test_suite_start;
-use crate::tests::log::USER_AUTOTEST_INFO;
 
 
 use sentry_uapi::syscall;
@@ -34,13 +33,10 @@ fn test_sleep_duration() {
         let mut stop: u64 = 0;
 
         let start_status = syscall::get_cycle(Precision::Milliseconds);
-        copy_from_kernel(&mut start);
-
+        let _ = copy_from_kernel(&mut start);
         let sleep_status = syscall::sleep(duration, SleepMode::Deep);
-
-
         let stop_status = syscall::get_cycle(Precision::Milliseconds);
-        copy_from_kernel(&mut stop);
+        let _ = copy_from_kernel(&mut stop);
 
         check_eq!(stop_status, Status::Ok);
         check_eq!(sleep_status, Status::Timeout);

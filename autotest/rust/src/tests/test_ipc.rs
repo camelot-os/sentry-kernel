@@ -1,7 +1,6 @@
 // SPDX-FileCopyrightText: 2025 ANSSI
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::check;
 use crate::check_eq;
 use crate::log_line;
 use crate::test_end;
@@ -9,8 +8,6 @@ use crate::tests::log::USER_AUTOTEST_INFO;
 use crate::test_start;
 use crate::test_suite_end;
 use crate::test_suite_start;
-
-use crate::println;
 
 use sentry_uapi::syscall;
 use sentry_uapi::systypes;
@@ -31,13 +28,13 @@ pub fn run() -> bool {
 fn test_ipc_send_toobig() -> bool {
     test_start!();
     let mut ok = true;
-    let mut status = systypes::Status::Invalid;
+    let status;
     let mut handle: systypes::TaskHandle = 0;
 
     let len1 = CONFIG_SVC_EXCHANGE_AREA_LEN + 1;
     let len2 = 255;
     status = syscall::get_process_handle(0xbabe);
-    sentry_uapi::copy_from_kernel(&mut handle);
+    let _ = sentry_uapi::copy_from_kernel(&mut handle);
     ok &= check_eq!(status, systypes::Status::Ok);
 
     log_line!(USER_AUTOTEST_INFO, "sending invalid IPC size {}", len1);
@@ -51,7 +48,7 @@ fn test_ipc_send_toobig() -> bool {
 fn test_ipc_send_invalidtarget() -> bool {
     test_start!();
     let mut ok = true;
-    let mut status = systypes::Status::Invalid;
+    let status;
     log_line!(USER_AUTOTEST_INFO, "sending IPC to invalid target");
     status = syscall::send_ipc(0xdead1001, 20);
     ok &= check_eq!(status, systypes::Status::Invalid);
@@ -63,14 +60,14 @@ fn test_ipc_send_invalidtarget() -> bool {
 fn test_ipc_sendrecv() -> bool {
     test_start!();
     let mut ok = true;
-    let mut status = systypes::Status::Invalid;
+    let mut status;
     let mut handle: systypes::TaskHandle = 0;
     let timeout: i32 = 100;
     let msg = b"hello it's autotest";
     let mut data = [0u8; CONFIG_SVC_EXCHANGE_AREA_LEN];
 
     status = syscall::get_process_handle(0xbabe);
-    sentry_uapi::copy_from_kernel(&mut handle);
+    let _ = sentry_uapi::copy_from_kernel(&mut handle);
     ok &= check_eq!(status, systypes::Status::Ok);
 
     log_line!(USER_AUTOTEST_INFO, "handle is {:#x}", handle);
@@ -106,11 +103,11 @@ fn test_ipc_deadlock() -> bool {
     test_start!();
     let mut ok = true;
     let mut handle: systypes::TaskHandle = 0;
-    let mut status = systypes::Status::Invalid;
+    let status;
     let msg = b"hello it's autotest";
 
     status = syscall::get_process_handle(0xbabe);
-    sentry_uapi::copy_from_kernel(&mut handle);
+    let _ = sentry_uapi::copy_from_kernel(&mut handle);
 
     assert_eq!(status, systypes::Status::Ok);
 

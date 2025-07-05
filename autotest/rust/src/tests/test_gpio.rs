@@ -6,12 +6,9 @@ use crate::test_end;
 use crate::test_start;
 use crate::check_eq;
 use sentry_uapi::*;
-use core::prelude::v1::Ok;
 use crate::test_suite_start;
 use crate::test_suite_end;
 use crate::tests::devices_utils::get_device_by_name;
-
-const CONFIG_SVC_EXCHANGE_AREA_LEN: usize = 128;
 
 pub fn run() -> bool {
     test_suite_start!("sys_gpio");
@@ -35,8 +32,9 @@ fn test_gpio_on() -> bool {
     let mut dev: systypes::DeviceHandle = 0;
     let mut ok = true;
     let device = get_device_by_name("led0").expect("LED0 device not found");
-    let mut status = syscall::get_device_handle(device.id as u8);
+    let status = syscall::get_device_handle(device.id as u8);
     let _ = copy_from_kernel(&mut dev);
+    ok &= check_eq!(status, systypes::Status::Ok);
     log_line!("USER_AUTOTEST_INFO", "handle is {:#x}", dev);
     ok &= check_eq!(syscall::gpio_configure(dev, 0), systypes::Status::Ok);
     ok &= check_eq!(syscall::gpio_set(dev, 0, true), systypes::Status::Ok);
@@ -48,10 +46,10 @@ fn test_gpio_off() -> bool {
     test_start!();
     let mut dev: systypes::DeviceHandle = 0;
     let device = get_device_by_name("led0").expect("LED0 device not found");
-    let mut status = syscall::get_device_handle(device.id as u8);
+    let status = syscall::get_device_handle(device.id as u8);
     let _ = copy_from_kernel(&mut dev);
     let mut ok = true;
-
+    ok &= check_eq!(status, systypes::Status::Ok);
     log_line!("USER_AUTOTEST_INFO", "handle is {:#x}", dev);
     ok &= check_eq!(syscall::gpio_configure(dev, 0), systypes::Status::Ok);
     ok &= check_eq!(syscall::gpio_set(dev, 0, false), systypes::Status::Ok);
@@ -62,8 +60,7 @@ fn test_gpio_off() -> bool {
 fn test_gpio_toggle() -> bool {
     test_start!();
     let mut dev: systypes::DeviceHandle = 0;
-    let mut data = [0u8; CONFIG_SVC_EXCHANGE_AREA_LEN];
-    let mut status = systypes::Status::Invalid;
+    let status;
     let mut ok = true;
 
     let device = get_device_by_name("led0").expect("LED0 device not found");
@@ -83,13 +80,14 @@ fn test_gpio_toggle() -> bool {
     fn test_gpio_invalid_io() -> bool {
         test_start!();
         let mut dev: systypes::DeviceHandle = 0;
-        let mut status = systypes::Status::Invalid;
+        let status;
         let mut ok = true;
         let device = get_device_by_name("led0").expect("LED0 device not found");
 
         status = syscall::get_device_handle(device.id as u8);
         let _ = copy_from_kernel(&mut dev);
 
+        ok &= check_eq!(status, systypes::Status::Ok);
         ok &= check_eq!(syscall::gpio_configure(dev, 4), systypes::Status::Invalid);
         ok &= check_eq!(syscall::gpio_configure(dev, 8), systypes::Status::Invalid);
         ok &= check_eq!(syscall::gpio_configure(dev, 250), systypes::Status::Invalid);
