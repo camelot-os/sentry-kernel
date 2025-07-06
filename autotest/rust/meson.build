@@ -44,6 +44,7 @@ autotest_elf = executable(
                 'src/tests/test_sleep.rs',
                 'src/tests/test_ipc.rs',
                 'src/tests/test_gpio.rs',
+                'src/tests/test_shm.rs',
                 'src/tests/devices_utils.rs',
                 devices_dtsgen_rs,
             ]

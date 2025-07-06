@@ -49,6 +49,8 @@ pub extern "C" fn autotest(_thread_id: u32, seed: u32) -> ! {
     tests::test_ipc::run();
     #[cfg(CONFIG_TEST_GPIO)]
     tests::test_gpio::run();
+    #[cfg(CONFIG_TEST_SHM)]
+    tests::test_shm::run();
 
     syscall::exit(0);
     panic!();
