@@ -855,7 +855,7 @@ pub mod dev {
     #[repr(C)]
     #[derive(Debug, Copy, Clone)]
     pub struct DevInfo {
-        pub id: u32,
+        pub id: u8,
         /// mappable device. Direct-IO (LED...) are not
         /// Not parsed from the DTS, useless ?
         pub mappable: bool,

@@ -27,3 +27,5 @@ pub mod test_ipc;
 pub mod test_gethandle;
 #[cfg(CONFIG_TEST_SHM)]
 pub mod test_shm;
+#[cfg(CONFIG_TEST_DEVICES)]
+pub mod test_map;
