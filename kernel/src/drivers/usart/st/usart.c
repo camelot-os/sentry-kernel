@@ -11,10 +11,16 @@
  */
 
 #include <sentry/ktypes.h>
+#if defined(CONFIG_ARCH_ARM_CORTEX_M)
 #include <sentry/arch/asm-cortex-m/layout.h>
 #include <sentry/arch/asm-cortex-m/irq_defs.h>
 #include <sentry/arch/asm-cortex-m/core.h>
 #include <sentry/arch/asm-cortex-m/buses.h>
+#elif defined(CONFIG_ARCH_RV32)
+//TODO: set missing headers
+#else
+#error "unsupported architecture!"
+#endif
 #include <bsp/drivers/clk/rcc.h>
 #include <bsp/drivers/usart/usart.h>
 #include <bsp/drivers/gpio/gpio.h>

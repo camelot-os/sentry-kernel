@@ -1,0 +1,49 @@
+// SPDX-FileCopyrightText: 2025 ANSSI
+// SPDX-License-Identifier: Apache-2.0
+
+/**
+ * Retrieve address of uart base address from dts
+ */
+
+/*
+ * XXX:
+ *  !!!! Generated header, DO NOT EDIT !!!!
+ */
+
+#ifndef OPENTITAN_UART_H
+#define OPENTITAN_UART_H
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+{%- set uart = dts.soc.uart0 %}
+
+#define UART_BASE {{uart.reg[0]}}
+
+#define UART_STATE        UART_BASE + 0x00
+#define UART_ENABLE       UART_BASE + 0x04
+#define UART_TEST         UART_BASE + 0x08
+#define UART_ALERT_TEST   UART_BASE + 0x0C
+#define UART_CTRL         UART_BASE + 0x10
+#define UART_STATUS       UART_BASE + 0x14
+#define UART_RDATA        UART_BASE + 0x18
+#define UART_WDATA        UART_BASE + 0x1C
+#define UART_FIFO_CTRL    UART_BASE + 0x20
+#define UART_FIFO_STATUS  UART_BASE + 0x24
+#define UART_OVRD         UART_BASE + 0x28
+#define UART_VAL          UART_BASE + 0x2C
+#define UART_TIMEOUT_CTRL UART_BASE + 0x30
+
+#define UART_CTRL_TX_EN 0
+#define UART_CTRL_NCO   16
+#define UART_CTRL_NCO_MSK 0xffff
+
+#define UART_TX_FULL  (1 << 0)
+#define UART_TX_EMPTY (1 << 2)
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif /* OPENTITAN_UART_H */

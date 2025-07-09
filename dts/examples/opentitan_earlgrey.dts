@@ -1,0 +1,82 @@
+/* Copyright (c) 2025 ANSSI
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+/dts-v1/;
+
+#include <lowrisc/opentitan_earlgrey.dtsi>
+
+/{
+	chosen {
+		sentry,kernelram_section = <&kernel_ram>;
+		sentry,idleram_section = <&idle_ram>;
+		sentry,kernelcode_section = <&kernel_code>;
+		sentry,idlecode_section = <&idle_code>;
+	};
+
+	reserved-memory {
+		#address-cells = <1>;
+		#size-cells = <1>;
+
+		kernel_code: kernel_code@20000400 {
+			reg = <0x20000400 0xb000>;
+			compatible = "outpost,memory-pool";
+		};
+
+		idle_code: idle_code@2000c000 {
+			reg = <0x2000c000 0x500>;
+			compatible = "outpost,memory-pool";
+		};
+
+		kernel_ram: kernel_memory@10000000 {
+			reg = <0x10000000 0x2000>;
+			compatible = "outpost,memory-pool";
+		};
+
+		idle_ram: idle_memory@10004000 {
+			reg = <0x10004000 0x200>;
+			compatible = "outpost,memory-pool";
+		};
+	};
+};
+
+&flash0 {
+	reg = <0x20000000 0x100000>;
+};
+
+&ram0 {
+	reg = <0x10000000 0x10000>;
+};
+
+&mtimer {
+	status = "okay";
+};
+
+&aontimer {
+	status = "okay";
+};
+
+&pwrmgr {
+	status = "okay";
+};
+
+&plic {
+	status = "okay";
+};
+
+&uart0 {
+	status = "okay";
+};
+
+&spi0 {
+	status = "okay";
+};
+
+&spi1 {
+	status = "okay";
+};
+
+&gpioa {
+	status = "okay";
+};

@@ -14,6 +14,8 @@
 
 #if defined(__arm__)
 #include <arch/asm-cortex-m/io.h>
+#elif defined(CONFIG_ARCH_RV32)
+#include <arch/asm-rv32/io.h>
 #else
 #error "unsupported architecture"
 #endif

@@ -275,3 +275,28 @@ warning('!!! Unable to forge final hex automatically! help yourself with ELF and
 endif
 
 endif
+
+if not with_autotest and not with_tests
+# Create an additional single firmware to ease loading in QEMU
+srec_cat = find_program('srec_cat', required: false, disabler: true)
+
+if srec_cat.found()
+firmware_hex = custom_target(
+    depends: [ idle_hex, sentry_hex ],
+    output: 'firmware.hex',
+    command: [
+        srec_cat,
+        '-o', '@OUTPUT@', '-Intel',
+        sentry_hex.full_path(), '-Intel',
+        idle_hex.full_path(), '-Intel',
+    ],
+    build_by_default: true,
+    install: true,
+    install_dir: get_option('bindir'),
+)
+else
+warning('srec_cat utility not found!')
+warning('!!! Unable to forge final hex automatically! help yourself with ELF and HEX...')
+endif
+
+endif

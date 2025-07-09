@@ -1,0 +1,22 @@
+# SPDX-FileCopyrightText: 2023-2024 Ledger SAS
+# SPDX-License-Identifier: Apache-2.0
+
+menu "Usart"
+	depends on DEBUG_OUTPUT_USART
+
+choice
+	bool "Debug USART driver selection"
+	default DRV_STM32_USART
+
+
+config DRV_STM32_USART
+	bool "STM32_USART"
+	depends on SOC_FAMILY_STM32
+
+config DRV_STM32_LPUART
+	bool "STM32_LPUART"
+	depends on SOC_SUBFAMILY_STM32L4 || SOC_SUBFAMILY_STM32U5 || SOC_SUBFAMILY_STM32WB
+
+endchoice
+
+endmenu

@@ -11,6 +11,8 @@
 #include <sentry/arch/asm-x86_64/membarriers.h>
 #elif defined(__i386__)
 #include <sentry/arch/asm-i386/membarriers.h>
+#elif defined(CONFIG_ARCH_RV32)
+#include <sentry/arch/asm-rv32/membarriers.h>
 #else
 #error "unsupported architecture!"
 #endif
