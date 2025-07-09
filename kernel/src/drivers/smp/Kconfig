@@ -1,7 +1,7 @@
 # SPDX-FileCopyrightText: 2025 H2Lab Development Team
 # SPDX-License-Identifier: Apache-2.0
 
-menu "SMP-related IPs"
+menu "SMP-related IPs (EXPERIMENTAL)"
 	depends on WITH_SMP_SUPPORT
 
 config HAS_SIO

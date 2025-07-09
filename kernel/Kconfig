@@ -58,8 +58,12 @@ config BUILD_TARGET_AUTOTEST
 	select SECU_LOOP_DBLE_IDX
 endchoice
 
+config EXPERIMENTAL_MODE
+    bool
+    default n
+
 config WITH_SMP_SUPPORT
-    bool "Support for SMP architecture"
+    bool "Support for SMP architecture (EXPERIMENTAL)"
     default n
     help
       In SMP mode, the kernel can be spawned in parallel in multiple cores at the
@@ -71,8 +75,10 @@ config WITH_SMP_SUPPORT
         their core-assignation being dependent of the selected scheduler
       - all kernel code after bootup must be reentrant, using hardware SMP-related locks
         if needed for system-wide impacting codes (e.g. using spin locking)
+    select EXPERIMENTAL_MODE
 
 if WITH_SMP_SUPPORT
+
 
 config SMP_CORES_NUMBER
     int "number of SMP cores"
