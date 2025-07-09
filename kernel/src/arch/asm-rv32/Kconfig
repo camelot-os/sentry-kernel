@@ -1,7 +1,7 @@
 # SPDX-FileCopyrightText: 2025 ANSSI
 # SPDX-License-Identifier: Apache-2.0
 
-menu "RISC-V configurations"
+menu "RISC-V configurations (EXPERIMENTAL)"
 
 config SOC_SUBFAMILY_QEMURV32
   bool
