@@ -29,3 +29,5 @@ pub mod test_gethandle;
 pub mod test_shm;
 #[cfg(CONFIG_TEST_DEVICES)]
 pub mod test_map;
+#[cfg(CONFIG_TEST_DMA)]
+pub mod test_dma;

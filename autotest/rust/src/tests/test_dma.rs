@@ -32,86 +32,81 @@ use sentry_uapi::systypes::dma::*;
 use sentry_uapi::systypes::shm::ShmInfo;
 use sentry_uapi::*;
 
-#[unsafe(no_mangle)]
-pub extern "C" fn test_dma() -> bool {
-    let mut all_ok = true;
-    test_suite_start!("sys_dma");
+pub fn run() {
+    test_suite_start!("syscall::dma*");
 
-    all_ok &= test_dma_get_handle_inval();
-    all_ok &= test_dma_manipulate_stream_badhandle();
-    all_ok &= test_dma_assign_unassign_stream();
-    all_ok &= test_dma_start_stream();
-    all_ok &= test_dma_get_stream_status();
-    all_ok &= test_dma_stop_stream();
-    all_ok &= test_dma_start_n_wait_stream();
-    all_ok &= test_dma_get_info();
+    test_dma_get_handle_inval();
+    test_dma_manipulate_stream_badhandle();
+    test_dma_assign_unassign_stream();
+    test_dma_start_stream();
+    test_dma_get_stream_status();
+    test_dma_stop_stream();
+    test_dma_start_n_wait_stream();
+    test_dma_get_info();
 
-    test_suite_end!("sys_dma");
-    all_ok
+    test_suite_end!("syscall::dma*");
 }
 
-fn test_dma_get_handle_inval() -> bool {
+fn test_dma_get_handle_inval() {
     test_start!();
-    let ok = check_eq!(get_dma_stream_handle(0x42), Status::Invalid);
+    check_eq!(get_dma_stream_handle(0x42), Status::Invalid);
     test_end!();
-    ok
 }
 
-fn test_dma_manipulate_stream_badhandle() -> bool {
+fn test_dma_manipulate_stream_badhandle() {
     test_start!();
-    let ok = check_eq!(dma_start_stream(0), Status::Invalid)
-        & check_eq!(dma_suspend_stream(0), Status::Invalid)
-        & check_eq!(dma_get_stream_status(0), Status::Invalid);
+    check_eq!(dma_start_stream(0), Status::Invalid);
+    check_eq!(dma_suspend_stream(0), Status::Invalid);
+    check_eq!(dma_get_stream_status(0), Status::Invalid);
     test_end!();
-    ok
 }
 
-fn test_dma_assign_unassign_stream() -> bool {
+fn test_dma_assign_unassign_stream() {
     test_start!();
     let mut streamh: StreamHandle = 0;
-    let ok = check_eq!(get_dma_stream_handle(0x2), Status::Ok)
-        & (copy_from_kernel(&mut (&mut streamh as *mut _ as *mut u8)) == Ok(Status::Ok))
-        & check_eq!(dma_assign_stream(streamh), Status::Ok)
-        & check_eq!(dma_assign_stream(streamh), Status::Invalid)
-        & check_eq!(dma_unassign_stream(streamh), Status::Ok)
-        & check_eq!(dma_unassign_stream(streamh), Status::Invalid);
+    let status = get_dma_stream_handle(0x2);
+    let _ = copy_from_kernel(&mut streamh);
+    check_eq!(status, Status::Ok);
+    check_eq!(dma_assign_stream(streamh), Status::Ok);
+    check_eq!(dma_assign_stream(streamh), Status::Invalid);
+    check_eq!(dma_unassign_stream(streamh), Status::Ok);
+    check_eq!(dma_unassign_stream(streamh), Status::Invalid);
     test_end!();
-    ok
 }
 
-fn test_dma_start_stream() -> bool {
+fn test_dma_start_stream() {
     test_start!();
     let mut streamh: StreamHandle = 0;
-    let ok = check_eq!(get_dma_stream_handle(0x2), Status::Ok)
-        & (copy_from_kernel(&mut (&mut streamh as *mut _ as *mut u8)) == Ok(Status::Ok))
-        & check_eq!(dma_start_stream(streamh), Status::Invalid)
-        & check_eq!(dma_assign_stream(streamh), Status::Ok)
-        & check_eq!(dma_start_stream(streamh), Status::Ok)
-        & check_eq!(dma_assign_stream(streamh), Status::Invalid)
-        & check_eq!(dma_start_stream(streamh), Status::Invalid);
+    let status = get_dma_stream_handle(0x2);
+    let _ = copy_from_kernel(&mut streamh);
+    check_eq!(status, Status::Ok);
+    check_eq!(dma_start_stream(streamh), Status::Invalid);
+    check_eq!(dma_assign_stream(streamh), Status::Ok);
+    check_eq!(dma_start_stream(streamh), Status::Ok);
+    check_eq!(dma_assign_stream(streamh), Status::Invalid);
+    check_eq!(dma_start_stream(streamh), Status::Invalid);
     test_end!();
-    ok
 }
 
-fn test_dma_get_stream_status() -> bool {
+fn test_dma_get_stream_status() {
     test_start!();
     let mut streamh: StreamHandle = 0;
-    let ok = check_eq!(get_dma_stream_handle(0x2), Status::Ok)
-        & (copy_from_kernel(&mut (&mut streamh as *mut _ as *mut u8)) == Ok(Status::Ok))
-        & check_eq!(dma_get_stream_status(streamh), Status::Ok);
+    let status = get_dma_stream_handle(0x2);
+    let _ = copy_from_kernel(&mut streamh);
+    check_eq!(status, Status::Ok);
+    check_eq!(dma_get_stream_status(streamh), Status::Ok);
     test_end!();
-    ok
 }
 
-fn test_dma_stop_stream() -> bool {
+fn test_dma_stop_stream() {
     test_start!();
     let mut streamh: StreamHandle = 0;
-    let ok = check_eq!(get_dma_stream_handle(0x2), Status::Ok)
-        & (copy_from_kernel(&mut (&mut streamh as *mut _ as *mut u8)) == Ok(Status::Ok))
-        & check_eq!(dma_suspend_stream(streamh), Status::Ok)
-        & check_eq!(dma_unassign_stream(streamh), Status::Ok);
+    let status = get_dma_stream_handle(0x2);
+    let _ = copy_from_kernel(&mut streamh);
+    check_eq!(status, Status::Ok);
+    check_eq!(dma_suspend_stream(streamh), Status::Ok);
+    check_eq!(dma_unassign_stream(streamh), Status::Ok);
     test_end!();
-    ok
 }
 
 fn test_dma_start_n_wait_stream() -> bool {

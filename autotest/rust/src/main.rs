@@ -53,6 +53,8 @@ pub extern "C" fn autotest(_thread_id: u32, seed: u32) -> ! {
     tests::test_shm::run();
     #[cfg(CONFIG_TEST_DEVICES)]
     tests::test_map::run();
+    #[cfg(CONFIG_TEST_DMA)]
+    tests::test_dma::run();
 
     syscall::exit(0);
     panic!();
