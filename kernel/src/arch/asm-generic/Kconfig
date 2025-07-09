@@ -1,0 +1,31 @@
+# SPDX-FileCopyrightText: 2025 H2Lab Development Team
+# SPDX-License-Identifier: Apache-2.0
+
+# Endianess is not arch-specific, but is defined here for consistency
+# with various arches, and to allow SoC-specific selection
+config LITTLE_ENDIAN
+	bool
+
+config BIG_ENDIAN
+	bool
+
+# data and instruction caches are not mandatory, but are
+# commonly found in most SoCs for various architectures
+config HAS_DCACHE
+	bool
+
+config HAS_ICACHE
+	bool
+
+# Floating Point Unit (FPU) is not mandatory, but is
+# commonly found in most SoCs for various architectures
+config HAS_FPU
+	bool
+
+# raspberry pi Pico SoC family may be cortex-m or RISC-V based, and as such is
+# selectable in both ARM and RISC-V modes
+config SOC_FAMILY_RPI_PICO
+	bool
+	select LITTLE_ENDIAN
+	select HAS_DCACHE
+	select HAS_ICACHE
