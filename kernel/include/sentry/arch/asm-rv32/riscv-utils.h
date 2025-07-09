@@ -21,7 +21,7 @@ extern "C" {
   })
 
 #define CSR_ZERO_ADDR(reg_addr)                    \
-    asm volatile ("csrw %0, zero" ::"I"(reg_addr));
+    asm volatile ("csrw , zero" ::"I"(reg_addr));
 
 #define CSR_WRITE_ADDR(reg, value) ({                         \
   if (__builtin_constant_p(value) && (unsigned long)(value) < 32) \

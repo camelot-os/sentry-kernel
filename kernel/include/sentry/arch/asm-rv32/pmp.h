@@ -396,8 +396,31 @@ static inline void _mpu_initialize(void)
   // TODO: rework the switch to loop across all config and:
   //  - check if it is locked
   //  - if not reset it
-  for (i = 0; i < NB_PMP_REGIONS/4; i++) {
-    CSR_ZERO_ADDR(CSR_PMPCFG_BASE + i);
+  switch (NB_PMP_REGIONS) {
+    case 64:
+      WRITE_PMPCFG(15, 0);
+      WRITE_PMPCFG(14, 0);
+      WRITE_PMPCFG(13, 0);
+      WRITE_PMPCFG(12, 0);
+      WRITE_PMPCFG(11, 0);
+      WRITE_PMPCFG(10, 0);
+      WRITE_PMPCFG(9, 0);
+      WRITE_PMPCFG(8, 0);
+      __attribute__ ((fallthrough));
+    case 32:
+      WRITE_PMPCFG(7, 0);
+      WRITE_PMPCFG(6, 0);
+      WRITE_PMPCFG(5, 0);
+      WRITE_PMPCFG(4, 0);
+      __attribute__ ((fallthrough));
+    case 16:
+      WRITE_PMPCFG(3, 0);
+      WRITE_PMPCFG(2, 0);
+      __attribute__ ((fallthrough));
+    case 8:
+      WRITE_PMPCFG(1, 0);
+      WRITE_PMPCFG(0, 0);
+      break;
   }
 }
 
@@ -472,21 +495,19 @@ static inline void mpu_disable(void)
  */
 static inline uint32_t mpu_convert_size_to_region(uint32_t size)
 {
-  if (unlikely(size < pmp_granularity)) {
-    size = pmp_granularity; /* Rounding to minimum PMP size */
+  // FIXME: used detected PMP granularity
+  if (unlikely(size < 16)) {
+    size = 16; /* Rounding to minimum PMP size */
   }
 
   // // NA4 and NAPOT size must be power of two
-  return ((((size) - 1) | ((pmp_granularity) - 1)) + 1);
+  return (((size - 1) | (16 - 1)) + 1);
 }
 
 static inline uint32_t _pmp_convert_napot(uint32_t addr, uint32_t size)
 {
-  if (0 != (addr % size)) {
-    return 0;
-  } else {
-    return addr | ((size - 1) >> 1);
-  }
+  // Do not shift base address by 2, it is done in WRITE_* macros
+  return (addr  | ((size - 1) >> 1));
 }
 
 static inline kstatus_t mpu_forge_resource(const struct mpu_region_desc *desc,
@@ -512,11 +533,13 @@ static inline kstatus_t mpu_forge_resource(const struct mpu_region_desc *desc,
 
   if (NB_PMP_REGIONS == index) {
     // No free region has been found
+    pr_err("no free region");
     return K_ERROR_BADSTATE;
   }
 
   resource->index = index;
   if (0 == (resource->pmpaddr = _pmp_convert_napot(desc->addr, desc->size))) {
+    pr_err("failed to convert address");
     return K_ERROR_BADSTATE;
   }
 
@@ -604,7 +627,10 @@ static inline kstatus_t mpu_load_descriptors(
   for (size_t i = 0UL; i < count; i++) {
     desc = region_descs + i;
 
-    if (MM_REGION_KERNEL_TXT == desc->id) {
+    if (MM_REGION_KERNEL_TXT == desc->id ||
+        MM_REGION_KERNEL_DATA == desc->id ||
+        MM_REGION_KERNEL_DEVICE == desc->id
+      ) {
       continue;
     }
 
