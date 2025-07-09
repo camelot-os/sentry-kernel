@@ -84,7 +84,7 @@ fn test_map_mapunmap() -> bool {
     #[cfg(CONFIG_ARCH_MCU_STM32U5A5)]
     if ok {
         log_line!(USER_AUTOTEST_INFO, "device mapped, checking registers");
-        let base = device.base;
+        let base = device.baseaddr;
         for offset in (0..12 * 4).step_by(4) {
             let val = unsafe { core::ptr::read_volatile((base + offset as usize) as *const u32) };
             if offset != 6 * 4 {
