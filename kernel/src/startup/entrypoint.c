@@ -35,6 +35,7 @@ __attribute__((noreturn)) void _entrypoint(void)
 {
 #ifdef CONFIG_HAS_SMP_SUPPORT
     size_t cpuid = 0;
+    /* XXX: this part is EXPERIMENTAL and should not, by now, be used in production */
     smp_get_cpuid(&cpuid);
     if (unlikely(cpuid >= SMP_CORES_NUMBER)) {
         do {
@@ -57,6 +58,9 @@ __attribute__((noreturn)) void _entrypoint(void)
     pr_autotest("INFO: no task discover in this mode");
 #endif
     pr_info("Starting Sentry kernel release %s", "v0.1");
+#if CONFIG_EXPERIMENTAL_MODE
+    pr_info("Using experimental features! Do not use this binary in production");
+#endif
     pr_info("kernel bootup stack at %p, current frame: %p", &_bootupstack, __platform_get_current_sp());
     pr_info("booting on SoC %s", CONFIG_ARCH_SOCNAME);
     pr_info("configured dts file: %s", DTS_FILE);

@@ -212,6 +212,7 @@ rust_toolchain = configure_file(
 )
 endif
 
+is_experimental = kconfig_data.get('CONFIG_EXPERIMENTAL_MODE', 0)
 is_standalone = kconfig_data.get('CONFIG_STANDALONE_MODE', 0)
 build_mode = 'Release'
 if kconfig_data.get('CONFIG_BUILD_TARGET_RELEASE', 0) != 1
@@ -224,6 +225,7 @@ summary(
         'soc': kconfig_data.get_unquoted('CONFIG_ARCH_SOCNAME').to_lower(),
         'build mode': build_mode,
         'standalone': is_standalone,
+        'experimental mode': is_experimental,
         'hardening flags': activated_hardening_cflags,
     },
     bool_yn: true,
