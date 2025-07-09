@@ -31,6 +31,7 @@ use sentry_uapi::systypes::TaskHandle;
 use sentry_uapi::systypes::dma::*;
 use sentry_uapi::systypes::shm::ShmInfo;
 use sentry_uapi::*;
+use crate::tests::devices_utils::get_shm_by_name;
 
 pub fn run() {
     test_suite_start!("syscall::dma*");
@@ -113,14 +114,19 @@ fn test_dma_start_n_wait_stream() -> bool {
     test_start!();
     let mut ok = true;
     let mut streamh: StreamHandle = 0;
-    ok &= check_eq!(get_dma_stream_handle(0x2), Status::Ok);
-    ok &= copy_from_kernel(&mut (&mut streamh as *mut _ as *mut u8)) == Ok(Status::Ok);
+    let mut status : systypes::Status;
+
+    status = get_dma_stream_handle(0x2);
+    let _ = copy_from_kernel(&mut streamh);
+    ok &= check_eq!(status, Status::Ok);
 
     let mut myself: TaskHandle = 0;
-    ok &= check_eq!(get_process_handle(0xbabe), Status::Ok);
-    ok &= copy_from_kernel(&mut (&mut myself as *mut _ as *mut u8)) == Ok(Status::Ok);
+    status = get_process_handle(0xbabe);
+    let _ = copy_from_kernel(&mut myself);
+    ok &= check_eq!(status, Status::Ok);
 
-    let mut shm1: ShmHandle = 0;
+    let mut shm1 = get_shm_by_name("shm_autotest_1").expect("shm_autotest_1 not found");
+    let mut shm: systypes::ShmHandle = 0;
     let mut info1 = ShmInfo {
         label: 0 as u32,
         handle: 0 as u32,
@@ -128,24 +134,33 @@ fn test_dma_start_n_wait_stream() -> bool {
         len: 0 as usize,
         perms: 0 as u32,
     };
-    ok &= check_eq!(get_shm_handle(shm1), Status::Ok);
-    ok &= copy_from_kernel(&mut (&mut shm1 as *mut _ as *mut u8)) == Ok(Status::Ok);
-    ok &= check_eq!(
-        shm_set_credential(
-            shm1,
+
+    status = get_shm_handle(shm1.label);
+    let _ = copy_from_kernel(&mut shm);
+    ok &= check_eq!(status, Status::Ok);
+
+    status = shm_set_credential(
+            shm,
             myself,
             SHMPermission::Write as u32 | SHMPermission::Map as u32
-        ),
-        Status::Ok
     );
-    ok &= check_eq!(map_shm(shm1), Status::Ok);
-    ok &= check_eq!(shm_get_infos(shm1), Status::Ok);
-    ok &= copy_from_kernel(&mut (&mut info1 as *mut _ as *mut u8)) == Ok(Status::Ok);
-    unsafe {
-        core::ptr::write_bytes(info1.base as *mut u8, 0xa5, 0x100);
+    ok &= check_eq!(status, Status::Ok);
+
+
+    status = map_shm(shm);
+    ok &= check_eq!(status, Status::Ok);
+
+    status = shm_get_infos(shm);
+    let _ = copy_from_kernel(&mut info1);
+    ok &= check_eq!(status, Status::Ok);
+
+    if ok {
+        unsafe {
+            core::ptr::write_bytes(info1.base as *mut u8, 0xa5, 0x100);
+        }
     }
 
-    let mut shm2: ShmHandle = 0;
+    let mut shm2 = get_shm_by_name("shm_autotest_2").expect("shm_autotest_2 not found");
     let mut info2 = ShmInfo {
         label: 0 as u32,
         handle: 0 as u32,
@@ -153,26 +168,34 @@ fn test_dma_start_n_wait_stream() -> bool {
         len: 0 as usize,
         perms: 0 as u32,
     };
-    ok &= check_eq!(get_shm_handle(shm2), Status::Ok);
-    ok &= copy_from_kernel(&mut (&mut shm2 as *mut _ as *mut u8)) == Ok(Status::Ok);
-    ok &= check_eq!(
-        shm_set_credential(
-            shm2,
-            myself,
-            SHMPermission::Write as u32 | SHMPermission::Map as u32
-        ),
-        Status::Ok
+    status = get_shm_handle(shm2.label);
+    let _ = copy_from_kernel(&mut shm);
+    ok &= check_eq!(status, Status::Ok);
+
+    status = shm_set_credential(
+        shm,
+        myself,
+        SHMPermission::Write as u32 | SHMPermission::Map as u32
     );
-    ok &= check_eq!(map_shm(shm2), Status::Ok);
-    ok &= check_eq!(shm_get_infos(shm2), Status::Ok);
-    ok &= copy_from_kernel(&mut (&mut info2 as *mut _ as *mut u8)) == Ok(Status::Ok);
-    unsafe {
-        core::ptr::write_bytes(info2.base as *mut u8, 0x42, 0x100);
+    ok &= check_eq!(status, Status::Ok);
+
+    status = map_shm(shm);
+    ok &= check_eq!(status, Status::Ok);
+
+    status = shm_get_infos(shm);
+    let _ = copy_from_kernel(&mut info2);
+    ok &= check_eq!(status, Status::Ok);
+
+    if ok {
+        unsafe {
+            core::ptr::write_bytes(info2.base as *mut u8, 0x42, 0x100);
+        }
     }
 
     ok &= check_eq!(dma_assign_stream(streamh), Status::Ok);
     ok &= check_eq!(dma_start_stream(streamh), Status::Ok);
-    ok &= check_eq!(wait_for_event(EventType::Dma as u8, -1), Status::Ok);
+    status = wait_for_event(EventType::Dma as u8, -1);
+    ok &= check_eq!(status, Status::Ok);
 
     let cmp = unsafe {
         core::slice::from_raw_parts(info1.base as *const u8, 0x100)
