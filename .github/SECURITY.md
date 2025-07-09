@@ -19,7 +19,7 @@ The [security embargo](https://googleprojectzero.blogspot.com/p/vulnerability-di
 
 The report author is free to reserve an associated CVE entry as soon as the embargo is respected.
 
-For any questions and to inform the maintainers of the vulnerability existence, please contact [outpost-os](mailto:outpost-os@ledger.fr) team.
+For any questions and to inform the maintainers of the vulnerability existence, please contact [camelot-os](mailto:camelot-os@h2lab.org) team.
 
 ## Supported versions
 

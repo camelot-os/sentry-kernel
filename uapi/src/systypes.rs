@@ -196,7 +196,7 @@ pub type StreamLabel = u32;
 /// A device label is a development-time fixed identifier that can be used hardcoded
 /// in the source code in order to identify declared device.
 /// This label is, by now, the result of the device tree analysis but will be replaced by
-/// a clean outpost,label field at dts level, in the same way other label are set, to
+/// a clean sentry,label field at dts level, in the same way other label are set, to
 /// highly simplify userspace level usage.
 /// This label is used to get back the associated handle at run time.
 pub type DeviceLabel = u32;

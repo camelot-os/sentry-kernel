@@ -24,8 +24,8 @@ static const stm32_timer_desc_t stm32_timers[] = {
         .clk_msk = {{ "%#08xUL"|format(clk_msk) }},
         .label = {{ "0x%xUL"|format(loop.index - 1) }},
         .irqn = {{ "0x%xU"|format(timer.interrupts[0]) }},
-        .counter = {{ "0x%xU"|format(timer["outpost,counter"]) }},
-        .prescaler = {{ "0x%xU"|format(timer["outpost,prescaler"]) }},
+        .counter = {{ "0x%xU"|format(timer["sentry,counter"]) }},
+        .prescaler = {{ "0x%xU"|format(timer["sentry,prescaler"]) }},
     },
     {% endif -%}
     {% endfor %}

@@ -21,7 +21,7 @@
 
 	led0: led_0 {
 		compatible = "gpio-leds";
-		outpost,owner = <0xbabe>;
+		sentry,ownerr = <0xbabe>;
 		pinctrl-0 = <&led_pc7 &led_pc7>;
 		status = "disabled";
 	};
@@ -84,7 +84,7 @@
 
 &i2c1 {
 	status = "okay";
-	outpost,owner = <0xbabe>;
+	sentry,ownerr = <0xbabe>;
 	dma-rx = <&gpdma1 13>;
 	dma-tx = <&gpdma1 12>;
 };

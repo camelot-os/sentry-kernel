@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2025 Outpost OSS team
+// SPDX-FileCopyrightText: 2025 Camelot OSS team
 // SPDX-License-Identifier: Apache-2.0
 
 #include <stdlib.h>

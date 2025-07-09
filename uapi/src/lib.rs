@@ -9,7 +9,7 @@
 //!
 //! sentry_uapi is the user API library that delivers a full access to the Sentry kernel
 //! interface.
-//! This crate aim to be used by any Outpost-OS Rust application.
+//! This crate aim to be used by any Sentry-OS Rust application.
 //!
 //! -**Data types** — Sentry_uapi provices a complete set of data types and
 //!  values that are required in order to properly exchange informations with the Sentry kernel.

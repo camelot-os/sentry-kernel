@@ -58,7 +58,6 @@ buses_h_in_set = ssmod.source_set()
 buses_h_in_set.add(when: 'CONFIG_SOC_SUBFAMILY_STM32F4', if_true: files('stm32f4-buses.h.in'))
 buses_h_in_set.add(when: 'CONFIG_SOC_SUBFAMILY_STM32L4', if_true: files('stm32l4-buses.h.in'))
 # FIXME: use the same as L4 for U5 family
-# see: https://git.orange.ledgerlabs.net/outpost/sentry-kernel/issues/188
 # rework this as this is weak
 buses_h_in_set.add(when: 'CONFIG_SOC_SUBFAMILY_STM32U5', if_true: files('stm32l4-buses.h.in'))
 buses_h_in_set.add(when: 'CONFIG_SOC_SUBFAMILY_STM32WB', if_true: files('stm32l4-buses.h.in'))

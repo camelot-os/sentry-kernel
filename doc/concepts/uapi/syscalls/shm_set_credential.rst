@@ -43,7 +43,7 @@ sys_shm_set_credential
 
    These flags are ORed so that multiple flags can be set if needed.
 
-   It is to note that the SHM_PERMISSION_MAP is ignored if the `outpost,no-map` attribute in the device tree is set
+   It is to note that the SHM_PERMISSION_MAP is ignored if the `sentry,no-map` attribute in the device tree is set
    (see :ref:`SHM general description <shm_principles>` of Sentry concept, for more information).
 
    .. code-block:: C

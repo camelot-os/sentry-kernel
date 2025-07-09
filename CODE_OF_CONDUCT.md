@@ -64,7 +64,7 @@ representative at an online or offline event.
 ## Enforcement
 
 Instances of abusive, harassing, or otherwise unacceptable behavior may be
-reported to the community leaders at outpost-os@ledger.fr.
+reported to the community leaders at camelot-os@h2lab.org.
 All complaints will be reviewed and investigated promptly and fairly.
 
 All community leaders are obligated to respect the privacy and security of the
@@ -121,7 +121,7 @@ community.
 This Code of Conduct is adapted from the [Contributor Covenant][homepage],
 version 2.1, available at
 [https://www.contributor-covenant.org/version/2/1/code_of_conduct.html][v2.1].
-The only changes made by The Outpost Project to the original document were to
+The only changes made by The Camelot Project to the original document were to
 make explicit the mail of the recipients of Code of Conduct incident reports.
 
 Community Impact Guidelines were inspired by

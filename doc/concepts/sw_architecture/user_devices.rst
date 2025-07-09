@@ -13,7 +13,7 @@ forged using the project's device tree. This is a useful helper as by doing
 that, only active devices are stored in the Sentry kernel device list,
 seen as a whitelist.
 
-When a Outpost-based project modify its device tree to add or remove a device,
+When a Sentry-based project modify its device tree to add or remove a device,
 or update a board reference, modying some device's pinmux configuration, the
 kernel device listing and associated configuration is automatically regenerated.
 

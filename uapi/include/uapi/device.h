@@ -37,7 +37,7 @@ typedef struct io_info {
 /**
  * @brief userspace oriented device definition
  *
- * In Outpost is device is
+ * In sentry is device is
  */
 typedef struct devinfo {
     uint32_t id;
@@ -57,7 +57,7 @@ typedef struct devinfo {
 /**
  * @brief userspace oriented device definition
  *
- * In Outpost is device is
+ * In sentry is device is
  */
 typedef struct shminfo {
     uint32_t id;

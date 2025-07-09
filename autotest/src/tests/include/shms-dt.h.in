@@ -21,15 +21,15 @@
 {% set ns.total_shm=0 -%}
 static const shminfo_t shms[] = {
     {% for node in dts.get_mappable() -%}
-    {% if node|has_property("outpost,shm") -%}
+    {% if node|has_property("sentry,shm") -%}
     {% set owner = "%#xUL"|format(node|owner) -%}
     {% if owner != "0xbabeUL" -%}
     {% continue -%}
     {% endif -%}
     {
-        {% set label = node["outpost,label"] -%}
+        {% set label = node["sentry,label"] -%}
         .id = {{ "%#xUL"|format(label) }},
-        {% if node|has_property("outpost,no-map") -%}
+        {% if node|has_property("sentry,no-map") -%}
         .mappable = false,
         {% else -%}
         .mappable = true,

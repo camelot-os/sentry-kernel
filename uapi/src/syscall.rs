@@ -18,7 +18,7 @@ use core::arch::asm;
 /// value is only used in order to call the `_finish(status)` function of the
 /// current task so that it is possible to delivers differentiated
 /// termination behavior depending on the returned status code. See
-/// [Sentry concept](https://outpost-sentry.readthedocs.io/en/latest/concepts/initial.html#action-on-termination)
+/// [Sentry concept](https://sentry-kernel.readthedocs.io/en/latest/concepts/initial.html#action-on-termination)
 /// for more informations about task terminations.
 ///
 /// > **NOTE**: This function never returns.
@@ -134,7 +134,7 @@ pub fn get_dma_stream_handle(stream: StreamLabel) -> Status {
 /// be preempted by another job.
 ///
 /// Calling this syscall do not make the task uneligible, but instead push the task
-/// bellow in the Sentry's scheduler queue. See [Senty scheduler](https://outpost-sentry.readthedocs.io/en/latest/sw_architecture/schedulers.html#rrmq-scheduler)
+/// bellow in the Sentry's scheduler queue. See [Sentry scheduler](https://sentry-kernel.readthedocs.io/en/latest/sw_architecture/schedulers.html#rrmq-scheduler)
 /// documentation for more information.
 ///
 /// This syscall never fails. This syscall preempt the current job.
@@ -511,7 +511,7 @@ pub fn send_signal(resource: u32, signal_type: Signal) -> Status {
 /// ```dts
 /// &i2c1 {
 ///     status = "okay";
-///	    outpost,owner = <0xC001F001>;
+///	    sentry,owner = <0xC001F001>;
 ///     pinctrl-0 = <&i2c1_sda>;
 /// }
 ///
