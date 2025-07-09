@@ -4,7 +4,9 @@
 #ifndef LOG_LEXER_H
 #define LOG_LEXER_H
 
+#include <stdarg.h>
 #include <inttypes.h>
+#include <stddef.h>
 #include <stdbool.h>
 
 uint8_t print_with_len(const char *fmt, va_list *args, size_t *sizew);

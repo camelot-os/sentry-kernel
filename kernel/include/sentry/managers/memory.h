@@ -11,6 +11,7 @@ extern "C" {
 #include <sentry/arch/asm-generic/memory.h>
 #include <sentry/arch/asm-generic/panic.h>
 #include <sentry/managers/task.h>
+#include <sentry/managers/memory_types.h>
 
 /**
  * This enumerate defines the contigous memory regions that
@@ -27,12 +28,6 @@ typedef enum mm_region {
     MM_REGION_TASK_RESSOURCE_DEVICE, /* starting at 4, no fixed order */
     MM_REGION_TASK_RESSOURCE_SHM,
 } mm_region_t;
-
-typedef enum mm_k_region {
-    MM_REGION_KERNEL_TXT = 0, /* starting point of userspace ressources */
-    MM_REGION_KERNEL_DATA = 1,
-    MM_REGION_KERNEL_DEVICE = CONFIG_NUM_MPU_REGIONS - 1,
-} mm_k_region_t;
 
 kstatus_t mgr_mm_resize_taskdata_to_svcexchange(taskh_t target);
 

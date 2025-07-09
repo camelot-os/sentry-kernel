@@ -5,6 +5,8 @@ arch_source_set = ssmod.source_set()
 
 if kconfig_data.get('CONFIG_ARCH_ARM_CORTEX_M', 0) == 1
 subdir('asm-cortex-m')
+elif kconfig_data.get('CONFIG_ARCH_RV32', 0) == 1
+subdir('asm-rv32')
 endif
 
 # architecture-generic, but architecture related code
@@ -12,7 +14,6 @@ arch_source_set.add(files(
   'asm-generic/platform.c',
   'asm-generic/sync.c',
   'asm-generic/panic.c',
-  'asm-generic/handler-svc-lut.c',
 ))
 
 arch_source_set_config = arch_source_set.apply(kconfig_data, strict:false)

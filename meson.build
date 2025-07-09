@@ -212,6 +212,7 @@ rust_toolchain = configure_file(
 )
 endif
 
+is_experimental = kconfig_data.get('CONFIG_EXPERIMENTAL_MODE', 0)
 is_standalone = kconfig_data.get('CONFIG_STANDALONE_MODE', 0)
 build_mode = 'Release'
 if kconfig_data.get('CONFIG_BUILD_TARGET_RELEASE', 0) != 1
@@ -224,6 +225,7 @@ summary(
         'soc': kconfig_data.get_unquoted('CONFIG_ARCH_SOCNAME').to_lower(),
         'build mode': build_mode,
         'standalone': is_standalone,
+        'experimental mode': is_experimental,
         'hardening flags': activated_hardening_cflags,
     },
     bool_yn: true,
@@ -262,6 +264,31 @@ firmware_hex = custom_target(
         sentry_hex.full_path(), '-Intel',
         idle_hex.full_path(), '-Intel',
         autotest_hex.full_path(), '-Intel',
+    ],
+    build_by_default: true,
+    install: true,
+    install_dir: get_option('bindir'),
+)
+else
+warning('srec_cat utility not found!')
+warning('!!! Unable to forge final hex automatically! help yourself with ELF and HEX...')
+endif
+
+endif
+
+if not with_autotest and not with_tests
+# Create an additional single firmware to ease loading in QEMU
+srec_cat = find_program('srec_cat', required: false, disabler: true)
+
+if srec_cat.found()
+firmware_hex = custom_target(
+    depends: [ idle_hex, sentry_hex ],
+    output: 'firmware.hex',
+    command: [
+        srec_cat,
+        '-o', '@OUTPUT@', '-Intel',
+        sentry_hex.full_path(), '-Intel',
+        idle_hex.full_path(), '-Intel',
     ],
     build_by_default: true,
     install: true,

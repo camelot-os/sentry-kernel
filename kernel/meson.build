@@ -110,6 +110,23 @@ sentry_bin = custom_target(
     install_tag: 'runtime',
 )
 
+if kconfig_data.get('CONFIG_WITH_UF2', 0) == 1
+picotool = find_program('picotool', required: true)
+
+custom_target(
+    input: sentry_bin,
+    output: '@BASENAME@.uf2',
+    command: [
+        picotool, 'uf2',
+        'convert', '@INPUT@', '-t', 'bin',
+        '@OUTPUT@', '-t', 'uf2'
+    ],
+    install: true,
+    install_dir: get_option('bindir'),
+    install_tag: 'runtime',
+)
+endif
+
 meson.add_install_script(sentry_install_script, sentry_map_file, get_option('infodir') / meson.project_name())
 
 endif

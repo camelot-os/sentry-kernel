@@ -19,8 +19,20 @@ rust_toolchain_config.set('target', kconfig_data.get_unquoted('CONFIG_RUSTC_TARG
 global_rust_build_args = [
     '@' + fs.parent(kconfig_rustargs) / fs.name(kconfig_rustargs),
     target_rustargs,
-    '-C', 'lto=true', '-C', 'relocation-model=pic', '-C', 'link-args=--emit-relocs'
+    '-C', 'lto=true', '-C', 'relocation-model=pic',
+    '-C', 'link-args=--emit-relocs',
 ]
+
+if kconfig_data.get('CONFIG_ARCH_RV32', 0) == 1
+    # Ensure that unsupported extensions are deactivated in rustc
+    if kconfig_data.get('CONFIG_HAS_ZMMUL', 0) != 1
+        # global_rust_build_args += ['-C', 'target-feature=-zmmul']
+    endif
+
+    if kconfig_data.get('CONFIG_HAS_ZIFENCEI', 0) != 1
+        # global_rust_build_args += ['-C', 'target-feature=-zifencei']
+    endif
+endif
 
 rust_edition = '2024'
 uapi_rust_std = 'rust_std=' + rust_edition

@@ -13,7 +13,7 @@
  *
  * This asm set the nPRIV bit in CONTROL register after idle start-up.
  */
-static inline void __switch_to_userspace(void)
+static inline void __switch_to_userspace()
 {
     asm volatile(
         "mrs r0,control \r\n"

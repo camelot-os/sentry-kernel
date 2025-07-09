@@ -14,6 +14,8 @@
 // nothing, userspace mode
 #elif defined(__i386__)
 // nothing, userspace mode
+#elif defined(CONFIG_ARCH_RV32)
+#include <sentry/arch/asm-rv32/handler.h>
 #else
 #error "unsupported architecture!"
 #endif

@@ -7,10 +7,10 @@
 #include <bsp/drivers/clk/rcc.h>
 #include <sentry/zlib/compiler.h>
 #if CONFIG_DEBUG_OUTPUT_SEMIHOSTING
-#include <sentry/arch/asm-cortex-m/semihosting.h>
+#include <sentry/arch/asm-generic/semihosting.h>
 #endif
 #include "log.h"
-
+#include "logo.h"
 /**
  * @brief probe the debug backend
  *
@@ -31,6 +31,7 @@ kstatus_t mgr_debug_init(void)
 #endif
     dbgbuffer_flush();
 #if CONFIG_DEBUG_OUTPUT_USART
+    logo_print();
 end:
 #endif
     return status;
@@ -63,12 +64,12 @@ kstatus_t debug_rawlog(__MAYBE_UNUSED const uint8_t *logbuf, __MAYBE_UNUSED size
     static const char filename[] = CONFIG_DEBUG_SEMIHOSTING_OUTPUT_FILE;
     int fd;
 
-    fd = arm_semihosting_open(filename, SYS_FILE_MODE_APPEND, sizeof(filename) - 1);
+    fd = semihosting_open(filename, SYS_FILE_MODE_APPEND, sizeof(filename) - 1);
     if (fd < 0) {
         goto err;
     }
-    arm_semihosting_write(fd, logbuf, len);
-    arm_semihosting_close(fd);
+    semihosting_write(fd, logbuf, len);
+    semihosting_close(fd);
 err:
     return status;
 #else

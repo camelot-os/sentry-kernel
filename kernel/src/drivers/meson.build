@@ -15,8 +15,12 @@ bsp_private_gen_header_set = ssmod.source_set()
 bsp_private_header_set = ssmod.source_set()
 
 subdir('clk')
-subdir('exti')
 subdir('flash')
+
+if kconfig_data.get('CONFIG_ARCH_ARM_CORTEX_M', 0) == 1
+subdir('exti')
+endif
+
 subdir('gpio')
 
 # TODO w/ kconfig driver selector
@@ -25,7 +29,10 @@ if kconfig_data.get('CONFIG_HAS_RNG', 0) == 1
 subdir('rng')
 endif
 
+if kconfig_data.get('CONFIG_ARCH_ARM_CORTEX_M', 0) == 1
 subdir('syscfg')
+endif
+
 if kconfig_data.get('CONFIG_DEBUG_OUTPUT_USART', 0) == 1
 subdir('usart')
 endif
@@ -34,6 +41,9 @@ if kconfig_data.get('CONFIG_HAS_GPDMA', 0) == 1
 subdir('dma')
 endif
 
+if kconfig_data.get('CONFIG_WITH_SMP_SUPPORT', 0) == 1
+subdir('smp')
+endif
 
 bsp_source_set_config = bsp_source_set.apply(kconfig_data, strict: false)
 bsp_private_gen_source_set_config = bsp_private_gen_source_set.apply(kconfig_data, strict: false)
