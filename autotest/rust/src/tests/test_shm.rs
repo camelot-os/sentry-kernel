@@ -59,14 +59,20 @@ fn test_shm_unmap_notmapped() -> bool {
     let mut status: systypes::Status;
     let mut shm: systypes::ShmHandle = 0;
     let mut ok: bool = true;
-    let perms = (systypes::SHMPermission::Write as u32) | (systypes::SHMPermission::Map as u32);
+    let mut myself: systypes::TaskHandle = 0;
+    let mut perms : u32;
+    perms = (systypes::SHMPermission::Write as u32) + (systypes::SHMPermission::Map as u32);
 
     let shm1 = get_shm_by_name("shm_autotest_1").expect("shm_autotest_1 not found");
     status = syscall::get_shm_handle(shm1.label);
     let _ = sentry_uapi::copy_from_kernel(&mut shm);
     ok &= check_eq!(status, systypes::Status::Ok);
 
-    status = syscall::shm_set_credential(shm, 0xbabe, perms.into());
+    status = syscall::get_process_handle(0xbabe);
+    let _ = sentry_uapi::copy_from_kernel(&mut myself);
+    ok &= check_eq!(status, systypes::Status::Ok);
+
+    status = syscall::shm_set_credential(shm, myself, perms);
     ok &= check_eq!(status, systypes::Status::Ok);
 
     status = syscall::map_shm(shm);
@@ -100,7 +106,7 @@ fn test_shm_mapdenied() -> bool {
     let shm1 = get_shm_by_name("shm_autotest_1").expect("shm_autotest_1 not found");
     let mut shm: systypes::ShmHandle = 0;
     let mut myself: systypes::TaskHandle = 0;
-    let perms = (systypes::SHMPermission::Write as u32) | (systypes::SHMPermission::Map as u32);
+    let perms : u32 = systypes::SHMPermission::Write as u32;
     let mut status: systypes::Status;
     let mut ok: bool = true;
 
@@ -112,7 +118,7 @@ fn test_shm_mapdenied() -> bool {
     let _ = sentry_uapi::copy_from_kernel(&mut shm);
     ok &= check_eq!(status, systypes::Status::Ok);
 
-    status = syscall::shm_set_credential(shm, myself, perms.into());
+    status = syscall::shm_set_credential(shm, myself, perms);
     ok &= check_eq!(status, systypes::Status::Ok);
 
     status = syscall::map_shm(shm);
@@ -172,11 +178,14 @@ fn test_shm_creds_on_mapped() -> bool {
     let _ = sentry_uapi::copy_from_kernel(&mut shm);
     ok &= check_eq!(status, systypes::Status::Ok);
 
+    let mut perms : u32;
+    perms = (systypes::SHMPermission::Write as u32) + (systypes::SHMPermission::Map as u32);
+
     // Set the credential to allow map and write
     status = syscall::shm_set_credential(
         shm,
         myself,
-        (systypes::SHMPermission::Map as u32 | systypes::SHMPermission::Write as u32).into()
+        perms,
     );
     ok &= check_eq!(status, systypes::Status::Ok);
 

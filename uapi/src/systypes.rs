@@ -369,16 +369,16 @@ impl From<AlarmFlag> for u32 {
 #[repr(C)]
 pub enum SHMPermission {
     /// allows target process to map the SHM. No read nor write though
-    Map,
+    Map = 0x1,
 
     /// allows target process to read the mapped SHM. Requires MAP
-    Read,
+    Read = 0x2,
 
     /// allows target process to write shared memory. Requires MAP
-    Write,
+    Write = 0x4,
 
     /// allows target process to transfer SHM to another, pre-allowed, process
-    Transfer,
+    Transfer = 0x8,
 }
 
 /// Converter for SHM permission to register encoding (u32)
