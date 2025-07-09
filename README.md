@@ -171,13 +171,20 @@ Once meson build directory is setup, the build step is as simple as calling ninj
 ninja -C builddir
 ```
 
-## proof
+## formal proofness
 
-Sentry kernel proof is supported by Frama-C framework. It is based on the
+Sentry kernel formal proofness is supported by Frama-C framework. It is based on the
 analysis of the libsentry sources, which include all the kernel drivers,
 services, etc. except the kernel entrypoint.
 
-**INFO**: the Frama-C framework used is Cobalt (27), with why3 and cvc4. Meson check that they are installed on the system.
+EVA and RTE Frama-C plugins are used in order to validate that the kernel sources do not hold any run-time errors nor undefined behavior in the
+overall coverage kernel code (approx. 98%, exluding some defensive unreachable code blocks and assembly calls).
+
+In the same way, WP plugin is used in order to validate the correctness of some subparts of the Sentry kernel. The goal here is to validate that the attended behavior
+and border effects match the specifications. The way Frama-C analysis is made is designed in order to allow composition (separated per-module formal proofness in
+order to demonstrate the correctness of each module interface, while proving a module is made considering external interfaces specification as valid by hypothesis).
+
+**INFO**: the Frama-C framework requires at least Frama-C Cobalt (27), with why3 and cvc4. Meson check that they are installed on the system.
 
 Frama-C targets are hosted in the `proof` directory and are activable using
 the `with_proof` option:
