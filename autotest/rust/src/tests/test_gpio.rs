@@ -61,7 +61,7 @@ fn test_gpio_off() -> bool {
 fn test_gpio_toggle() -> bool {
     test_start!();
     let mut dev: systypes::DeviceHandle = 0;
-    let status;
+    let mut status;
     let mut ok = true;
 
     let device = get_device_by_name("led0").expect("LED0 device not found");
@@ -72,7 +72,8 @@ fn test_gpio_toggle() -> bool {
     check_eq!(syscall::gpio_configure(dev, 0), systypes::Status::Ok);
         for _ in 0..10 {
             ok &= check_eq!(syscall::gpio_toggle(dev, 0), systypes::Status::Ok);
-            syscall::sleep(systypes::SleepDuration::ArbitraryMs(250), systypes::SleepMode::Deep);
+            status = syscall::sleep(systypes::SleepDuration::ArbitraryMs(250u32), systypes::SleepMode::Deep);
+            check_eq!(status, systypes::Status::Timeout);
         }
         test_end!();
         ok
