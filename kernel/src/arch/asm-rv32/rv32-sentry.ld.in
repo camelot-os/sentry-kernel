@@ -46,7 +46,7 @@ SECTIONS {
         . = ALIGN(4);
     } > {{ kernelcode_section }}
 
-    .task_list :
+    .task_list (READONLY) :
     {
         . = ALIGN(4);
         KEEP(*(.task_list))
@@ -64,13 +64,10 @@ SECTIONS {
     {
         . = ALIGN(4);
         _stext = .;	            /* create a global symbol at data start */
-        /* *startup*(.text.Reset_Handler) */
         *(.text)
         *(.text*)
         *(.rodata)         	/* .rodata sections (constants, strings, etc.) */
         *(.rodata*)         	/* .rodata sections (constants, strings, etc.) */
-        /* *(.glue_7) */         	/* glue arm to thumb code */
-        /* *(.glue_7t) */       	/* glue thumb to arm code */
         /* *(.eh_frame) */   /* Not sure if needed for C and rust on riscv */
 
         KEEP (*(.init))
