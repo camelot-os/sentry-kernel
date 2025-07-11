@@ -3,11 +3,9 @@
 
 pub mod log;
 
-#[cfg(CONFIG_TEST_DEVICES)]
-#[cfg(CONFIG_TEST_GPIO)]
+#[cfg(any(CONFIG_TEST_DEVICES,CONFIG_TEST_GPIO,CONFIG_TEST_SHM))]
 mod devices_dt;
-#[cfg(CONFIG_TEST_DEVICES)]
-#[cfg(CONFIG_TEST_GPIO)]
+#[cfg(any(CONFIG_TEST_DEVICES,CONFIG_TEST_GPIO,CONFIG_TEST_SHM))]
 mod devices_utils;
 #[cfg(CONFIG_TEST_GPIO)]
 pub mod test_gpio;

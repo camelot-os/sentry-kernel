@@ -13,7 +13,8 @@ autotest_rust_build_args = [
 
 devices_dtsgen_rs = []
 
-if kconfig_data.get('CONFIG_TEST_DEVICES', 0) == 1
+if kconfig_data.get('CONFIG_TEST_DEVICES', 0) == 1 or kconfig_data.get('CONFIG_TEST_SHM', 0) == 1
+
 devices_template_rs = files(['src/devices_dt.rs.in'])
 
 devices_dtsgen_rs = custom_target('devices_dtsgen_rs_gen',
