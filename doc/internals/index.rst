@@ -12,9 +12,9 @@ Welcome to Sentry internals documentation!
    api/index.rst
 
 
-.. image:: _static/figures/outpost.png
+.. image:: _static/figures/camelot.png
    :width: 30%
-   :alt: Outpost logo
+   :alt: Camelot logo
    :align: center
 
 This is the Sentry kernel internal implementation documentation.

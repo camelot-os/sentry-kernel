@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2025 Outpost OSS Team
+// SPDX-FileCopyrightText: 2025 Camelot OSS Team
 // SPDX-License-Identifier: Apache-2.0
 
 
@@ -131,6 +131,6 @@ int main(void) {
         cmocka_unit_test(test_rngbitmasks),
         cmocka_unit_test(test_fullmask),
     };
- 
+
     return cmocka_run_group_tests(tests, NULL, NULL);
 }

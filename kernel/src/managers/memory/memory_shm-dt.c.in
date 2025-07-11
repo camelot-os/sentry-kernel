@@ -13,7 +13,7 @@
 {% set ns.total_shm=0 -%}
 static const shm_meta_t shms[] = {
     {% for node in dts.get_mappable() -%}
-    {% if node|has_property("outpost,shm") -%}
+    {% if node|has_property("sentry,shm") -%}
     /* {{ node.label }} */
     {
         .baseaddr = {{ "0x%08x"|format(node.reg[0]) }},
@@ -23,14 +23,14 @@ static const shm_meta_t shms[] = {
         {% else -%}
         .is_dma_pool = SECURE_FALSE,
         {% endif -%}
-        {% if node|has_property("outpost,no-map") -%}
+        {% if node|has_property("sentry,no-map") -%}
         .is_mappable = SECURE_FALSE,
         {% else -%}
         .is_mappable = SECURE_TRUE,
         {% endif -%}
-        {% set label = node["outpost,label"] -%}
+        {% set label = node["sentry,label"] -%}
         .shm_label = {{ "%#xUL"|format(label) }},
-        {% set owner = node["outpost,owner"] -%}
+        {% set owner = node["sentry,owner"] -%}
         .owner_label = {{ "%#xUL"|format(owner) }}
     {% set ns.total_shm = ns.total_shm + 1 -%}
     },

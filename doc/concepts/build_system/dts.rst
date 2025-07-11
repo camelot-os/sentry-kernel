@@ -10,13 +10,13 @@ resolution) have to be passed at project configure time, see
 .. [#] Device Tree Source
 
 
-OutpostOS/Sentry requires custom nodes and property to work as expected.
+CamelotOS/Sentry requires custom nodes and property to work as expected.
 
 Properties
 ^^^^^^^^^^
 
-.. _outpost_owner_property:
-``outpost,owner`` property
+.. _sentry_owner_property:
+``sentry,owner`` property
 """"""""""""""""""""""""""
 
 This property is an ``u32`` type property used to assign the owner :ref:`task label <Task handle>`
@@ -32,7 +32,7 @@ dma buffers.
     ...
     some_nodelabel: name@address {
         ...
-        outpost,owner = <0xbabe>;
+        sentry,owner = <0xbabe>;
         ...
       };
   };
@@ -149,10 +149,10 @@ Each child node describe one region with the following properties:
 
  - ``reg``: <`base_address` `size`> (mandatory)
  - ``dma-pool``: boolean, this region can be used as dma-pool.
- - ``outpost,shm``: boolean, can be use as shared memory, this property requires outpost,label and outpost,owner property to be defined
- - ``outpost,label``: memory region label (used by user space to get internal opaque handler)
- - ``outpost,owner``: see :ref:`outpost_owner_property` section.
- - ``outpost,no-map``: prevent region to be mapped by sentry kernel.
+ - ``sentry,shm``: boolean, can be use as shared memory, this property requires sentry,label and sentry,owner property to be defined
+ - ``sentry,label``: memory region label (used by user space to get internal opaque handler)
+ - ``sentry,owner``: see :ref:`sentry_owner_property` section.
+ - ``sentry,no-map``: prevent region to be mapped by sentry kernel.
 
 .. important::
     [kernel/idle/autotest/tasks]_code/ram label are reserved and mandatory in order to declare,
@@ -174,26 +174,26 @@ Each child node describe one region with the following properties:
 
         kernel_code: memory@8000000 {
             reg = <0x8000000 0x8000>;
-            compatible = "outpost,memory-pool";
+            compatible = "sentry,memory-pool";
         };
         idle_code: memory@8008000 {
             reg = <0x8008000 0x300>;
-            compatible = "outpost,memory-pool";
+            compatible = "sentry,memory-pool";
         };
         kernel_ram: memory@20000000 {
             reg = <0x20000000 0x2000>;
-            compatible = "outpost,memory-pool";
+            compatible = "sentry,memory-pool";
         };
         idle_ram: memory@20004000 {
             reg = <0x20004000 0x200>;
-            compatible = "outpost,memory-pool";
+            compatible = "sentry,memory-pool";
         };
         tasks_code: memory@0800a000 {
             reg = <0x0800a000 0x200000>;
-            compatible = "outpost,memory-pool";
+            compatible = "sentry,memory-pool";
         };
         tasks_ram: memory@20008000 {
             reg = <0x20008000 0x280000>;
-            compatible = "outpost,memory-pool";
+            compatible = "sentry,memory-pool";
         };
     };

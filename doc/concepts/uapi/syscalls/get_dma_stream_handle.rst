@@ -12,7 +12,7 @@ sys_get_dma_handle
 **Usage**
 
    In Sentry, all DMA streams are uniquely identified by ther handle. At bootup,
-   the user-space task only holds the DMA stream label, as defined in the `outpost,label`
+   the user-space task only holds the DMA stream label, as defined in the `sentry,label`
    attribute of the DMA stream in the project ``dts`` file. This label is unique to
    the system.
 

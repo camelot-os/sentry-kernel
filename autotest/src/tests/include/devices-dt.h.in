@@ -18,8 +18,8 @@
 #include <uapi/device.h>
 
 {% macro device_get_owner(device) -%}
-{% if device["outpost,owner"] -%}
-{{ "0x%x"|format(device["outpost,owner"]) }}
+{% if device["sentry,owner"] -%}
+{{ "0x%x"|format(device["sentry,owner"]) }}
 {% else -%}
 {{ "0x%x"|format(0) }}
 {% endif -%}

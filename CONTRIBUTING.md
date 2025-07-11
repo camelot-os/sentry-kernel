@@ -32,7 +32,7 @@ collaboratibe methods for submissions.
 
 * A Continuous Integration (CI) system runs on every Pull Request (PR). This includes the formal proofness (noRTE) analysis.
 
-* A Discord channel denoted OutpostOS is dedicated to exchanges with the community. This repository also has the Github
+* A Discord channel denoted CamelotOS is dedicated to exchanges with the community. This repository also has the Github
   discussions interface active for any questions or requests.
 
 ## Contribution buidelines

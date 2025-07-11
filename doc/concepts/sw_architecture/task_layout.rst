@@ -28,13 +28,13 @@ elements:
      executable. At boot time (or at build time in case of build-time address resolution)
      the GoT need to be updated in order to hold the correct symbol offsets so that
      the program properly resolve all its symbol, whatever its position in flash is.
-     In Outpost OS, the GoT is updated at build time by the build system positioner.
+     In Camelot OS, the GoT is updated at build time by the build system positioner.
 
    * **bss section**: The BSS hold the uninitialized data of a task. This section do
      not require to be stored in the final binary and thus in flash, but must exist in
      the volatile memory so that the task can manipulate its uninitialized variable properly
 
-   * **heap**: when it exists, hold the allocator pool. In Outpost, allocator is
+   * **heap**: when it exists, hold the allocator pool. In Sentry, the allocator is
      fully userspace and under the responsability of the userspace library. Sentry only
      delivers, if needed, an empty space to hold a memory pool. The heap size is defined
      at task configuration time.
@@ -87,7 +87,7 @@ A typical application mapping at boot time is done as defined in the following:
 
 .. note::
     For more information on the way the build system manipulate applications, forge
-    metadata information or store metadata in ELF files, see Outpost buid system documentation
+    metadata information or store metadata in ELF files, see Sentry buid system documentation
 
 Forging and holding task layout
 """""""""""""""""""""""""""""""

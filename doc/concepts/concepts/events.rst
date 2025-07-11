@@ -91,10 +91,10 @@ At DTS level, a typical shared memory definition is the following:
       shm_customtask: memory@2000a000 {
         reg = <0x2000a000 0x256>;
         dma-pool; // DMA allowed from/to this SHM
-        outpost,shm;
-        outpost,no-map;
-        outpost,label = <0xf00>;// shm label, unique
-        outpost,owner = <0xbabe>; // task label
+        sentry,shm;
+        sentry,no-map;
+        sentry,label = <0xf00>;// shm label, unique
+        sentry,owner = <0xbabe>; // task label
       };
     };
   };
@@ -104,11 +104,11 @@ A shared memory hold various attributes, some being required, others not:
    * `reg`: (**required**) define the shared memory base address and size
    * `dma-pool`: when used as DMA source or destination. If not, any DMA request that
      targets this shared memory is refused.
-   * `outpost,shm`: (**required**) Sentry specific attribute that is used to filter SHMs in reserved memory node
-   * `outpost,label`: (**required**) easy, unically existing label that identify this SHM. Allows userspace task to use them
+   * `sentry,shm`: (**required**) Sentry specific attribute that is used to filter SHMs in reserved memory node
+   * `sentry,label`: (**required**) easy, unically existing label that identify this SHM. Allows userspace task to use them
      as canonical names
-   * `outpost,owner`: (**required**) defined the SHM owner using the corresponding task label
-   * `outpost,no-map`: if defined, the SHM can't be mapped by any task. This permits chained DMA transfers
+   * `sentry,owner`: (**required**) defined the SHM owner using the corresponding task label
+   * `sentry,no-map`: if defined, the SHM can't be mapped by any task. This permits chained DMA transfers
      that do not require software access
 
 .. note::
@@ -196,7 +196,7 @@ DMA stream definition must comply with the following specification:
    * `dest`: (**required**) Sentry object destination, being an existing shared memory or a device using DTS phandle reference
    * `length`: (**required**) amount of bytes to transfer
    * `circular`: when the source or the destination requires a circular write, set circular flag to 1 using `<source dest>` booleans
-   * `outpost,label`: (**required**) unique strem identifier to be used when requiring the DMA handle value
+   * `sentry,label`: (**required**) unique strem identifier to be used when requiring the DMA handle value
 
 .. warning::
    DMA API do not verify target or source memory ownership of a DMA stream for the sake of
@@ -221,7 +221,7 @@ streams.
 	        dest = <&shm__2>;
 	        length = <0x100>;
 	        // no circular, linear for both source and dest
-	        outpost,label = <0x2>; // task-level unique DMA identifier
+	        sentry,label = <0x2>; // task-level unique DMA identifier
         };
 
         stream2 {
@@ -233,7 +233,7 @@ streams.
             dest = <&shm_autotest_1>;
             length = <42>;
             circular = <1 0>; // circular source, linear dest
-            outpost,label = <0x1>; // task-level unique DMA identifier
+            sentry,label = <0x1>; // task-level unique DMA identifier
         };
     };
 
@@ -244,7 +244,7 @@ streams.
 	    // About channels that are used
 	    gpdma1_1: dma-channel@1 {
 		    status = "okay";
-		    outpost,owner = <0xbabe>;
+		    sentry,owner = <0xbabe>;
 	    };
     };
 
@@ -342,7 +342,7 @@ device for which at least one interrupt has been defined in the device tree.
 
 
 While the current SoC dtsi file, delivered in the
-`outpost-devicetree <https://github.com/camelot-os/outpost-devicetree>`_
+`camelot-devicetree <https://github.com/camelot-os/camelot-devicetree>`_
 repository is clean for the device, there is no need to add interrupt related information,
 as interrupt assignations is already defined. As a xonsequence, only the device activation
 (using the `status = "okay";` standard attribute) is enough.
@@ -363,10 +363,10 @@ as interrupt assignations is already defined. As a xonsequence, only the device 
             interrupts = < 0x31 0x0 >;
             interrupt-names = "global";
             status = "okay";
-            outpost,owner = < 0xbabe >;
-            outpost,label = < 0x1f01 >;
-            outpost,counter = < 0xffff >;
-            outpost,prescaler = < 0x262 >;
+            sentry,owner = < 0xbabe >;
+            sentry,label = < 0x1f01 >;
+            sentry,counter = < 0xffff >;
+            sentry,prescaler = < 0x262 >;
             pwm {
                     compatible = "st,stm32-pwm";
                     status = "disabled";

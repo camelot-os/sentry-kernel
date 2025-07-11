@@ -16,23 +16,23 @@
 {%- macro stream_get_transfer_type(node) -%}
 {% set source = node["source"] -%}
 {% set dest = node["dest"] -%}
-{% if not source|has_property("outpost,shm") and not dest|has_property("outpost,shm") -%}
+{% if not source|has_property("sentry,shm") and not dest|has_property("sentry,shm") -%}
 GPDMA_TRANSFER_DEVICE_TO_DEVICE
 {%- endif -%}
-{% if source|has_property("outpost,shm") and dest|has_property("outpost,shm") -%}
+{% if source|has_property("sentry,shm") and dest|has_property("sentry,shm") -%}
 GPDMA_TRANSFER_MEMORY_TO_MEMORY
 {%- endif -%}
-{% if not source|has_property("outpost,shm") and dest|has_property("outpost,shm") -%}
+{% if not source|has_property("sentry,shm") and dest|has_property("sentry,shm") -%}
 GPDMA_TRANSFER_DEVICE_TO_MEMORY
 {%- endif -%}
-{% if source|has_property("outpost,shm") and not dest|has_property("outpost,shm") -%}
+{% if source|has_property("sentry,shm") and not dest|has_property("sentry,shm") -%}
 GPDMA_TRANSFER_MEMORY_TO_DEVICE
 {%- endif -%}
 {%- endmacro %}
 
 {%- macro stream_get_transfer_source(node) -%}
 {% set source = node["source"] -%}
-{% if source|has_property("outpost,shm") -%}
+{% if source|has_property("sentry,shm") -%}
 {{ "0x%08x"|format(source["reg"][0]) }}
 {%- else -%}
 0
@@ -41,7 +41,7 @@ GPDMA_TRANSFER_MEMORY_TO_DEVICE
 
 {%- macro stream_get_transfer_dest(node) -%}
 {% set dest = node["dest"] -%}
-{% if dest|has_property("outpost,shm") -%}
+{% if dest|has_property("sentry,shm") -%}
 {{ "0x%08x"|format(dest["reg"][0]) }}
 {%- else -%}
 0
@@ -69,7 +69,7 @@ GPDMA_TRANSFER_MEMORY_TO_DEVICE
 {% set ns.total_streams=0 -%}
 static const dma_meta_t streams[] = {
     {% for node in dts.get_compatible("dma-stream") -%}
-    {% if node|has_property("outpost,label") -%}
+    {% if node|has_property("sentry,label") -%}
     {% set gpdma_chan = node["channel"] -%}
     {% set gpdma_ctrl = gpdma_chan.parent -%}
     /* stream {{ node.name }} definition */
@@ -114,8 +114,8 @@ static const dma_meta_t streams[] = {
             .src_beat_len = 0,
             .dest_beat_len = 0,
         },
-        .owner = {{ "0x%x"|format(gpdma_chan["outpost,owner"]) }}UL,
-        .label = {{ "0x%x"|format(node["outpost,label"]) }}UL,
+        .owner = {{ "0x%x"|format(gpdma_chan["sentry,owner"]) }}UL,
+        .label = {{ "0x%x"|format(node["sentry,label"]) }}UL,
     {% set ns.total_streams = ns.total_streams + 1 -%}
     },
     {% endif -%}

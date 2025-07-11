@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2025 Outpost OSS Team
+// SPDX-FileCopyrightText: 2025 Camelot OSS Team
 // SPDX-License-Identifier: Apache-2.0
 
 #include <string.h>
@@ -16,7 +16,7 @@
 #include <sentry/ktypes.h>
 #include <garbage.h>
 #include "stm32-exti-dt.h"
- 
+
 static void test_probe(void **state) {
     assert_int_equal(exti_probe(), K_STATUS_OKAY);
 }
@@ -51,6 +51,6 @@ int main(void) {
         cmocka_unit_test(test_probe),
         cmocka_unit_test(test_exti_interrupts),
     };
- 
+
     return cmocka_run_group_tests(tests, NULL, NULL);
 }

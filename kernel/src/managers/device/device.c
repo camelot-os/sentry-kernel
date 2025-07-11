@@ -112,7 +112,7 @@ kstatus_t mgr_device_init(void)
          * association between the device owner in the dts and the one of the
          * metadata.
          * To do this, we:
-         * - get back the taskh_t using the dts 'outpost,owner' label
+         * - get back the taskh_t using the dts 'sentry,owner' label
          * - we check that this owner (using the handle) do matches the metadata,
          *   by asking the task manager to confirm.
          *

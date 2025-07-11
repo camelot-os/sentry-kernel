@@ -21,22 +21,22 @@
 
 		kernel_code: kernel_code@20000400 {
 			reg = <0x20000400 0xb000>;
-			compatible = "outpost,memory-pool";
+			compatible = "sentry,memory-pool";
 		};
 
 		idle_code: idle_code@2000c000 {
 			reg = <0x2000c000 0x500>;
-			compatible = "outpost,memory-pool";
+			compatible = "sentry,memory-pool";
 		};
 
 		kernel_ram: kernel_memory@10000000 {
 			reg = <0x10000000 0x2000>;
-			compatible = "outpost,memory-pool";
+			compatible = "sentry,memory-pool";
 		};
 
 		idle_ram: idle_memory@10004000 {
 			reg = <0x10004000 0x200>;
-			compatible = "outpost,memory-pool";
+			compatible = "sentry,memory-pool";
 		};
 	};
 };

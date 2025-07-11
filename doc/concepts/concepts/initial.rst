@@ -8,7 +8,7 @@ Initial conception model
 Micro-kernel design
 ^^^^^^^^^^^^^^^^^^^
 
-Sentry (and more generaly Outpost) is based on a micro-kernel model. Such a
+Sentry (and more generaly Camelot) is based on a micro-kernel model. Such a
 model considers that the less the supervisor code handles, the better the overall
 architecture is enforced. To achieve that, this requires some specific considerations:
 
@@ -216,7 +216,7 @@ Here is the global Sentry capability model:
 
 .. figure:: ../_static/figures/capabilities.png
    :width: 80%
-   :alt: Outpost capabilities
+   :alt: Sentry capabilities
    :align: center
 
    Capabilities hierarchy in Sentry
@@ -383,7 +383,7 @@ stack model would be:
       __builtin__unreachable()
    }
 
-In Outpost, the `_start` symbol is, in C, under the libshield responsability. It can
+In Sentry, the `_start` symbol is, in C, under the libshield responsability. It can
 though be implemented in Rust or any language while the ABI is respected.
 
 No kernel-level or global job mapping requirement is needed when the job is being

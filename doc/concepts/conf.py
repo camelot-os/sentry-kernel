@@ -15,10 +15,10 @@ simplepdf_vars = {
     'cover': '#ffffff',
     'white': '#ffffff',
     'links': '#6299C4',
-    'cover-bg': 'url(figures/outpost_fp.png) no-repeat center',
+    'cover-bg': 'url(figures/camelot_fp.png) no-repeat center',
     'cover-overlay': 'rgba(62, 99, 196, 0.5)',
     'top-left-content': 'counter(page)',
-    'bottom-center-content': 'Outpost documentation suite: Sentry kernel concepts',
+    'bottom-center-content': 'Camelot documentation suite: Sentry kernel concepts',
 }
 
 # Add any paths that contain templates here, relative to this directory.

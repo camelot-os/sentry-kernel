@@ -63,7 +63,7 @@ todo_include_todos = True
 
 html_theme = 'sphinx_rtd_theme'
 
-html_logo = '_static/figures/outpost.png'
+html_logo = '_static/figures/camelot.png'
 
 html_static_path = ['_static']
 
