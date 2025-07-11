@@ -60,7 +60,7 @@ fn test_shm_unmap_notmapped() -> bool {
     let mut shm: systypes::ShmHandle = 0;
     let mut ok: bool = true;
     let mut myself: systypes::TaskHandle = 0;
-    let mut perms : u32;
+    let perms : u32;
     perms = (systypes::SHMPermission::Write as u32) + (systypes::SHMPermission::Map as u32);
 
     let shm1 = get_shm_by_name("shm_autotest_1").expect("shm_autotest_1 not found");
