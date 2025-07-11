@@ -25,6 +25,17 @@ uapi_lib = static_library(
     install: true,
 )
 
+uapi_rlib = static_library(
+    'sentry_uapi',
+    sources : uapi_libfile,
+    rust_abi: 'rust',
+    rust_args: global_rust_build_args,
+    override_options: [uapi_rust_std],
+    extra_files: uapi_modules,
+    install: true,
+)
+
+
 # XXX:
 #  This deps is designed for userspace (libshied) only
 #  As in linux kernel, uapi headers are not used w/ a kernel name and/or uapi

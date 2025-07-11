@@ -10,12 +10,9 @@ autotest_sourceset.add(
         'main.c',
         'printf.c',
         'ssp.c',
-        '../../kernel/src/managers/debug/log_lexer.c',
+        '../../../kernel/src/managers/debug/log_lexer.c',
     )
 )
 
-subdir('arch')
 subdir('drivers')
-
-# autotest library, in C
 subdir('tests')
