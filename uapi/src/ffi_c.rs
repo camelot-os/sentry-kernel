@@ -1,5 +1,5 @@
 // SPDX-FileCopyrightText: 2023 Ledger SAS
-// SPDX-FileCopyrightText: 2025 ANSSI
+// SPDX-FileCopyrightText: 2025 ANSSI & H2Lab OSS Team
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::exchange;
@@ -235,6 +235,20 @@ pub extern "C" fn __sys_dma_get_stream_info(dmah: StreamHandle) -> Status {
 #[unsafe(no_mangle)]
 pub extern "C" fn __sys_dma_resume_stream(dmah: StreamHandle) -> Status {
     crate::syscall::dma_resume_stream(dmah)
+}
+
+/// C interface to [`crate::syscall::autotest_set_capa`] syscall Rust implementation
+#[cfg(CONFIG_BUILD_TARGET_AUTOTEST)]
+#[unsafe(no_mangle)]
+pub extern "C" fn __sys_autotest_set_capa(capa: u32) -> Status {
+    crate::syscall::autotest_set_capa(capa)
+}
+
+/// C interface to [`crate::syscall::autotest_clear_capa`] syscall Rust implementation
+#[cfg(CONFIG_BUILD_TARGET_AUTOTEST)]
+#[unsafe(no_mangle)]
+pub extern "C" fn __sys_autotest_clear_capa(capa: u32) -> Status {
+    crate::syscall::autotest_clear_capa(capa)
 }
 
 /// # Safety

@@ -1,4 +1,5 @@
 // SPDX-FileCopyrightText: 2023 Ledger SAS
+// SPDX-FileCopyrightText: 2025 H2Lab OSS Team
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::exchange;
@@ -842,6 +843,22 @@ pub fn dma_get_stream_info(dmah: StreamHandle) -> Status {
 #[inline(always)]
 pub fn dma_resume_stream(dmah: StreamHandle) -> Status {
     syscall!(Syscall::DmaResumeStream, dmah).into()
+}
+
+/// Set (enable) given capability for autotest
+/// Only autotest has the userspace knowledge of the capabilities effective values
+#[cfg(CONFIG_BUILD_TARGET_AUTOTEST)]
+#[inline(always)]
+pub fn autotest_set_capa(capability: u32) -> Status {
+    syscall!(Syscall::AutotestSetCapa, capability).into()
+}
+
+/// Clear (disable) given capability for autotest
+/// Only autotest has the userspace knowledge of the capabilities effective values
+#[cfg(CONFIG_BUILD_TARGET_AUTOTEST)]
+#[inline(always)]
+pub fn autotest_clear_capa(capability: u32) -> Status {
+    syscall!(Syscall::AutotestClearCapa, capability).into()
 }
 
 #[cfg(test)]

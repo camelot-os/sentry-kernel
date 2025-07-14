@@ -1,4 +1,5 @@
 // SPDX-FileCopyrightText: 2023-2024 Ledger SAS
+// SPDX-FileCopyrightText: 2025 H2Lab OSS Team
 // SPDX-License-Identifier: Apache-2.0
 
 /*
@@ -248,6 +249,10 @@ typedef enum Syscall {
   SYSCALL_DMA_UNASSIGN_STREAM,
   SYSCALL_DMA_GET_STREAM_INFO,
   SYSCALL_DMA_RESUME_STREAM,
+#if CONFIG_BUILD_TARGET_AUTOTEST
+  SYSCALL_AUTOTEST_SET_CAPA,
+  SYSCALL_AUTOTEST_CLEAR_CAPA,
+#endif
 } Syscall;
 
 /**
