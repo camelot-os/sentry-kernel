@@ -36,6 +36,10 @@ secure_bool_t mgr_security_has_oneof_capas(taskh_t tsk, uint32_t capas);
 
 #ifdef CONFIG_BUILD_TARGET_AUTOTEST
 kstatus_t mgr_security_autotest(void);
+
+kstatus_t mgr_security_set_capa(capability_t);
+
+kstatus_t mgr_security_clear_capa(capability_t);
 #endif
 
 #ifdef __cplusplus
