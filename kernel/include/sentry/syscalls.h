@@ -83,4 +83,10 @@ stack_frame_t *gate_dma_suspend(stack_frame_t *frame, dmah_t dmah);
 
 stack_frame_t *gate_dma_resume(stack_frame_t *frame, dmah_t dmah);
 
+#if CONFIG_BUILD_TARGET_AUTOTEST
+stack_frame_t *gate_autotest_set_self_capa(stack_frame_t *frame, uint32_t capa);
+
+stack_frame_t *gate_autotest_clear_self_capa(stack_frame_t *frame, uint32_t capa);
+#endif
+
 #endif/*!SYSCALLS_H*/

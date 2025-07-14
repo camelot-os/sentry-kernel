@@ -214,6 +214,18 @@ static stack_frame_t *lut_dma_stream_resume(stack_frame_t *frame) {
     return gate_dma_resume(frame, dma);
 }
 
+#if CONFIG_BUILD_TARGET_AUTOTEST
+static stack_frame_t *lut_autotest_set_self_capa(stack_frame_t *frame) {
+    uint32_t capa = frame->r0;
+    return gate_autotest_set_self_capa(frame, capa);
+}
+
+static stack_frame_t *lut_autotest_clear_self_capa(stack_frame_t *frame) {
+    uint32_t capa = frame->r0;
+    return gate_autotest_clear_self_capa(frame, capa);
+}
+#endif
+
 /* for not yet supported syscalls */
 static stack_frame_t *lut_unsuported(stack_frame_t *frame) {
     mgr_task_set_sysreturn(sched_get_current(), STATUS_NO_ENTITY);
@@ -259,6 +271,10 @@ static const lut_svc_handler svc_lut[] = {
     lut_dma_unassign,
     lut_dma_get_stream_info,
     lut_dma_stream_resume,
+#if CONFIG_BUILD_TARGET_AUTOTEST
+    lut_autotest_set_self_capa,
+    lut_autotest_clear_self_capa,
+#endif
 };
 
 #define SYSCALL_NUM ARRAY_SIZE(svc_lut)
