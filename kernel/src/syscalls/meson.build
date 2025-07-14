@@ -1,4 +1,5 @@
 # SPDX-FileCopyrightText: 2023-2024 Ledger SAS
+# SPDX-FileCopyrightText: 2025 H2Lab OSS Team
 # SPDX-License-Identifier: Apache-2.0
 
 syscall_source_set = ssmod.source_set()
