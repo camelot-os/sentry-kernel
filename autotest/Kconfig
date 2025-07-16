@@ -71,6 +71,10 @@ config TEST_IRQ
     select AUTOTEST_TIMER_DRIVER
     default n
 
+config TEST_CAPA
+    bool "Test that userspace capabilities are properly triggered by the kernel"
+    default n
+
 endmenu
 
 endif
