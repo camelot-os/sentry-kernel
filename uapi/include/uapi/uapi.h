@@ -285,6 +285,12 @@ Status __sys_dma_get_stream_status(dmah_t stream);
 
 Status __sys_dma_get_stream_info(dmah_t stream);
 
+#if CONFIG_BUILD_TARGET_AUTOTEST
+Status __sys_autotest_set_capa(uint32_t capa);
+
+Status __sys_autotest_clear_capa(uint32_t capa);
+#endif
+
 #ifdef __cplusplus
 } // extern "C"
 #endif // __cplusplus
