@@ -20,6 +20,7 @@
 #include <test_shm.h>
 #include <test_dma.h>
 #include <test_irq.h>
+#include <test_capability.h>
 
 uint32_t __stack_chk_guard = 0;
 
@@ -80,6 +81,9 @@ void __attribute__((no_stack_protector, used, noreturn)) autotest(uint32_t label
 #endif
 #ifdef CONFIG_TEST_IRQ
     test_irq();
+#endif
+#ifdef CONFIG_TEST_CAPA
+    test_capability();
 #endif
     printf("AUTOTEST END");
 

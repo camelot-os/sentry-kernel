@@ -1,0 +1,39 @@
+// SPDX-FileCopyrightText: 2025 H2Lab OSS Team
+// SPDX-License-Identifier: Apache-2.0
+
+#include <inttypes.h>
+#include <test_log.h>
+#include <test_assert.h>
+#include <uapi/uapi.h>
+#include "test_cycles.h"
+
+/**
+ * @brief capability enum type
+ */
+typedef enum capability {
+{% filter indent(4, true) -%}
+{% for cap in capabilities -%}
+CAP_{{ cap.name|upper }} = (1 << {{ cap.shift }}),
+{% endfor -%}
+{% endfilter -%}
+} capability_t;
+
+#if CONFIG_TEST_CAPA
+static void test_capa_cycles(void)
+{
+    TEST_START();
+    ASSERT_EQ(__sys_autotest_clear_capa(CAP_TIM_HP_CHRONO), STATUS_OK);
+    ASSERT_EQ(__sys_get_cycle(PRECISION_MICROSECONDS), STATUS_OK);
+    ASSERT_EQ(__sys_get_cycle(PRECISION_NANOSECONDS), STATUS_DENIED);
+    ASSERT_EQ(__sys_autotest_set_capa(CAP_TIM_HP_CHRONO), STATUS_OK);
+    ASSERT_EQ(__sys_get_cycle(PRECISION_NANOSECONDS), STATUS_OK);
+    TEST_END();
+}
+#endif
+
+void test_capability(void)
+{
+#if CONFIG_TEST_CAPA
+    test_capa_cycles();
+#endif
+}
