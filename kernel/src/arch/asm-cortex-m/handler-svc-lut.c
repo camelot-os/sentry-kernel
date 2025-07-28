@@ -227,8 +227,16 @@ static stack_frame_t *lut_autotest_clear_self_capa(stack_frame_t *frame) {
 #endif
 
 /* for not yet supported syscalls */
-static stack_frame_t *lut_unsuported(stack_frame_t *frame) {
+stack_frame_t *lut_unsuported(stack_frame_t *frame) {
+#ifdef CONFIG_BUILD_TARGET_AUTOTEST
     mgr_task_set_sysreturn(sched_get_current(), STATUS_NO_ENTITY);
+#else
+    /*
+     * in nominal mode, a task that triggers an unsupported syscall is
+     * terminated (gracefully), as this is an abnormal behavior
+     */
+    mgr_task_set_state(sched_get_current(), JOB_STATE_ABORTING);
+#endif
     return frame;
 }
 
@@ -274,6 +282,9 @@ static const lut_svc_handler svc_lut[] = {
 #if CONFIG_BUILD_TARGET_AUTOTEST
     lut_autotest_set_self_capa,
     lut_autotest_clear_self_capa,
+#else
+    lut_unsuported, /* SYSCALL_AUTOTEST_SET_CAPA */
+    lut_unsuported, /* SYSCALL_AUTOTEST_CLEAR_CAPA */
 #endif
 };
 

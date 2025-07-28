@@ -249,9 +249,16 @@ typedef enum Syscall {
   SYSCALL_DMA_UNASSIGN_STREAM,
   SYSCALL_DMA_GET_STREAM_INFO,
   SYSCALL_DMA_RESUME_STREAM,
+  /*
+   * in order to preserve ABI retro-compatibility in case of new syscalls
+   * being added, we reserve 2 syscalls identifiers even not in autotest purposes.
+  */
 #if CONFIG_BUILD_TARGET_AUTOTEST
   SYSCALL_AUTOTEST_SET_CAPA,
   SYSCALL_AUTOTEST_CLEAR_CAPA,
+#else
+  SYSCALL_RESERVED_1,
+  SYSCALL_RESERVED_2,
 #endif
 } Syscall;
 
