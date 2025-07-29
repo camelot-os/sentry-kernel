@@ -20,23 +20,14 @@ static task_meta_t autotest_meta;
 
 void task_autotest_init(void)
 {
+    /**
+     * NOTE: capabilities are set in security.c, allowing the capability set/clear methods
+     * to validate capability checks. This is not needed here, as autotest capabilities are
+     * under the exclusive control of the autotest task.
+     * @see security.c for more details about boot time autotest capabilities.
+     */
     uint32_t autotest_capa = 0;
 
-#ifdef CONFIG_TEST_DEVICES
-    autotest_capa |= CAP_DEV_BUSES;
-#endif
-#ifdef CONFIG_TEST_GPIO
-    autotest_capa |= CAP_DEV_IO;
-#endif
-#ifdef CONFIG_TEST_RANDOM
-    autotest_capa |= CAP_CRY_KRNG;
-#endif
-#ifdef CONFIG_TEST_DMA
-    autotest_capa |= CAP_DEV_DMA;
-#endif
-#ifdef CONFIG_TEST_IRQ
-    autotest_capa |= CAP_DEV_TIMER;
-#endif
     autotest_meta.label = SCHED_AUTOTEST_TASK_LABEL;
     autotest_meta.quantum = 10;
     autotest_meta.priority = 1;
