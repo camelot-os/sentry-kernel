@@ -24,16 +24,78 @@ static void test_capa_cycles(void)
     TEST_START();
     ASSERT_EQ(__sys_autotest_clear_capa(CAP_TIM_HP_CHRONO), STATUS_OK);
     ASSERT_EQ(__sys_get_cycle(PRECISION_MICROSECONDS), STATUS_OK);
-    ASSERT_EQ(__sys_get_cycle(PRECISION_NANOSECONDS), STATUS_DENIED);
-    ASSERT_EQ(__sys_autotest_set_capa(CAP_TIM_HP_CHRONO), STATUS_OK);
     ASSERT_EQ(__sys_get_cycle(PRECISION_NANOSECONDS), STATUS_OK);
+    ASSERT_EQ(__sys_get_cycle(PRECISION_CYCLE), STATUS_DENIED);
+    ASSERT_EQ(__sys_autotest_set_capa(CAP_TIM_HP_CHRONO), STATUS_OK);
+    ASSERT_EQ(__sys_get_cycle(PRECISION_CYCLE), STATUS_OK);
     TEST_END();
 }
+
+#ifdef CONFIG_TEST_SHM
+#include <shms-dt.h>
+
+static void test_capa_shm(void)
+{
+    shmh_t shmh;
+    taskh_t myself;
+    Status status;
+
+    TEST_START();
+    /* with no SHM related capa, even the SHM handle associated to a label we own is refused */
+    ASSERT_EQ(__sys_autotest_clear_capa(CAP_MEM_SHM_OWN), STATUS_OK);
+    ASSERT_EQ(__sys_autotest_clear_capa(CAP_MEM_SHM_USE), STATUS_OK);
+    ASSERT_EQ(__sys_autotest_clear_capa(CAP_MEM_SHM_TRANSFER), STATUS_OK);
+    ASSERT_EQ(__sys_get_shm_handle(shms[0].id), STATUS_DENIED);
+
+    /*
+     * if we are allowed to use the SHM but we are not allowed to own one,
+     * we can't get the handle from the label, the owning task (with owning capa) has to transfer
+     * the handle to us instead
+     */
+    ASSERT_EQ(__sys_autotest_set_capa(CAP_MEM_SHM_USE), STATUS_OK);
+    ASSERT_EQ(__sys_get_shm_handle(shms[0].id), STATUS_DENIED);
+
+    /*
+     * if we own a shm but are not able to use it, we can only get back
+     * the handle and infos, set the credential, but not map it even if allowed to
+     * NOTE: this means, though, that DMA-streams based access to SHM is possible for us,
+     * TODO: maybe we should not allow this particular case in the DMA subystem ?
+     * capa check for DMA subystem will be added later
+     */
+    ASSERT_EQ(__sys_autotest_clear_capa(CAP_MEM_SHM_USE), STATUS_OK);
+    ASSERT_EQ(__sys_autotest_set_capa(CAP_MEM_SHM_OWN), STATUS_OK);
+
+    status = __sys_get_shm_handle(shms[0].id);
+    copy_from_kernel((uint8_t*)&shmh, sizeof(shmh_t));
+    ASSERT_EQ(status, STATUS_OK);
+    ASSERT_EQ(__sys_shm_get_infos(shmh), STATUS_OK);
+
+    status = __sys_get_process_handle(0xbabeUL);
+    copy_from_kernel((uint8_t*)&myself, sizeof(taskh_t));
+    ASSERT_EQ(status, STATUS_OK);
+    ASSERT_EQ(__sys_shm_set_credential(shmh, myself, SHM_PERMISSION_MAP | SHM_PERMISSION_WRITE), STATUS_OK);
+    ASSERT_EQ(__sys_map_shm(shmh), STATUS_DENIED);
+
+    /* if we both own and can use the SHM, we can map it (if set mappable) */
+    ASSERT_EQ(__sys_autotest_set_capa(CAP_MEM_SHM_OWN), STATUS_OK);
+    ASSERT_EQ(__sys_autotest_set_capa(CAP_MEM_SHM_USE), STATUS_OK);
+    ASSERT_EQ(__sys_map_shm(shmh), STATUS_OK);
+    ASSERT_EQ(__sys_unmap_shm(shmh), STATUS_OK);
+
+    /** NOTE: CAP_MEM_SHM_TRANSFER is not yet supported (transfer without ownership) */
+
+    TEST_END();
+}
+#else
+static void test_capa_shm(void) {}
+#endif /* CONFIG_TEST_SHMS */
+
 #endif
 
 void test_capability(void)
 {
 #if CONFIG_TEST_CAPA
     test_capa_cycles();
+    test_capa_shm();
 #endif
 }
