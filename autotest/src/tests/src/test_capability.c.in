@@ -5,6 +5,7 @@
 #include <test_log.h>
 #include <test_assert.h>
 #include <uapi/uapi.h>
+#include <uapi/dma.h>
 #include "test_cycles.h"
 
 /**
@@ -112,12 +113,53 @@ static void test_capa_shm(void)
 static void test_capa_shm(void) {}
 #endif /* CONFIG_TEST_SHMS */
 
-#endif
+#if CONFIG_HAS_GPDMA
+static void test_capa_dma(void)
+{
+    Status status;
+    dmah_t dmah = 0;
+
+
+    TEST_START();
+    status = __sys_autotest_clear_capa(CAP_DEV_DMA);
+    ASSERT_EQ(status, STATUS_OK);
+    status = __sys_get_dma_stream_handle(0x1);
+    ASSERT_EQ(status, STATUS_DENIED);
+    status = __sys_autotest_set_capa(CAP_DEV_DMA);
+    ASSERT_EQ(status, STATUS_OK);
+    status = __sys_get_dma_stream_handle(0x1);
+    copy_from_kernel((uint8_t*)&dmah, sizeof(dmah_t));
+    ASSERT_EQ(status, STATUS_OK);
+
+    /*
+     * even with a valid handle (which is partialy random), and without capa
+     * the other DMA syscalls must be denied
+     */
+    status = __sys_autotest_clear_capa(CAP_DEV_DMA);
+    ASSERT_EQ(status, STATUS_OK);
+
+    status = __sys_dma_get_stream_info(dmah);
+    ASSERT_EQ(status, STATUS_DENIED);
+    status = __sys_dma_assign_stream(dmah);
+    ASSERT_EQ(status, STATUS_DENIED);
+    /* even on unasigned, capa check is done fist */
+    status = __sys_dma_start_stream(dmah);
+    ASSERT_EQ(status, STATUS_DENIED);
+
+    TEST_END();
+}
+#else
+static void test_capa_dma(void) {}
+#endif /* CONFIG_HAS_GPDMA */
+
+#endif /* CONFIG_TEST_CAPA */
+
 
 void test_capability(void)
 {
 #if CONFIG_TEST_CAPA
     test_capa_cycles();
     test_capa_shm();
+    test_capa_dma();
 #endif
 }
