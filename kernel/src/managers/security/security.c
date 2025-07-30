@@ -53,8 +53,16 @@ kstatus_t mgr_security_init(void)
 #ifdef CONFIG_TEST_RANDOM
     autotest_cap_set |= CAP_CRY_KRNG;
 #endif
+#ifdef CONFIG_TEST_SHM
+    autotest_cap_set |= CAP_MEM_SHM_OWN;
+    autotest_cap_set |= CAP_MEM_SHM_USE;
+    autotest_cap_set |= CAP_MEM_SHM_TRANSFER;
+#endif
 #ifdef CONFIG_TEST_DMA
+    /** note: DMA M2M transfers are made between SHMs, requiring SHM perms */
     autotest_cap_set |= CAP_DEV_DMA;
+    autotest_cap_set |= CAP_MEM_SHM_OWN;
+    autotest_cap_set |= CAP_MEM_SHM_USE;
 #endif
 #ifdef CONFIG_TEST_IRQ
     autotest_cap_set |= CAP_DEV_TIMER;

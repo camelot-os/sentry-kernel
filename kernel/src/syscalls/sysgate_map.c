@@ -136,6 +136,11 @@ stack_frame_t *gate_map_shm(stack_frame_t *frame, shmh_t shm)
     kstatus_t status;
     shm_user_t user;
 
+    if (unlikely(mgr_security_has_capa(current, CAP_MEM_SHM_USE) != SECURE_TRUE)) {
+        pr_err("SHM use capability required");
+        mgr_task_set_sysreturn(current, STATUS_DENIED);
+        goto end;
+    }
     status = mgr_mm_shm_get_task_type(shm, current, &user);
     if (unlikely(status != K_STATUS_OKAY)) {
         /* shm is invalid */
@@ -178,6 +183,7 @@ stack_frame_t *gate_unmap_shm(stack_frame_t *frame, shmh_t shm)
     secure_bool_t is_mapped;
     shm_user_t user;
 
+    /* note: no creds check at umap() time, as creds are verified at map() time */
     status = mgr_mm_shm_get_task_type(shm, current, &user);
     if (unlikely(status != K_STATUS_OKAY)) {
         /* shm is invalid */

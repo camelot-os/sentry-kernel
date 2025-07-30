@@ -17,6 +17,18 @@ stack_frame_t *gate_shm_get_infos(stack_frame_t *frame, shmh_t shm)
     shm_infos_t *svcexch = NULL;
     const task_meta_t *meta;
 
+    /*
+     * to get back (ro) infos for a given SHM handle, the task need at least
+     * one of SHM_OWN or SHM_USE
+     */
+    if (unlikely(
+            mgr_security_has_capa(current, CAP_MEM_SHM_OWN) != SECURE_TRUE &&
+            mgr_security_has_capa(current, CAP_MEM_SHM_USE) != SECURE_TRUE
+        )) {
+        pr_err("SHM ownership or user capability required");
+        mgr_task_set_sysreturn(current, STATUS_DENIED);
+        goto end;
+    }
     /*! NOTE: there is no need to check that the SHM handle exists, as the manager do that on its side */
     if (unlikely(mgr_mm_shm_get_task_type(shm, current, &user) != K_STATUS_OKAY)) {
         /* smoke test here, this branch should never happen */
@@ -24,6 +36,7 @@ stack_frame_t *gate_shm_get_infos(stack_frame_t *frame, shmh_t shm)
         mgr_task_set_sysreturn(current, STATUS_INVALID);
         goto end;
     }
+    /* task is neither a user nor a owner declared in this SHM handle */
     if (unlikely(user == SHM_TSK_NONE)) {
         mgr_task_set_sysreturn(current, STATUS_INVALID);
         goto end;
