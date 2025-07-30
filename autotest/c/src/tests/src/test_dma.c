@@ -157,6 +157,10 @@ static void test_dma_start_n_wait_stream(dmah_t stream)
     ASSERT_EQ(res, STATUS_OK);
     res = __sys_dma_unassign_stream(stream);
     ASSERT_EQ(res, STATUS_OK);
+    res = __sys_unmap_shm(shm1);
+    ASSERT_EQ(res, STATUS_OK);
+    res = __sys_unmap_shm(shm2);
+    ASSERT_EQ(res, STATUS_OK);
     TEST_END();
 }
 
