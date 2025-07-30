@@ -14,6 +14,11 @@ stack_frame_t *gate_shm_setcreds(stack_frame_t *frame, shmh_t shm, taskh_t targe
     shm_config_t config;
     secure_bool_t is_mapped = SECURE_TRUE;
 
+    if (unlikely(mgr_security_has_capa(current, CAP_MEM_SHM_OWN) != SECURE_TRUE)) {
+        pr_err("SHM ownership or user capability required");
+        mgr_task_set_sysreturn(current, STATUS_DENIED);
+        goto end;
+    }
     if (unlikely(mgr_mm_shm_get_task_type(shm, current, &user) != K_STATUS_OKAY)) {
         /* smoke test here, this branch should never happen */
         /*@ assert(false); */
