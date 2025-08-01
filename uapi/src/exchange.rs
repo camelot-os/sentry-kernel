@@ -2,12 +2,13 @@
 // SPDX-FileCopyrightText: 2025 ANSSI
 // SPDX-License-Identifier: Apache-2.0
 
+#![allow(unused_imports)]
 #![allow(static_mut_refs)]
 #![allow(clippy::wrong_self_convention)]
 use crate::systypes::shm::ShmInfo;
 use crate::systypes::{ExchangeHeader, Status};
-use core::ptr::*;
 use core::mem;
+use core::ptr::*;
 
 const EXCHANGE_AREA_LEN: usize = 128; // TODO: replace by CONFIG-defined value
 
@@ -15,11 +16,6 @@ const EXCHANGE_AREA_LEN: usize = 128; // TODO: replace by CONFIG-defined value
 ///
 #[unsafe(link_section = ".svcexchange")]
 static mut EXCHANGE_AREA: [u8; EXCHANGE_AREA_LEN] = [0u8; EXCHANGE_AREA_LEN];
-
-#[repr(align(8))]
-pub struct ExchangeAligned(pub [u8; 128]);
-#[unsafe(no_mangle)]
-pub static mut EXCHANGE_AREA_TEST: ExchangeAligned = ExchangeAligned([0u8; 128]);
 
 /// Trait of kernel-user exchangeable objects
 ///
@@ -98,8 +94,12 @@ macro_rules! impl_exchangeable {
                 // }
 
                 // let first = aligned.first().ok_or(Status::Invalid)?;
-                let mut u8_slice: &mut [u8] =
-                unsafe { core::slice::from_raw_parts_mut(addr_of_mut!(*self) as *mut u8, core::mem::size_of::<$t>()) as &mut [u8] };
+                let mut u8_slice: &mut [u8] = unsafe {
+                    core::slice::from_raw_parts_mut(
+                        addr_of_mut!(*self) as *mut u8,
+                        core::mem::size_of::<$t>(),
+                    ) as &mut [u8]
+                };
                 copy_from_kernel(&mut u8_slice)
             }
 
@@ -365,6 +365,11 @@ where
 
 #[cfg(test)]
 mod tests {
+    #[repr(align(8))]
+    pub struct ExchangeAligned(pub [u8; 128]);
+    #[unsafe(no_mangle)]
+    pub static mut EXCHANGE_AREA_TEST: ExchangeAligned = ExchangeAligned([0u8; 128]);
+
     use crate::systypes::{EventType, ShmHandle};
 
     use super::*;
