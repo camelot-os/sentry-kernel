@@ -43,12 +43,12 @@ fn test_gethandle() -> bool {
     status = syscall::get_process_handle(0xbabe);
     let _ = copy_from_kernel(&mut handle);
     ok &= check_eq!(status, systypes::Status::Ok);
-    log_line!(USER_AUTOTEST_INFO, "received handle: {:#x}", handle);
+    log_line!(USER_AUTOTEST_INFO, "handle is {:#x}", handle);
 
     let khandle = KTaskHandle::from_raw(handle);
     //log_line!(USER_AUTOTEST_INFO, "handle rerun = {:#x}", khandle.rerun);
-    log_line!(USER_AUTOTEST_INFO, "handle id = {:#x}", khandle.id);
-    log_line!(USER_AUTOTEST_INFO, "handle family = {:#x}", khandle.family);
+    log_line!(USER_AUTOTEST_INFO, "id = {:#x}", khandle.id);
+    log_line!(USER_AUTOTEST_INFO, "family = {:#x}", khandle.family);
 
     test_end!();
     ok

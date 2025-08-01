@@ -20,27 +20,30 @@ use sentry_uapi::systypes::shm::ShmInfo;
 use sentry_uapi::*;
 use crate::tests::devices_utils::get_shm_by_name;
 
-pub fn run() {
+pub fn run() -> bool {
     test_suite_start!("syscall::dma*");
+    let mut ok = true;
 
-    test_dma_get_handle_inval();
-    test_dma_get_info();
-    test_dma_manipulate_stream_badhandle();
-    test_dma_assign_unassign_stream();
-    test_dma_start_n_wait_stream();
-    test_dma_start_stream();
-    test_dma_get_stream_status();
+    ok &= test_dma_get_handle_inval();
+    ok &= test_dma_get_info();
+    ok &= test_dma_manipulate_stream_badhandle();
+    ok &= test_dma_assign_unassign_stream();
+    ok &= test_dma_start_n_wait_stream();
+    ok &= test_dma_start_stream();
+    ok &= test_dma_get_stream_status();
 
     test_suite_end!("syscall::dma*");
+    ok
 }
 
-fn test_dma_get_handle_inval() {
+fn test_dma_get_handle_inval() -> bool {
     test_start!();
-    check_eq!(syscall::get_dma_stream_handle(0x42), Status::Invalid);
+    let ok = check_eq!(syscall::get_dma_stream_handle(0x42), Status::Invalid);
     test_end!();
+    ok
 }
 
-fn test_dma_manipulate_stream_badhandle() {
+fn test_dma_manipulate_stream_badhandle() -> bool {
     test_start!();
     let mut status : systypes::Status;
     let mut ok = true;
@@ -53,30 +56,33 @@ fn test_dma_manipulate_stream_badhandle() {
     status = syscall::dma_get_stream_status(0);
     ok &= check_eq!(status, systypes::Status::Invalid);
     test_end!();
+    ok
 }
 
-fn test_dma_assign_unassign_stream() {
+fn test_dma_assign_unassign_stream() -> bool {
     test_start!();
     let mut streamh: StreamHandle = 0;
     let mut status = syscall::get_dma_stream_handle(0x2);
+    let mut ok = true;
     let _ = copy_from_kernel(&mut streamh);
     check_eq!(status, Status::Ok);
 
     status = syscall::dma_assign_stream(streamh);
-    check_eq!(status, Status::Ok);
+    ok &= check_eq!(status, Status::Ok);
     status = syscall::dma_assign_stream(streamh);
-    check_eq!(status, Status::Invalid);
+    ok &= check_eq!(status, Status::Invalid);
 
     status = syscall::dma_unassign_stream(streamh);
-    check_eq!(status, Status::Ok);
+    ok &= check_eq!(status, Status::Ok);
 
     status = syscall::dma_unassign_stream(streamh);
-    check_eq!(status, Status::Invalid);
+    ok &= check_eq!(status, Status::Invalid);
 
     test_end!();
+    ok
 }
 
-fn test_dma_start_stream() {
+fn test_dma_start_stream() -> bool {
     test_start!();
     let mut streamh: StreamHandle = 0;
     let mut ok = true;
@@ -108,17 +114,19 @@ fn test_dma_start_stream() {
     ok &= check_eq!(status, Status::Ok);
 
     test_end!();
+    ok
 }
 
-fn test_dma_get_stream_status() {
+fn test_dma_get_stream_status() -> bool {
     test_start!();
     let mut streamh: StreamHandle = 0;
     let status = syscall::get_dma_stream_handle(0x2);
     let _ = copy_from_kernel(&mut streamh);
     check_eq!(status, Status::Ok);
     // should fail, not yet supported
-    check_eq!(syscall::dma_get_stream_status(streamh), Status::Ok);
+    let ok = check_eq!(syscall::dma_get_stream_status(streamh), Status::Ok);
     test_end!();
+    ok
 }
 
 fn test_dma_start_n_wait_stream() -> bool {
@@ -136,7 +144,7 @@ fn test_dma_start_n_wait_stream() -> bool {
     let _ = copy_from_kernel(&mut myself);
     ok &= check_eq!(status, Status::Ok);
 
-    let mut shm1 = get_shm_by_name("shm_autotest_1").expect("shm_autotest_1 not found");
+    let shm1 = get_shm_by_name("shm_autotest_1").expect("shm_autotest_1 not found");
     let mut shm1h: systypes::ShmHandle = 0;
     let mut info1 = ShmInfo {
         label: 0 as u32,
@@ -171,7 +179,7 @@ fn test_dma_start_n_wait_stream() -> bool {
         }
     }
 
-    let mut shm2 = get_shm_by_name("shm_autotest_2").expect("shm_autotest_2 not found");
+    let shm2 = get_shm_by_name("shm_autotest_2").expect("shm_autotest_2 not found");
     let mut info2 = ShmInfo {
         label: 0 as u32,
         handle: 0 as u32,

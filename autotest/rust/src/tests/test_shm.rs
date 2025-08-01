@@ -178,7 +178,7 @@ fn test_shm_creds_on_mapped() -> bool {
     let _ = sentry_uapi::copy_from_kernel(&mut shm);
     ok &= check_eq!(status, systypes::Status::Ok);
 
-    let mut perms : u32;
+    let perms : u32;
     perms = (systypes::SHMPermission::Write as u32) + (systypes::SHMPermission::Map as u32);
 
     // Set the credential to allow map and write
