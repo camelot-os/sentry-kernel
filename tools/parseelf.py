@@ -1,12 +1,17 @@
 #!/usr/bin/env python3
 
 # SPDX-FileCopyrightText: 2023 Ledger SAS
+# SPDX-FileCopyrightText: 2025 H2Lab
 # SPDX-License-Identifier: Apache-2.0
 
-import os
 import sys
 import lief
 import json
+
+# TODO:
+# use argparse for inline documentation
+# use Path arg type for arg0 and arg1
+# arg0 (i.e. input elf file must exists), arg1 might not (i.e. build from scratch)
 
 # Define basic binary info dict
 if __name__ == '__main__':
@@ -33,9 +38,10 @@ if __name__ == '__main__':
     bindict['data']['vaddr'] = hex(bindict['data']['vaddr'])
     bindict['data']['laddr'] = hex(bindict['data']['laddr'])
     bindict['bss']['vaddr'] = hex(bindict['bss']['vaddr'])
-    with open(os.path.splitext(sys.argv[1])[0] + '.json', 'w') as outfile:
+
+    with open(sys.argv[2], 'w') as outfile:
         json.dump(bindict, outfile)
 
-    if len(sys.argv) == 3 and sys.argv[2] == 'dump':
+    if len(sys.argv) == 4 and sys.argv[3] == 'dump':
         for key, value in bindict.items():
             print(f"{key}: {value}")

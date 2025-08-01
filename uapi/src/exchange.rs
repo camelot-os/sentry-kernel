@@ -2,10 +2,12 @@
 // SPDX-FileCopyrightText: 2025 ANSSI
 // SPDX-License-Identifier: Apache-2.0
 
+#![allow(unused_imports)]
 #![allow(static_mut_refs)]
 #![allow(clippy::wrong_self_convention)]
 use crate::systypes::shm::ShmInfo;
-use crate::systypes::{ExchangeHeader, ShmHandle, Status};
+use crate::systypes::{ExchangeHeader, Status};
+use core::mem;
 use core::ptr::*;
 
 const EXCHANGE_AREA_LEN: usize = 128; // TODO: replace by CONFIG-defined value
@@ -14,11 +16,6 @@ const EXCHANGE_AREA_LEN: usize = 128; // TODO: replace by CONFIG-defined value
 ///
 #[unsafe(link_section = ".svcexchange")]
 static mut EXCHANGE_AREA: [u8; EXCHANGE_AREA_LEN] = [0u8; EXCHANGE_AREA_LEN];
-
-#[repr(align(4))]
-pub struct ExchangeAligned(pub [u8; 128]);
-#[unsafe(no_mangle)]
-pub static mut EXCHANGE_AREA_TEST: ExchangeAligned = ExchangeAligned([0u8; 128]);
 
 /// Trait of kernel-user exchangeable objects
 ///
@@ -84,53 +81,53 @@ impl SentryExchangeable for crate::systypes::shm::ShmInfo {
     }
 }
 
-/// SentryExchangeable trait implementation for ShmHandle.
-/// ShmHandle is a another structure which is returned by the kernel to the
-/// userspace in order to delivers SHM handle to a given
-/// task.
+/// SentryExchangeable trait implementation for Scalar types.
 ///
-/// In test mode only, this structure can be written back to the Exchange Area.
-/// In production mode, the application can't write such a content to the exchange
-/// as the kernel as strictly no use of it.
-///
-impl SentryExchangeable for crate::systypes::ShmHandle {
-    #[allow(static_mut_refs)]
-    fn from_kernel(&mut self) -> Result<Status, Status> {
-        let (prefix, aligned, _) = unsafe { EXCHANGE_AREA_TEST.0.align_to::<u32>() };
-        // Let's check that the prefix is empty, if not -> Critical error
-        if !prefix.is_empty() {
-            return Err(Status::Critical);
+macro_rules! impl_exchangeable {
+    ($t:ty) => {
+        #[allow(static_mut_refs)]
+        impl SentryExchangeable for $t {
+            fn from_kernel(&mut self) -> Result<Status, Status> {
+                // let (prefix, aligned, _) = unsafe { EXCHANGE_AREA.align_to::<$t>() };
+                // if !prefix.is_empty() {
+                //     return Err(Status::Critical);
+                // }
+
+                // let first = aligned.first().ok_or(Status::Invalid)?;
+                let mut u8_slice: &mut [u8] = unsafe {
+                    core::slice::from_raw_parts_mut(
+                        addr_of_mut!(*self) as *mut u8,
+                        core::mem::size_of::<$t>(),
+                    ) as &mut [u8]
+                };
+                copy_from_kernel(&mut u8_slice)
+            }
+
+            #[cfg(test)]
+            fn to_kernel(&self) -> Result<Status, Status> {
+                let (prefix, aligned, _) = unsafe { EXCHANGE_AREA.align_to_mut::<$t>() };
+                if !prefix.is_empty() {
+                    return Err(Status::Critical);
+                }
+
+                let slot = aligned.first_mut().ok_or(Status::Invalid)?;
+                *slot = *self;
+                Ok(Status::Ok)
+            }
+
+            #[cfg(not(test))]
+            fn to_kernel(&self) -> Result<Status, Status> {
+                Err(Status::Invalid)
+            }
         }
-
-        let first = aligned.first().ok_or(Status::Invalid)?;
-
-        unsafe {
-            core::ptr::copy_nonoverlapping(first, self as *mut ShmHandle, 1);
-        }
-        Ok(Status::Ok)
-    }
-
-    #[cfg(test)]
-    #[allow(static_mut_refs)]
-    fn to_kernel(&self) -> Result<Status, Status> {
-        let (prefix, aligned, _) = unsafe { EXCHANGE_AREA_TEST.0.align_to_mut::<u32>() };
-        // Let's check that the prefix is empty, if not -> Critical error
-        if !prefix.is_empty() {
-            return Err(Status::Critical);
-        }
-
-        let slot = aligned.first_mut().ok_or(Status::Invalid)?;
-
-        *slot = *self;
-        Ok(Status::Ok)
-    }
-
-    #[cfg(not(test))]
-    #[allow(static_mut_refs)]
-    fn to_kernel(&self) -> Result<Status, Status> {
-        Err(Status::Invalid)
-    }
+    };
 }
+
+impl_exchangeable!(u8);
+impl_exchangeable!(*mut u8);
+impl_exchangeable!(u16);
+impl_exchangeable!(u32);
+impl_exchangeable!(u64);
 
 // from-exchange related capacity to Exchange header
 impl ExchangeHeader {
@@ -368,7 +365,12 @@ where
 
 #[cfg(test)]
 mod tests {
-    use crate::systypes::EventType;
+    #[repr(align(8))]
+    pub struct ExchangeAligned(pub [u8; 128]);
+    #[unsafe(no_mangle)]
+    pub static mut EXCHANGE_AREA_TEST: ExchangeAligned = ExchangeAligned([0u8; 128]);
+
+    use crate::systypes::{EventType, ShmHandle};
 
     use super::*;
 
@@ -450,6 +452,42 @@ mod tests {
     fn back_to_back_c_string() {
         let src: &[u8] = &[42, 1, 3, 5, 12];
         let mut dst: &mut [u8] = &mut [0, 0, 0, 0, 0];
+        assert_eq!(src.to_kernel(), Ok(Status::Ok));
+        assert_eq!(dst.from_kernel(), Ok(Status::Ok));
+        assert_eq!(src, dst);
+    }
+
+    #[test]
+    fn back_to_back_u8() {
+        let src: u8 = 42;
+        let mut dst = 0;
+        assert_eq!(src.to_kernel(), Ok(Status::Ok));
+        assert_eq!(dst.from_kernel(), Ok(Status::Ok));
+        assert_eq!(src, dst);
+    }
+
+    #[test]
+    fn back_to_back_u16() {
+        let src: u16 = 42;
+        let mut dst = 0;
+        assert_eq!(src.to_kernel(), Ok(Status::Ok));
+        assert_eq!(dst.from_kernel(), Ok(Status::Ok));
+        assert_eq!(src, dst);
+    }
+
+    #[test]
+    fn back_to_back_u32() {
+        let src: u32 = 42;
+        let mut dst = 0;
+        assert_eq!(src.to_kernel(), Ok(Status::Ok));
+        assert_eq!(dst.from_kernel(), Ok(Status::Ok));
+        assert_eq!(src, dst);
+    }
+
+    #[test]
+    fn back_to_back_u64() {
+        let src: u64 = 42;
+        let mut dst = 0;
         assert_eq!(src.to_kernel(), Ok(Status::Ok));
         assert_eq!(dst.from_kernel(), Ok(Status::Ok));
         assert_eq!(src, dst);
