@@ -26,7 +26,7 @@ stack_frame_t *gate_dma_resume(stack_frame_t *frame, dmah_t dmah)
         goto end;
     }
     if (unlikely(mgr_security_has_capa(current, CAP_DEV_DMA) != SECURE_TRUE)) {
-        mgr_task_set_sysreturn(current, STATUS_DENIED);
+        sysret = STATUS_DENIED;
         goto end;
     }
     if (unlikely(mgr_dma_stream_resume(dmah) != K_STATUS_OKAY)) {
