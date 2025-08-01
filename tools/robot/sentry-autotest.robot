@@ -171,6 +171,15 @@ AT IRQ
     Should Not Contain  ${suite}   KO
     Suite Result        ${suite}
 
+AT Capabilities
+    [Documentation]     Parse Capabilities autotest results
+
+    Depends on test     Load Autotest
+    ${suite}            Get Lines Containing String	${AT_LOG}	test_capa
+    Log                 ${suite}
+    Should Not Contain  ${suite}   KO
+    Suite Result        ${suite}
+
 Autotest Totals
     [Documentation]         Calculate total numbers of Success and KOs
 
