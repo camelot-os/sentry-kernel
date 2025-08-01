@@ -25,7 +25,7 @@ typedef struct dma_meta {
 {% set ns = namespace() -%}
 {% set ns.total_streams=0 -%}
 {% for node in dts.get_compatible("dma-stream") -%}
-{% if node|has_property("outpost,label") -%}
+{% if node|has_property("sentry,label") -%}
 {% set ns.total_streams = ns.total_streams + 1 -%}
 {% endif -%}
 {% endfor -%}

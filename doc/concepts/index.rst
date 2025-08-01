@@ -32,13 +32,13 @@ made for high security embedded systems that include micro-controllers
 in association with dedicated Secure Element component for security
 cryptographic functions.
 
-The Sentry kernel is a part of the Outpost Operating System, built
+The Sentry kernel is a part of the Camelot Operating System, built
 to deploy a high level security upto the micro-controller, ensuring
 secure manipulation of complex or performance critical I/O the SE is
 not able to handle.
 
 
 
-.. image:: _static/figures/outpost.png
+.. image:: _static/figures/camelot.png
    :align: right
    :width: 5%

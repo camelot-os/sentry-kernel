@@ -234,7 +234,7 @@ like the following:
 
 .. note::
     A repository hosting various cross-files, denoted `meson-cross-files`, exists
-    in the Outpost organisation. Although, anyone can write its own toolchain for
+    in the Camelot organisation. Although, anyone can write its own toolchain for
     its own host, like, for e.g. on Windows build environment:
 
 .. code-block::

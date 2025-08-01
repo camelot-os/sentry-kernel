@@ -9,7 +9,7 @@ Security requirements
 
 Multiple security considerations have been taken into account at design time.
 These considerations are the consequence of a security study with respect for
-the core usage of the Outpost OS and the Sentry kernel, which targets small embedded
+the core usage of the Camelot OS and the Sentry kernel, which targets small embedded
 systems.
 
 The consideration are the following:

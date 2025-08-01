@@ -7,7 +7,7 @@ kconfiglib~=14.1.0
 sphinx_rtd_theme
 exhale
 svd2json>=0.1.6
-dts-utils>=0.3.0
+dts-utils>=0.4.0
 jinja-cli
 swig
 sphinx-simplepdf

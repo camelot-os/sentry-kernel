@@ -26,7 +26,7 @@
 
 	led0: led_0 {
 		compatible = "gpio-leds";
-		outpost,owner = <0xbabe>;
+		sentry,owner = <0xbabe>;
 		pinctrl-0 = <&led_pc7 &led_pc7>;
 		status = "disabled";
 	};
@@ -40,68 +40,68 @@
 		/* harden kernel is highly bigger, requiring full flash mapping update */
 		kernel_code: kernel_code@8000000 {
 			reg = <0x8000000 0x30000>;
-			compatible = "outpost,memory-pool";
+			compatible = "sentry,memory-pool";
 		};
 
 		kernel_ram: kernel_memory@20000000 {
 			reg = <0x20000000 0x2000>;
-			compatible = "outpost,memory-pool";
+			compatible = "sentry,memory-pool";
 		};
 
 		idle_code: idle_code@8030000 {
 			reg = <0x8030000 0x500>;
-			compatible = "outpost,memory-pool";
+			compatible = "sentry,memory-pool";
 		};
 
 		idle_ram: idle_memory@20004000 {
 			reg = <0x20004000 0x200>;
-			compatible = "outpost,memory-pool";
+			compatible = "sentry,memory-pool";
 		};
 
 		autotest_code: autotest_code@8031000 {
 			reg = <0x8031000 0xe000>;
-			compatible = "outpost,memory-pool";
+			compatible = "sentry,memory-pool";
 		};
 
 		autotest_ram: autotest_memory@20008000 {
 			reg = <0x20008000 0x1000>;
-			compatible = "outpost,memory-pool";
+			compatible = "sentry,memory-pool";
 		};
 
 		shm_autotest_1: memory@2000a000 {
 			// mappable, dma allowed
 			reg = <0x2000a000 0x256>;
-			outpost,shm;
+			sentry,shm;
 			dma-pool;
-			outpost,label = <0xf00>;
-			outpost,owner = <0xbabe>;
+			sentry,label = <0xf00>;
+			sentry,owner = <0xbabe>;
 		};
 
 		shm_autotest_2: memory@2000b000 {
 			// mappable, dma allowed
 			reg = <0x2000b000 0x100>;
-			outpost,shm;
+			sentry,shm;
 			dma-pool;
-			outpost,label = <0xf01>;
-			outpost,owner = <0xbabe>;
+			sentry,label = <0xf01>;
+			sentry,owner = <0xbabe>;
 		};
 
 		shm_autotest_3: memory@2000b100 {
 			// mappable, dma refused
 			reg = <0x2000b100 0x100>;
-			outpost,shm;
-			outpost,label = <0xf02>;
-			outpost,owner = <0xbabe>;
+			sentry,shm;
+			sentry,label = <0xf02>;
+			sentry,owner = <0xbabe>;
 		};
 
 		shm_autotest_4: memory@2000b200 {
 			// not mappable, dma allowed
 			reg = <0x2000b200 0x100>;
-			outpost,shm;
+			sentry,shm;
 			dma-pool;
-			outpost,no-map;
-			outpost,label = <0xf03>;
-			outpost,owner = <0xbabe>;
+			sentry,no-map;
+			sentry,label = <0xf03>;
+			sentry,owner = <0xbabe>;
 		};
 	};
 	dma-streams {
@@ -115,7 +115,7 @@
 			dest = <&shm_autotest_1>;
 			length = <42>;
 			circular = <1 0>; // circular source, linear dest
-			outpost,label = <0x1>; // task-level unique DMA identifier
+			sentry,label = <0x1>; // task-level unique DMA identifier
 		};
 		// memory-to-memory DMA stream
 		stream2 {
@@ -126,7 +126,7 @@
 			dest = <&shm_autotest_2>;
 			length = <0x100>;
 			// no circular, linear for both source and dest
-			outpost,label = <0x2>; // task-level unique DMA identifier
+			sentry,label = <0x2>; // task-level unique DMA identifier
 		};
 	};
 };
@@ -136,16 +136,16 @@
 	// About channels that are used
 	gpdma1_1: dma-channel@1 {
 		status = "okay";
-		outpost,owner = <0xbabe>;
+		sentry,owner = <0xbabe>;
 	};
 };
 
 &timers6 {
 	status = "okay";
-	outpost,owner = <0xbabe>;
-	outpost,label = <0x1f01>;
-	outpost,counter = <0xffff>;
-	outpost,prescaler = <0x262>;
+	sentry,owner = <0xbabe>;
+	sentry,label = <0x1f01>;
+	sentry,counter = <0xffff>;
+	sentry,prescaler = <0x262>;
 };
 
 &led0 {
@@ -199,7 +199,7 @@
 
 &i2c1 {
 	status = "okay";
-	outpost,owner = <0xbabe>;
+	sentry,owner = <0xbabe>;
 	dma-rx = <&gpdma1 13>;
 	dma-tx = <&gpdma1 12>;
 };

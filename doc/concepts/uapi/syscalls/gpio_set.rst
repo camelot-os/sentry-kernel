@@ -23,7 +23,7 @@ sys_gpio_set
 
        led0: led_0 {
    		compatible = "gpio-leds";
-       	outpost,owner = <0xbabe>;
+       	sentry,owner = <0xbabe>;
        	pinctrl-0 = <&led_pc7>;
        	status = "okay";
    	};

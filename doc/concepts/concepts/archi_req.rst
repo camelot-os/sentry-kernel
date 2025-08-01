@@ -188,7 +188,7 @@ There are multiple managers in Sentry:
 
    * **memory manager**: This manager is responsible for configuring the memory protection
      and delivering a portable high level API for manipulate memory such as mapping and
-     unmapping Outpost ressources into the context of a Sentry subjet (for example a task).
+     unmapping Camelot ressources into the context of a Sentry subjet (for example a task).
      This API comply with armv7m MPU as well as RISC-V MPU or even MMU model. The memory manager
      access `devh_t` handles to map userspace devices, and is responsible for mapping
      abstracted blocks such as task code, data, kernel code and data.

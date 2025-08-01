@@ -19,48 +19,48 @@
     reserved-memory {
 		autotest_code: autotest_code@800d000 {
 			reg = <0x800d000 0x3000>;
-			compatible = "outpost,memory-pool";
+			compatible = "sentry,memory-pool";
 		};
 
 		autotest_ram: autotest_memory@20008000 {
 			reg = <0x20008000 0x1000>;
-			compatible = "outpost,memory-pool";
+			compatible = "sentry,memory-pool";
 		};
 
 		shm_autotest_1: memory@2000a000 {
 			// mappable, dma allowed
 			reg = <0x2000a000 0x256>;
-			outpost,shm;
+			sentry,shm;
 			dma-pool;
-			outpost,label = <0xf00>;
-			outpost,owner = <0xbabe>;
+			sentry,label = <0xf00>;
+			sentry,owner = <0xbabe>;
 		};
 
 		shm_autotest_2: memory@2000b000 {
 			// mappable, dma allowed
 			reg = <0x2000b000 0x100>;
-			outpost,shm;
+			sentry,shm;
 			dma-pool;
-			outpost,label = <0xf01>;
-			outpost,owner = <0xbabe>;
+			sentry,label = <0xf01>;
+			sentry,owner = <0xbabe>;
 		};
 
 		shm_autotest_3: memory@2000b100 {
 			// mappable, dma refused
 			reg = <0x2000b100 0x100>;
-			outpost,shm;
-			outpost,label = <0xf02>;
-			outpost,owner = <0xbabe>;
+			sentry,shm;
+			sentry,label = <0xf02>;
+			sentry,owner = <0xbabe>;
 		};
 
 		shm_autotest_4: memory@2000b200 {
 			// not mappable, dma allowed
 			reg = <0x2000b200 0x100>;
-			outpost,shm;
+			sentry,shm;
 			dma-pool;
-			outpost,no-map;
-			outpost,label = <0xf03>;
-			outpost,owner = <0xbabe>;
+			sentry,no-map;
+			sentry,label = <0xf03>;
+			sentry,owner = <0xbabe>;
 		};
 	};
 

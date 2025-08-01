@@ -23,7 +23,7 @@ sys_gpio_get
 
        button0: button_0 {
    		compatible = "gpio-button";
-       	outpost,owner = <0xbabe>;
+       	sentry,owner = <0xbabe>;
        	pinctrl-0 = <&button_pa4>;
        	status = "okay";
    	};

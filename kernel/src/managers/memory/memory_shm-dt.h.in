@@ -24,7 +24,7 @@ typedef struct shm_meta {
 {% set ns = namespace() -%}
 {% set ns.total_shm=0 -%}
 {% for node in dts.get_mappable() -%}
-{% if node|has_property("outpost,shm") -%}
+{% if node|has_property("sentry,shm") -%}
 {% set ns.total_shm = ns.total_shm + 1 -%}
 {% endif -%}
 {% endfor -%}

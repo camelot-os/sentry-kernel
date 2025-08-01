@@ -28,8 +28,8 @@ MEMORY
     {{ ccm.label.upper() }} (rw): ORIGIN = {{ origin }}, LENGTH = {{ length }}
 {%- endfor %}
 
-{%- set outpost_pools = dts.get_compatible("outpost,memory-pool") %}
-{%- for pool in outpost_pools %}
+{%- set sentry_pools = dts.get_compatible("sentry,memory-pool") %}
+{%- for pool in sentry_pools %}
     {%- set origin = "0x%08x"|format(pool.reg[0]) %}
     {%- set length = "0x%08x"|format(pool.reg[1]) %}
     {{ pool.label.upper() }} (rw): ORIGIN = {{ origin }}, LENGTH = {{ length }}

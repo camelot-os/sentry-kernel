@@ -42,7 +42,7 @@ Update SVD database
 ^^^^^^^^^^^^^^^^^^^
 
 Sentry is using SVD files in order to forge SoC-related informations such as IRQ list and
-per-IP registers definition. The SVD database is hosted in a `decicated repository <https://github.com/camelot-os/outpost-svd>`_.
+per-IP registers definition. The SVD database is hosted in a `decicated repository <https://github.com/camelot-os/kadoc>`_.
 Adding a SVD file (or a set of files) is done through a dedicated pull request on this repo by:
 
    * adding the SVD file(s) in the corresponding `svd/` subdir
@@ -63,7 +63,7 @@ In the same way SVD files are used to forge the SoC source files for CMSIS and d
 registers mapping, dtsi files are used so that all devices mapping, familly and featureset,
 as generically defined for all OSes.
 
-The dtsi files are stored in a dtsi database hosted in a `decicated repository <https://github.com/camelot-os/outpost-devicetree>`_.
+The dtsi files are stored in a dtsi database hosted in a `decicated repository <https://github.com/camelot-os/camelot-devicetree>`_.
 There are already a lot of dtsi files, hosted in this repository's `dts/` subdir. In the very same
 way SVD are added, dts files can be simply included in the corresponding subdir. There is no need
 in that case to update any of the `meson.build` files though.

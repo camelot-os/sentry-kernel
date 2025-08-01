@@ -89,7 +89,7 @@ static inline const kdmah_t *dmah_to_kdmah(const dmah_t * const dh) {
   * @return converted handler pointer to opaque value
   */
 static inline const dmah_t *kdmah_to_dmah(const kdmah_t * const kdh) {
-    /*@ assert \valid(kdh); */
+    /*@ assert \valid_read(kdh); */
     union udmah converter = {
         .kdh = kdh
     };
