@@ -212,7 +212,8 @@ stack_frame_t *svc_handler(stack_frame_t *frame)
     syscall_id = Frama_C_entropy_source_u8;
 #endif
     if (unlikely(syscall_id >= svc_lut_size())) {
-        mgr_task_set_sysreturn(sched_get_current(), STATUS_INVALID);
+
+        lut_unsuported(frame);
         goto err;
     }
     svc_lut = svc_lut_get();

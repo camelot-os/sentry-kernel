@@ -15,6 +15,11 @@ stack_frame_t *gate_get_shmhandle(stack_frame_t *frame, uint32_t shmid)
     const task_meta_t *meta;
     uint32_t *svcexch;
 
+    if (unlikely(mgr_security_has_capa(current, CAP_MEM_SHM_OWN) != SECURE_TRUE)) {
+        pr_err("SHM ownership capability required");
+        mgr_task_set_sysreturn(current, STATUS_DENIED);
+        goto end;
+    }
     if (unlikely(mgr_mm_shm_get_handle(shmid, &shmhandle) != K_STATUS_OKAY)) {
         mgr_task_set_sysreturn(current, STATUS_INVALID);
         goto end;
