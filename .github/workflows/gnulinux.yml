@@ -80,13 +80,13 @@ jobs:
       - name: XXX git permission quirk XXX
         run: |
           git config --global --add safe.directory $GITHUB_WORKSPACE
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           fetch-depth: 0
           fetch-tags: true
           set-safe-directory: true
       - name: Clone cross-files
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           ref:  'main'
           repository: 'camelot-os/meson-cross-files'
@@ -152,13 +152,13 @@ jobs:
       - name: XXX git permission quirk XXX
         run: |
           git config --global --add safe.directory $GITHUB_WORKSPACE
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           fetch-depth: 0
           fetch-tags: true
           set-safe-directory: true
       - name: Clone cross-files
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           ref:  'main'
           repository: 'camelot-os/meson-cross-files'
@@ -241,13 +241,13 @@ jobs:
       - name: XXX git permission quirk XXX
         run: |
           git config --global --add safe.directory $GITHUB_WORKSPACE
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           fetch-depth: 0
           fetch-tags: true
           set-safe-directory: true
       - name: Clone cross-files
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           ref:  'main'
           repository: 'camelot-os/meson-cross-files'
