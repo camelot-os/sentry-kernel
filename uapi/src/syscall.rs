@@ -665,13 +665,8 @@ pub fn irq_disable(irq: u16) -> Status {
 ///
 #[inline(always)]
 pub fn wait_for_event(mask: u8, timeout: i32) -> Status {
-    let timeout = u32::try_from(timeout);
-    match timeout {
-        Ok(_) => (),
-        Err(_) => return Status::Invalid,
-    };
-    match syscall!(Syscall::WaitForEvent, u32::from(mask), timeout.unwrap()).into() {
-        Status::Intr => syscall!(Syscall::WaitForEvent, u32::from(mask), timeout.unwrap()).into(),
+    match syscall!(Syscall::WaitForEvent, u32::from(mask), timeout as u32).into() {
+        Status::Intr => syscall!(Syscall::WaitForEvent, u32::from(mask), timeout as u32).into(),
         any => any,
     }
 }

@@ -32,12 +32,12 @@
 /{
 	reserved-memory {
 		autotest_code: autotest_code@800d000 {
-			reg = <0x800d000 0xe000>;
+			reg = <0x800d000 0xf000>;
 			compatible = "sentry,memory-pool";
 		};
 
 		autotest_ram: autotest_memory@20008000 {
-			reg = <0x20008000 0x1000>;
+			reg = <0x20008000 0x2000>;
 			compatible = "sentry,memory-pool";
 		};
 

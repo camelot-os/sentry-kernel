@@ -4,7 +4,7 @@
 #include "timer_defs.h"
 #include "stm32-basic-timer-dt.h"
 #include <io.h>
-#include <uapi.h>
+#include <uapi/uapi.h>
 
 /**
  * FIXME: prescaler config depends on timer bus (u5: APB1) clock, in order to

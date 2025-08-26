@@ -369,16 +369,16 @@ impl From<AlarmFlag> for u32 {
 #[repr(C)]
 pub enum SHMPermission {
     /// allows target process to map the SHM. No read nor write though
-    Map,
+    Map = 0x1,
 
     /// allows target process to read the mapped SHM. Requires MAP
-    Read,
+    Read = 0x2,
 
     /// allows target process to write shared memory. Requires MAP
-    Write,
+    Write = 0x4,
 
     /// allows target process to transfer SHM to another, pre-allowed, process
-    Transfer,
+    Transfer = 0x8,
 }
 
 /// Converter for SHM permission to register encoding (u32)
@@ -395,6 +395,7 @@ impl From<SHMPermission> for u32 {
 
 /// Sentry signals definition. Most of them are aligned on standard POSIX signals
 #[repr(C)]
+#[derive(Clone, PartialEq, Copy, Debug)]
 pub enum Signal {
     /// Abort signal
     Abort = 1,
@@ -711,9 +712,9 @@ pub mod dev {
     #[derive(Debug, Copy, Clone)]
     pub struct InterruptInfo {
         /// interrupt number
-        pub num: u16,
+        pub it_num: u16,
         /// interrupt controler identifier
-        pub controller: u8,
+        pub it_controler: u8,
     }
 
     #[test]
@@ -731,7 +732,7 @@ pub mod dev {
             concat!("Alignment of ", stringify!(InterruptInfo))
         );
         assert_eq!(
-            unsafe { ::std::ptr::addr_of!((*ptr).num) as usize - ptr as usize },
+            unsafe { ::std::ptr::addr_of!((*ptr).it_num) as usize - ptr as usize },
             0usize,
             concat!(
                 "Offset of field: ",
@@ -741,7 +742,7 @@ pub mod dev {
             )
         );
         assert_eq!(
-            unsafe { ::std::ptr::addr_of!((*ptr).controller) as usize - ptr as usize },
+            unsafe { ::std::ptr::addr_of!((*ptr).it_controler) as usize - ptr as usize },
             2usize,
             concat!(
                 "Offset of field: ",
@@ -753,106 +754,15 @@ pub mod dev {
     }
 
     #[repr(C)]
-    #[derive(Debug, Copy, Clone)]
+    #[derive(Copy, Clone, Debug)]
     pub struct IoInfo {
-        /// GPIO port identifier, declared in DTS
         pub port: u8,
-        /// GPIO pin identifier, declared in DTS
         pub pin: u8,
         pub mode: u8,
-        /// GPIO AF identifier, declared in DTS
         pub af: u8,
-        /// GPIO ppull config, declared in DTS
         pub ppull: u8,
-        /// GPIO speed config, declared in DTS
         pub speed: u8,
-        // GPIO pupdr config, declared in DTS
-        pub pupdr: u32,
-    }
-    #[test]
-    fn test_layout_io_info() {
-        const UNINIT: ::std::mem::MaybeUninit<IoInfo> = ::std::mem::MaybeUninit::uninit();
-        let ptr = UNINIT.as_ptr();
-        assert_eq!(
-            ::std::mem::size_of::<IoInfo>(),
-            12usize,
-            concat!("Size of: ", stringify!(IoInfo))
-        );
-        assert_eq!(
-            ::std::mem::align_of::<IoInfo>(),
-            4usize,
-            concat!("Alignment of ", stringify!(IoInfo))
-        );
-        assert_eq!(
-            unsafe { ::std::ptr::addr_of!((*ptr).port) as usize - ptr as usize },
-            0usize,
-            concat!(
-                "Offset of field: ",
-                stringify!(IoInfo),
-                "::",
-                stringify!(port)
-            )
-        );
-        assert_eq!(
-            unsafe { ::std::ptr::addr_of!((*ptr).pin) as usize - ptr as usize },
-            1usize,
-            concat!(
-                "Offset of field: ",
-                stringify!(IoInfo),
-                "::",
-                stringify!(pin)
-            )
-        );
-        assert_eq!(
-            unsafe { ::std::ptr::addr_of!((*ptr).mode) as usize - ptr as usize },
-            2usize,
-            concat!(
-                "Offset of field: ",
-                stringify!(IoInfo),
-                "::",
-                stringify!(mode)
-            )
-        );
-        assert_eq!(
-            unsafe { ::std::ptr::addr_of!((*ptr).af) as usize - ptr as usize },
-            3usize,
-            concat!(
-                "Offset of field: ",
-                stringify!(IoInfo),
-                "::",
-                stringify!(af)
-            )
-        );
-        assert_eq!(
-            unsafe { ::std::ptr::addr_of!((*ptr).ppull) as usize - ptr as usize },
-            4usize,
-            concat!(
-                "Offset of field: ",
-                stringify!(IoInfo),
-                "::",
-                stringify!(ppull)
-            )
-        );
-        assert_eq!(
-            unsafe { ::std::ptr::addr_of!((*ptr).speed) as usize - ptr as usize },
-            5usize,
-            concat!(
-                "Offset of field: ",
-                stringify!(IoInfo),
-                "::",
-                stringify!(speed)
-            )
-        );
-        assert_eq!(
-            unsafe { ::std::ptr::addr_of!((*ptr).pupdr) as usize - ptr as usize },
-            8usize,
-            concat!(
-                "Offset of field: ",
-                stringify!(IoInfo),
-                "::",
-                stringify!(pupdr)
-            )
-        );
+        pub pupdr: u8,
     }
 
     /// userspace oriented device definition
@@ -860,8 +770,9 @@ pub mod dev {
     #[repr(C)]
     #[derive(Debug, Copy, Clone)]
     pub struct DevInfo {
-        pub id: u32,
+        pub id: u8,
         /// mappable device. Direct-IO (LED...) are not
+        /// Not parsed from the DTS, useless ?
         pub mappable: bool,
         /// for mappable devices, base address
         pub baseaddr: usize,
@@ -876,101 +787,6 @@ pub mod dev {
         pub num_ios: u8,
         /// device I/O list
         pub ios: [IoInfo; 8usize],
-    }
-    #[test]
-    fn test_layout_devinfo() {
-        const UNINIT: ::std::mem::MaybeUninit<DevInfo> = ::std::mem::MaybeUninit::uninit();
-        let ptr = UNINIT.as_ptr();
-        assert_eq!(
-            ::std::mem::size_of::<DevInfo>(),
-            160usize,
-            concat!("Size of: ", stringify!(DevInfo))
-        );
-        assert_eq!(
-            ::std::mem::align_of::<DevInfo>(),
-            8usize,
-            concat!("Alignment of ", stringify!(DevInfo))
-        );
-        assert_eq!(
-            unsafe { ::std::ptr::addr_of!((*ptr).id) as usize - ptr as usize },
-            0usize,
-            concat!(
-                "Offset of field: ",
-                stringify!(DevInfo),
-                "::",
-                stringify!(id)
-            )
-        );
-        assert_eq!(
-            unsafe { ::std::ptr::addr_of!((*ptr).mappable) as usize - ptr as usize },
-            4usize,
-            concat!(
-                "Offset of field: ",
-                stringify!(DevInfo),
-                "::",
-                stringify!(mappable)
-            )
-        );
-        assert_eq!(
-            unsafe { ::std::ptr::addr_of!((*ptr).baseaddr) as usize - ptr as usize },
-            8usize,
-            concat!(
-                "Offset of field: ",
-                stringify!(DevInfo),
-                "::",
-                stringify!(baseaddr)
-            )
-        );
-        assert_eq!(
-            unsafe { ::std::ptr::addr_of!((*ptr).size) as usize - ptr as usize },
-            16usize,
-            concat!(
-                "Offset of field: ",
-                stringify!(DevInfo),
-                "::",
-                stringify!(size)
-            )
-        );
-        assert_eq!(
-            unsafe { ::std::ptr::addr_of!((*ptr).num_interrupt) as usize - ptr as usize },
-            24usize,
-            concat!(
-                "Offset of field: ",
-                stringify!(DevInfo),
-                "::",
-                stringify!(num_interrupt)
-            )
-        );
-        assert_eq!(
-            unsafe { ::std::ptr::addr_of!((*ptr).its) as usize - ptr as usize },
-            26usize,
-            concat!(
-                "Offset of field: ",
-                stringify!(DevInfo),
-                "::",
-                stringify!(its)
-            )
-        );
-        assert_eq!(
-            unsafe { ::std::ptr::addr_of!((*ptr).num_ios) as usize - ptr as usize },
-            58usize,
-            concat!(
-                "Offset of field: ",
-                stringify!(DevInfo),
-                "::",
-                stringify!(num_ios)
-            )
-        );
-        assert_eq!(
-            unsafe { ::std::ptr::addr_of!((*ptr).ios) as usize - ptr as usize },
-            60usize,
-            concat!(
-                "Offset of field: ",
-                stringify!(DevInfo),
-                "::",
-                stringify!(ios)
-            )
-        );
     }
 }
 

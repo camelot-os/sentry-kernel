@@ -19,6 +19,10 @@ stm32_timer_dts_template_h = files('stm32-basic-timer-dt.h.in')
 stm32_timer_dts_dtsgen_c = dtsgen.process(stm32_timer_dts_template_c)
 stm32_timer_dts_dtsgen_h = dtsgen.process(stm32_timer_dts_template_h)
 
+stm32_timer_dts_dtsgen_dep = declare_dependency(
+  sources: stm32_timer_dts_dtsgen_h,
+)
+
 autotest_driver_timer_src = [
     timer_h,
     stm32_timer_dts_dtsgen_c,
