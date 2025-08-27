@@ -128,8 +128,8 @@ macro_rules! mirror_enum {
 /// they return code synchronously (e.g. IPC), MUST use this value as
 /// default one
 #[repr(C)]
-#[cfg_attr(debug_assertions, derive(Debug, PartialEq))]
-#[derive(Copy, Clone)]
+#[cfg_attr(debug_assertions, derive(Debug))]
+#[derive(Copy, Clone, PartialEq)]
 pub enum Status {
     /// Successful result, the kernel has terminated its task with no error
     Ok,
