@@ -232,12 +232,12 @@ static stack_frame_t *lut_dma_stream_resume(stack_frame_t *frame) {
 
 #if CONFIG_BUILD_TARGET_AUTOTEST
 static stack_frame_t *lut_autotest_set_self_capa(stack_frame_t *frame) {
-    uint32_t capa = frame->r0;
+    uint32_t capa = frame->a0;
     return gate_autotest_set_self_capa(frame, capa);
 }
 
 static stack_frame_t *lut_autotest_clear_self_capa(stack_frame_t *frame) {
-    uint32_t capa = frame->r0;
+    uint32_t capa = frame->a0;
     return gate_autotest_clear_self_capa(frame, capa);
 }
 #endif
