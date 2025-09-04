@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2023 Ledger SAS
+// SPDX-FileCopyrightText: 2025 H2Lab OSS Team
 // SPDX-License-Identifier: Apache-2.0
 
 #ifndef SYSCALLS_H
@@ -82,5 +82,21 @@ stack_frame_t *gate_dma_start(stack_frame_t *frame, dmah_t dmah);
 stack_frame_t *gate_dma_suspend(stack_frame_t *frame, dmah_t dmah);
 
 stack_frame_t *gate_dma_resume(stack_frame_t *frame, dmah_t dmah);
+
+#if CONFIG_BUILD_TARGET_AUTOTEST
+/**
+ * @brief set a given capability to autotest
+ *
+ * @note only one capability at a time is allowed.
+ */
+stack_frame_t *gate_autotest_set_self_capa(stack_frame_t *frame, uint32_t capa);
+
+/**
+ * @brief clear a given capability from autotest
+ *
+ * @note only one capability at a time is allowed.
+ */
+stack_frame_t *gate_autotest_clear_self_capa(stack_frame_t *frame, uint32_t capa);
+#endif
 
 #endif/*!SYSCALLS_H*/

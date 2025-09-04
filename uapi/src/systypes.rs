@@ -1,5 +1,5 @@
 // SPDX-FileCopyrightText: 2023 Ledger SAS
-// SPDX-FileCopyrightText: 2025 ANSSI
+// SPDX-FileCopyrightText: 2025 ANSSI & H2Lab OSS Team
 // SPDX-License-Identifier: Apache-2.0
 
 /// This library defines types (structs, enums, ...) related to syscalls,
@@ -53,6 +53,8 @@ macro_rules! syscall_list {
     }
 }
 
+// FIXME: #[cfg()] does not seems to be supported with macro rules....
+// We need to find a way to make the last two autotest_ syscalls conditionally declared
 syscall_list! {
 pub enum Syscall {
     Exit,
@@ -93,6 +95,8 @@ pub enum Syscall {
     DmaUnassignStream,
     DmaGetStreamInfo,
     DmaResumeStream,
+    AutotestSetCapa,
+    AutotestClearCapa,
 }
 }
 

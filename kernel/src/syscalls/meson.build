@@ -1,4 +1,5 @@
 # SPDX-FileCopyrightText: 2023-2024 Ledger SAS
+# SPDX-FileCopyrightText: 2025 H2Lab OSS Team
 # SPDX-License-Identifier: Apache-2.0
 
 syscall_source_set = ssmod.source_set()
@@ -37,6 +38,9 @@ syscalls = files(
 )
 
 syscall_source_set.add(syscalls)
+
+syscall_source_set.add(when: 'CONFIG_BUILD_TARGET_AUTOTEST', if_true: files('sysgate_autotest.c'))
+
 syscall_source_set_config = syscall_source_set.apply(kconfig_data, strict:false)
 
 sentry_syscall_lib = static_library('sentry_syscall',
