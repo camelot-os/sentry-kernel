@@ -39,9 +39,7 @@ syscalls = files(
 
 syscall_source_set.add(syscalls)
 
-if kconfig_data.get('CONFIG_BUILD_TARGET_AUTOTEST', 0) == 1
-    syscall_source_set.add(files('sysgate_autotest.c'))
-endif
+syscall_source_set.add(when: 'CONFIG_BUILD_TARGET_AUTOTEST', if_true: files('sysgate_autotest.c'))
 
 syscall_source_set_config = syscall_source_set.apply(kconfig_data, strict:false)
 
