@@ -1,6 +1,14 @@
 # SPDX-FileCopyrightText: 2025 H2Lab OSS Team
 # SPDX-License-Identifier: Apache-2.0
 
+test_capability_c = custom_target('test_capability_c',
+    input: files('test_capability.c.in'),
+    output: '@BASENAME@',
+    depend_files: [ task_capabilities_json ],
+    command: [ jinja_cli, '-d', task_capabilities_json, '-o', '@OUTPUT@', '@INPUT@' ],
+)
+
+
 testlib_sourceset = ssmod.source_set()
 
 # private header, to be used by the testlib C11 implementation only
@@ -11,6 +19,7 @@ testlib_sourceset.add(files(
 ))
 
 # testlib C11 test suites implementations
+testlib_sourceset.add(when: 'CONFIG_TEST_CAPA', if_true: test_capability_c)
 testlib_sourceset.add(when: 'CONFIG_TEST_CYCLES', if_true: files('test_cycles.c'))
 testlib_sourceset.add(when: 'CONFIG_TEST_DMA', if_true: files('test_dma.c'))
 testlib_sourceset.add(when: 'CONFIG_TEST_GPIO', if_true: files('test_gpio.c'))

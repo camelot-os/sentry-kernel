@@ -42,17 +42,32 @@ kstatus_t mgr_security_init(void)
     __platform_enforce_alignment();
 #endif
 #if CONFIG_BUILD_TARGET_AUTOTEST
-    taskh_t autotest;
-    const task_meta_t *meta;
-    if (mgr_task_get_handle(0xbabe, &autotest) != K_STATUS_OKAY) {
-        panic(PANIC_CONFIGURATION_MISMATCH);
-    }
-    if (mgr_task_get_metadata(autotest, &meta) != K_STATUS_OKAY) {
-        /* current must be a valid task */
-        panic(PANIC_CONFIGURATION_MISMATCH);
-    }
-    autotest_cap_set = meta->capabilities;
+    /* set bootup capas for autotest here */
+    autotest_cap_set = 0;
+#ifdef CONFIG_TEST_DEVICES
+    autotest_cap_set |= CAP_DEV_BUSES;
 #endif
+#ifdef CONFIG_TEST_GPIO
+    autotest_cap_set |= CAP_DEV_IO;
+#endif
+#ifdef CONFIG_TEST_RANDOM
+    autotest_cap_set |= CAP_CRY_KRNG;
+#endif
+#ifdef CONFIG_TEST_SHM
+    autotest_cap_set |= CAP_MEM_SHM_OWN;
+    autotest_cap_set |= CAP_MEM_SHM_USE;
+    autotest_cap_set |= CAP_MEM_SHM_TRANSFER;
+#endif
+#ifdef CONFIG_TEST_DMA
+    /** note: DMA M2M transfers are made between SHMs, requiring SHM perms */
+    autotest_cap_set |= CAP_DEV_DMA;
+    autotest_cap_set |= CAP_MEM_SHM_OWN;
+    autotest_cap_set |= CAP_MEM_SHM_USE;
+#endif
+#ifdef CONFIG_TEST_IRQ
+    autotest_cap_set |= CAP_DEV_TIMER;
+#endif
+#endif /*CONFIG_BUILD_TARGET_AUTOTEST*/
     return status;
 }
 

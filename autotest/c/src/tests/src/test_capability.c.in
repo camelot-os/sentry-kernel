@@ -1,0 +1,165 @@
+// SPDX-FileCopyrightText: 2025 H2Lab OSS Team
+// SPDX-License-Identifier: Apache-2.0
+
+#include <inttypes.h>
+#include <test_log.h>
+#include <test_assert.h>
+#include <uapi/uapi.h>
+#include <uapi/dma.h>
+#include "test_cycles.h"
+
+/**
+ * @brief capability enum type
+ */
+typedef enum capability {
+{% filter indent(4, true) -%}
+{% for cap in capabilities -%}
+CAP_{{ cap.name|upper }} = (1 << {{ cap.shift }}),
+{% endfor -%}
+{% endfilter -%}
+} capability_t;
+
+#if CONFIG_TEST_CAPA
+static void test_capa_cycles(void)
+{
+    Status status;
+    TEST_START();
+    status = __sys_autotest_clear_capa(CAP_TIM_HP_CHRONO);
+    ASSERT_EQ(status, STATUS_OK);
+    status = __sys_get_cycle(PRECISION_MICROSECONDS);
+    ASSERT_EQ(status, STATUS_OK);
+    status = __sys_get_cycle(PRECISION_NANOSECONDS);
+    ASSERT_EQ(status, STATUS_OK);
+    status = __sys_get_cycle(PRECISION_CYCLE);
+    ASSERT_EQ(status, STATUS_DENIED);
+    status = __sys_autotest_set_capa(CAP_TIM_HP_CHRONO);
+    ASSERT_EQ(status, STATUS_OK);
+    status = __sys_get_cycle(PRECISION_CYCLE);
+    ASSERT_EQ(status, STATUS_OK);
+    TEST_END();
+}
+
+#ifdef CONFIG_TEST_SHM
+#include <shms-dt.h>
+
+static void test_capa_shm(void)
+{
+    shmh_t shmh;
+    taskh_t myself;
+    Status status;
+
+    TEST_START();
+    /* with no SHM related capa, even the SHM handle associated to a label we own is refused */
+    status = __sys_autotest_clear_capa(CAP_MEM_SHM_OWN);
+    ASSERT_EQ(status, STATUS_OK);
+    status = __sys_autotest_clear_capa(CAP_MEM_SHM_USE);
+    ASSERT_EQ(status, STATUS_OK);
+    status = __sys_autotest_clear_capa(CAP_MEM_SHM_TRANSFER);
+    ASSERT_EQ(status, STATUS_OK);
+    status = __sys_get_shm_handle(shms[0].id);
+    ASSERT_EQ(status, STATUS_DENIED);
+
+    /*
+     * if we are allowed to use the SHM but we are not allowed to own one,
+     * we can't get the handle from the label, the owning task (with owning capa) has to transfer
+     * the handle to us instead
+     */
+    status = __sys_autotest_set_capa(CAP_MEM_SHM_USE);
+    ASSERT_EQ(status, STATUS_OK);
+    status = __sys_get_shm_handle(shms[0].id);
+    ASSERT_EQ(status, STATUS_DENIED);
+
+    /*
+     * if we own a shm but are not able to use it, we can only get back
+     * the handle and infos, set the credential, but not map it even if allowed to
+     * NOTE: this means, though, that DMA-streams based access to SHM is possible for us,
+     * TODO: maybe we should not allow this particular case in the DMA subystem ?
+     * capa check for DMA subystem will be added later
+     */
+    status = __sys_autotest_clear_capa(CAP_MEM_SHM_USE);
+    ASSERT_EQ(status, STATUS_OK);
+    status = __sys_autotest_set_capa(CAP_MEM_SHM_OWN);
+    ASSERT_EQ(status, STATUS_OK);
+
+    status = __sys_get_shm_handle(shms[0].id);
+    copy_from_kernel((uint8_t*)&shmh, sizeof(shmh_t));
+    ASSERT_EQ(status, STATUS_OK);
+    status = __sys_shm_get_infos(shmh);
+    ASSERT_EQ(status, STATUS_OK);
+
+    status = __sys_get_process_handle(0xbabeUL);
+    copy_from_kernel((uint8_t*)&myself, sizeof(taskh_t));
+    ASSERT_EQ(status, STATUS_OK);
+    status = __sys_shm_set_credential(shmh, myself, SHM_PERMISSION_MAP | SHM_PERMISSION_WRITE);
+    ASSERT_EQ(status, STATUS_OK);
+    status = __sys_map_shm(shmh);
+    ASSERT_EQ(status, STATUS_DENIED);
+
+    /* if we both own and can use the SHM, we can map it (if set mappable) */
+    status = __sys_autotest_set_capa(CAP_MEM_SHM_OWN);
+    ASSERT_EQ(status, STATUS_OK);
+    status = __sys_autotest_set_capa(CAP_MEM_SHM_USE);
+    ASSERT_EQ(status, STATUS_OK);
+    status = __sys_map_shm(shmh);
+    ASSERT_EQ(status, STATUS_OK);
+    status = __sys_unmap_shm(shmh);
+    ASSERT_EQ(status, STATUS_OK);
+
+    /** NOTE: CAP_MEM_SHM_TRANSFER is not yet supported (transfer without ownership) */
+
+    TEST_END();
+}
+#else
+static void test_capa_shm(void) {}
+#endif /* CONFIG_TEST_SHMS */
+
+#if CONFIG_HAS_GPDMA
+static void test_capa_dma(void)
+{
+    Status status;
+    dmah_t dmah = 0;
+
+
+    TEST_START();
+    status = __sys_autotest_clear_capa(CAP_DEV_DMA);
+    ASSERT_EQ(status, STATUS_OK);
+    status = __sys_get_dma_stream_handle(0x1);
+    ASSERT_EQ(status, STATUS_DENIED);
+    status = __sys_autotest_set_capa(CAP_DEV_DMA);
+    ASSERT_EQ(status, STATUS_OK);
+    status = __sys_get_dma_stream_handle(0x1);
+    copy_from_kernel((uint8_t*)&dmah, sizeof(dmah_t));
+    ASSERT_EQ(status, STATUS_OK);
+
+    /*
+     * even with a valid handle (which is partialy random), and without capa
+     * the other DMA syscalls must be denied
+     */
+    status = __sys_autotest_clear_capa(CAP_DEV_DMA);
+    ASSERT_EQ(status, STATUS_OK);
+
+    status = __sys_dma_get_stream_info(dmah);
+    ASSERT_EQ(status, STATUS_DENIED);
+    status = __sys_dma_assign_stream(dmah);
+    ASSERT_EQ(status, STATUS_DENIED);
+    /* even on unasigned, capa check is done fist */
+    status = __sys_dma_start_stream(dmah);
+    ASSERT_EQ(status, STATUS_DENIED);
+
+    TEST_END();
+}
+#else
+static void test_capa_dma(void) {}
+#endif /* CONFIG_HAS_GPDMA */
+
+#endif /* CONFIG_TEST_CAPA */
+
+
+void test_capability(void)
+{
+#if CONFIG_TEST_CAPA
+    test_capa_cycles();
+    test_capa_shm();
+    test_capa_dma();
+#endif
+}
