@@ -84,50 +84,34 @@ impl SentryExchangeable for crate::systypes::shm::ShmInfo {
 /// SentryExchangeable trait implementation for Scalar types.
 ///
 macro_rules! impl_exchangeable {
-    ($t:ty) => {
-        #[allow(static_mut_refs)]
-        impl SentryExchangeable for $t {
-            fn from_kernel(&mut self) -> Result<Status, Status> {
-                // let (prefix, aligned, _) = unsafe { EXCHANGE_AREA.align_to::<$t>() };
-                // if !prefix.is_empty() {
-                //     return Err(Status::Critical);
-                // }
-
-                // let first = aligned.first().ok_or(Status::Invalid)?;
-                let mut u8_slice: &mut [u8] = unsafe {
-                    core::slice::from_raw_parts_mut(
-                        addr_of_mut!(*self) as *mut u8,
-                        core::mem::size_of::<$t>(),
-                    ) as &mut [u8]
-                };
-                copy_from_kernel(&mut u8_slice)
-            }
-
-            #[cfg(test)]
-            fn to_kernel(&self) -> Result<Status, Status> {
-                let (prefix, aligned, _) = unsafe { EXCHANGE_AREA.align_to_mut::<$t>() };
-                if !prefix.is_empty() {
-                    return Err(Status::Critical);
+    ($($t:ty),*) => {
+        $(
+            impl SentryExchangeable for $t {
+                fn from_kernel(&mut self) -> Result<Status, Status> {
+                    let (_, aligned, _) = unsafe { EXCHANGE_AREA.align_to_mut::<$t>() };
+                    let slot = aligned.first_mut().ok_or(Status::Invalid)?;
+                    *self = *slot;
+                    Ok(Status::Ok)
                 }
 
-                let slot = aligned.first_mut().ok_or(Status::Invalid)?;
-                *slot = *self;
-                Ok(Status::Ok)
-            }
+                #[cfg(test)]
+                fn to_kernel(&self) -> Result<Status, Status> {
+                    let (_, aligned, _) = unsafe { EXCHANGE_AREA.align_to_mut::<$t>() };
+                    let slot = aligned.first_mut().ok_or(Status::Invalid)?;
+                    *slot = *self;
+                    Ok(Status::Ok)
+                }
 
-            #[cfg(not(test))]
-            fn to_kernel(&self) -> Result<Status, Status> {
-                Err(Status::Invalid)
+                #[cfg(not(test))]
+                fn to_kernel(&self) -> Result<Status, Status> {
+                    Err(Status::Invalid)
+                }
             }
-        }
+        )*
     };
 }
 
-impl_exchangeable!(u8);
-impl_exchangeable!(*mut u8);
-impl_exchangeable!(u16);
-impl_exchangeable!(u32);
-impl_exchangeable!(u64);
+impl_exchangeable!(u8, u16, u32, u64, usize);
 
 // from-exchange related capacity to Exchange header
 impl ExchangeHeader {
@@ -365,6 +349,7 @@ where
 
 #[cfg(test)]
 mod tests {
+    #[allow(dead_code)]
     #[repr(align(8))]
     pub struct ExchangeAligned(pub [u8; 128]);
     #[unsafe(no_mangle)]
