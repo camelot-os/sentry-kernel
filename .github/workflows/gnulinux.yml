@@ -31,6 +31,7 @@ jobs:
             toolchain = [ 'gcc|12.3.Rel1', 'gcc|10.3-2021.07', 'gcc|13.2.Rel1', 'gcc|14.2.Rel1' ]
             config = [
               { 'name': 'nucleo_u5a5_autotest', 'cpu': 'cm33', 'triple': 'thumbv8m.main-none-eabi' },
+              { 'name': 'nucleo_u5a5_autotest_rs', 'cpu': 'cm33', 'triple': 'thumbv8m.main-none-eabi' },
               { 'name': 'nucleo_u5a5_autotest_harden', 'cpu': 'cm33', 'triple': 'thumbv8m.main-none-eabi' },
               { 'name': 'nucleo_u5a5_nooutput', 'cpu': 'cm33', 'triple': 'thumbv8m.main-none-eabi' },
               { 'name': 'nucleo_wb55_autotest', 'cpu': 'cm4', 'triple': 'thumbv7em-none-eabi' },
