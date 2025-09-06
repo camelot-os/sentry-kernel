@@ -3,8 +3,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 {% macro device_get_owner(device) -%}
-{% if device["outpost,owner"] -%}
-{{ "0x%x"|format(device["outpost,owner"]) }}
+{% if device["sentry,owner"] -%}
+{{ "0x%x"|format(device["sentry,owner"]) }}
 {% else -%}
 {{ "0x%x"|format(0) }}
 {% endif -%}
@@ -87,10 +87,10 @@ pub static DEVICE_NAMES: &[&str] = &[
 pub static SHMS: &[ShmInfo] = &[
 
 {%- for node in dts.get_mappable() -%}
-{% if node|has_property("outpost,shm") -%}
+{% if node|has_property("sentry,shm") -%}
     ShmInfo {
         handle: 0,
-        {% set label = node["outpost,label"] -%}
+        {% set label = node["sentry,label"] -%}
         label: {{ "0x%x"|format(label) }},
         {% if node.reg -%}
         base: {{ "0x%08x"|format(node.reg[0]) }},
@@ -99,7 +99,7 @@ pub static SHMS: &[ShmInfo] = &[
         base: 0,
         len: 0,
         {% endif -%}
-        perms: {% if node["outpost,perms"] %}{{ "0x%x"|format(node["outpost,perms"]) }}{% else -%}0{% endif -%},
+        perms: {% if node["sentry,perms"] %}{{ "0x%x"|format(node["sentry,perms"]) }}{% else -%}0{% endif -%},
     },
 {% endif -%}
 {%- endfor %}
@@ -107,7 +107,7 @@ pub static SHMS: &[ShmInfo] = &[
 
 pub static SHM_NAMES: &[&str] = &[
 {% for node in dts.get_mappable() -%}
-{%- if node|has_property("outpost,shm") %}
+{%- if node|has_property("sentry,shm") %}
     "{{ node.label }}",
 {%- endif %}
 {%- endfor %}

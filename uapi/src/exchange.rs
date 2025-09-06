@@ -81,6 +81,50 @@ impl SentryExchangeable for crate::systypes::shm::ShmInfo {
     }
 }
 
+/// SentryExchangeable trait implementation for dma::GpdmaStreamConfig.
+/// dma::GpdmaStreamConfig is a typical structure which is returned by the kernel to the
+/// userspace in order to delivers various DMA stream-related information to a given
+/// task that is using the corresponding DMA handle.
+///
+/// In test mode only, this structure can be written back to the Exchange Area.
+/// In production mode, the application can't write such a content to the exchange
+/// as the kernel as strictly no use of it.
+///
+impl SentryExchangeable for crate::systypes::dma::GpdmaStreamConfig {
+    #[allow(static_mut_refs)]
+    fn from_kernel(&mut self) -> Result<Status, Status> {
+        unsafe {
+            core::ptr::copy_nonoverlapping(
+                EXCHANGE_AREA.as_ptr(),
+                addr_of_mut!(*self) as *mut u8,
+                core::mem::size_of::<crate::systypes::dma::GpdmaStreamConfig>()
+                    .min(EXCHANGE_AREA_LEN),
+            );
+        }
+        Ok(Status::Ok)
+    }
+
+    #[cfg(test)]
+    #[allow(static_mut_refs)]
+    fn to_kernel(&self) -> Result<Status, Status> {
+        unsafe {
+            core::ptr::copy_nonoverlapping(
+                addr_of!(*self) as *const u8,
+                EXCHANGE_AREA.as_mut_ptr(),
+                core::mem::size_of::<crate::systypes::dma::GpdmaStreamConfig>()
+                    .min(EXCHANGE_AREA_LEN),
+            );
+        }
+        Ok(Status::Ok)
+    }
+
+    #[cfg(not(test))]
+    #[allow(static_mut_refs)]
+    fn to_kernel(&self) -> Result<Status, Status> {
+        Err(Status::Invalid)
+    }
+}
+
 /// SentryExchangeable trait implementation for Scalar types.
 ///
 macro_rules! impl_exchangeable {

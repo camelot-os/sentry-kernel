@@ -63,7 +63,7 @@ fn test_ipc_sendrecv() -> bool {
     let mut status;
     let mut handle: systypes::TaskHandle = 0;
     let timeout: i32 = 100;
-    let msg = b"hello it's autotest";
+    let msg = "hello it's autotest";
     let mut data = [0u8; CONFIG_SVC_EXCHANGE_AREA_LEN];
 
     status = syscall::get_process_handle(0xbabe);
@@ -74,12 +74,12 @@ fn test_ipc_sendrecv() -> bool {
     log_line!(USER_AUTOTEST_INFO, "sending IPC to myself");
 
     // Emit IPC
-    let _ = sentry_uapi::copy_to_kernel(&(msg.as_ptr() as *mut u8));
+    let _ = sentry_uapi::copy_to_kernel(&(msg.as_bytes()));
     status = syscall::send_ipc(handle, 20);
     ok &= check_eq!(status, systypes::Status::Ok);
     // Recive IPC
     status = syscall::wait_for_event(systypes::EventType::Ipc as u8, timeout);
-    ok &= sentry_uapi::copy_from_kernel(&mut data.as_mut_ptr()) == Ok(systypes::Status::Ok);
+    ok &= sentry_uapi::copy_from_kernel(&mut (&mut data[..])) == Ok(systypes::Status::Ok);
     assert_eq!(status, systypes::Status::Ok);
 
     let header = unsafe { &*(data.as_ptr() as *const systypes::ExchangeHeader) };
@@ -104,7 +104,7 @@ fn test_ipc_deadlock() -> bool {
     let mut ok = true;
     let mut handle: systypes::TaskHandle = 0;
     let status;
-    let msg = b"hello it's autotest";
+    let msg = "hello it's autotest";
 
     status = syscall::get_process_handle(0xbabe);
     let _ = sentry_uapi::copy_from_kernel(&mut handle);
@@ -112,7 +112,7 @@ fn test_ipc_deadlock() -> bool {
     assert_eq!(status, systypes::Status::Ok);
 
     log_line!(USER_AUTOTEST_INFO, "sending IPC to myself");
-    let _ = sentry_uapi::copy_to_kernel(&(msg.as_ptr() as *mut u8));
+    let _ = sentry_uapi::copy_to_kernel(&(msg.as_bytes()));
     ok &= check_eq!(syscall::send_ipc(handle, 20), systypes::Status::Ok);
     log_line!(
         USER_AUTOTEST_INFO,
