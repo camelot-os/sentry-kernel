@@ -15,7 +15,8 @@ concurrency:
 
 # using /home/build as home, as buildbot is using user build. Cache is still in /cache
 # This allows the usage of automated ssh key installation step
-
+# note: autotest-rs CI build is deactivated because of meson issue #14986
+# (rustc incapacity to differenciate build time vs link time dependencies)
 jobs:
   forge_matrix:
     runs-on: ubuntu-latest
@@ -43,7 +44,6 @@ jobs:
             toolchain = [ 'gcc|13.2.Rel1' ]
             config = [
               { 'name': 'nucleo_u5a5_autotest', 'cpu': 'cm33', 'triple': 'thumbv8m.main-none-eabi' },
-              { 'name': 'nucleo_u5a5_autotest_rs', 'cpu': 'cm33', 'triple': 'thumbv8m.main-none-eabi' },
               { 'name': 'nucleo_u5a5_autotest_harden', 'cpu': 'cm33', 'triple': 'thumbv8m.main-none-eabi' },
               { 'name': 'nucleo_wb55_autotest', 'cpu': 'cm4', 'triple': 'thumbv7em-none-eabi' },
               { 'name': 'stm32f429i_disc1_debug', 'cpu': 'cm4', 'triple': 'thumbv7em-none-eabi' },
