@@ -97,7 +97,8 @@ impl SentryExchangeable for crate::systypes::dma::GpdmaStreamConfig {
             core::ptr::copy_nonoverlapping(
                 EXCHANGE_AREA.as_ptr(),
                 addr_of_mut!(*self) as *mut u8,
-                core::mem::size_of::<crate::systypes::dma::GpdmaStreamConfig>().min(EXCHANGE_AREA_LEN),
+                core::mem::size_of::<crate::systypes::dma::GpdmaStreamConfig>()
+                    .min(EXCHANGE_AREA_LEN),
             );
         }
         Ok(Status::Ok)
@@ -110,7 +111,8 @@ impl SentryExchangeable for crate::systypes::dma::GpdmaStreamConfig {
             core::ptr::copy_nonoverlapping(
                 addr_of!(*self) as *const u8,
                 EXCHANGE_AREA.as_mut_ptr(),
-                core::mem::size_of::<crate::systypes::dma::GpdmaStreamConfig>().min(EXCHANGE_AREA_LEN),
+                core::mem::size_of::<crate::systypes::dma::GpdmaStreamConfig>()
+                    .min(EXCHANGE_AREA_LEN),
             );
         }
         Ok(Status::Ok)
