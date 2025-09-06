@@ -275,15 +275,15 @@ fn test_dma_get_info() -> bool {
     };
 
     ok &= check_eq!(syscall::get_shm_handle(shm), Status::Ok);
-    ok &= copy_from_kernel(&mut (&mut shm as *mut _ as *mut u8)) == Ok(Status::Ok);
+    ok &= copy_from_kernel(&mut shm) == Ok(Status::Ok);
     ok &= check_eq!(syscall::shm_get_infos(shm), Status::Ok);
-    ok &= copy_from_kernel(&mut (&mut infos as *mut _ as *mut u8)) == Ok(Status::Ok);
+    ok &= copy_from_kernel(&mut infos) == Ok(Status::Ok);
 
     ok &= check_eq!(syscall::get_dma_stream_handle(0x1), Status::Ok);
-    ok &= copy_from_kernel(&mut (&mut streamh as *mut _ as *mut u8)) == Ok(Status::Ok);
+    ok &= copy_from_kernel(&mut streamh) == Ok(Status::Ok);
 
     ok &= check_eq!(syscall::dma_get_stream_info(streamh), Status::Ok);
-    ok &= copy_from_kernel(&mut (&mut stream_info as *mut _ as *mut u8)) == Ok(Status::Ok);
+    ok &= copy_from_kernel(&mut stream_info) == Ok(Status::Ok);
 
     ok &= check_eq!(stream_info.stream, 112);
     ok &= check_eq!(stream_info.channel, 1);

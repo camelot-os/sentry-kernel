@@ -11,7 +11,7 @@
 {% endmacro -%}
 
 #![allow(non_upper_case_globals)]
-use sentry_uapi::systypes::dev::{DevInfo, InterruptInfo, IoInfo};
+use sentry_uapi::systypes::dev::{DevInfo};
 use sentry_uapi::systypes::shm::ShmInfo;
 
 /// Liste des identifiants symboliques des périphériques
