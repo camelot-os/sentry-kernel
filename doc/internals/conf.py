@@ -30,17 +30,17 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'sentry'
-copyright = u'2023, Ledger SA'
-author = u'Ledger'
+copyright = u'2025, H2Lab development team'
+author = u'H2Lab'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
 # built documents.
 #
 # The short X.Y version.
-version = u'1.0.0'
+version = u'0.4.2'
 # The full version, including alpha/beta/rc tags.
-release = u'1.0.0'
+release = u'0.4.2'
 
 language = None
 today_fmt = '%B %d, %Y'
