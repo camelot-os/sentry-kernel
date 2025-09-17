@@ -15,6 +15,8 @@ uapi_modules = files([
 
 subdir('arch')
 
+meson.add_devenv(kconfig_rust_env)
+
 uapi_lib = static_library(
     'uapi',
     sources : uapi_libfile,
@@ -23,6 +25,7 @@ uapi_lib = static_library(
     override_options: [uapi_rust_std],
     extra_files: uapi_modules,
     install: true,
+    dependencies: [kconfig_rust_dep],
 )
 
 uapi_rlib = static_library(

@@ -10,7 +10,9 @@ use crate::systypes::{ExchangeHeader, Status};
 use core::mem;
 use core::ptr::*;
 
-const EXCHANGE_AREA_LEN: usize = 128; // TODO: replace by CONFIG-defined value
+use kconfig;
+
+const EXCHANGE_AREA_LEN: usize = kconfig::get!("CONFIG_SVC_EXCHANGE_AREA_LEN", usize);
 
 /// The effective kernelspace/userspace exchange zone, set in a dedicated section
 ///

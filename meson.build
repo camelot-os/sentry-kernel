@@ -17,7 +17,7 @@
 project('sentry-kernel', 'c',
     meson_version: '>=1.4.0',
     default_options: [
-        'c_std=gnu11', 'cpp_std=gnu++20',
+        'c_std=gnu11', 'cpp_std=gnu++20', 'rust_std=2024',
         'warning_level=3', 'optimization=s',
         'default_library=static', 'b_pie=false', 'b_staticpic=false',
         'licensedir=share/info/sentry-kernel',
@@ -27,6 +27,18 @@ project('sentry-kernel', 'c',
     license: 'Apache-2.0',
     license_files: [ 'LICENSE' ],
 )
+
+with_uapi_opt = get_option('with_uapi')
+with_kernel_opt = get_option('with_kernel')
+with_idle_opt = get_option('with_idle')
+with_doc_opt = get_option('with_doc')
+with_tests = get_option('with_tests')
+with_tools = get_option('with_tools')
+with_proof = get_option('with_proof')
+
+if with_idle_opt or with_autotest
+    with_uapi_opt = true
+endif
 
 meson.add_dist_script('support/meson/version.sh', 'set-dist', meson.project_version())
 
@@ -43,9 +55,17 @@ ssmod = import('sourceset')
 py3 = pymod.find_installation('python3')
 
 kconfig_file = meson.current_source_dir() / 'Kconfig'
-kconfig_proj = subproject('kconfig', default_options: ['kconfig=@0@'.format(kconfig_file)])
+kconfig_proj = subproject('kconfig',
+    default_options: [
+        'kconfig=@0@'.format(kconfig_file),
+        'with_rlib=@0@'.format(with_uapi_opt)
+    ],
+)
+
 kconfig_h = kconfig_proj.get_variable('kconfig_h')
 kconfig_rustargs = kconfig_proj.get_variable('kconfig_rustargs')
+kconfig_rust_env = kconfig_proj.get_variable('kconfig_rust_env')
+kconfig_rust_dep = kconfig_proj.get_variable('kconfig_rust_dep')
 kconfig_data = kconfig_proj.get_variable('kconfig_data')
 
 # Testing high security flags of cross compiler. These are gcc 13-14 hardening flags.
@@ -171,18 +191,7 @@ dtsgen = generator(dts2src,
 
 # all sources are there, sentry source set is populated in each subdir
 
-with_uapi_opt = get_option('with_uapi')
-with_kernel_opt = get_option('with_kernel')
-with_idle_opt = get_option('with_idle')
-with_doc_opt = get_option('with_doc')
 with_autotest = kconfig_data.get('CONFIG_BUILD_TARGET_AUTOTEST', 0) == 1
-with_tests = get_option('with_tests')
-with_tools = get_option('with_tools')
-with_proof = get_option('with_proof')
-
-if with_idle_opt or with_autotest
-    with_uapi_opt = true
-endif
 
 # Keep subdir order as-is, do not sort them.
 # In order to guanrantee build order and reproducibility,
