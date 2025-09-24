@@ -286,6 +286,9 @@ spawn mode and the respawn mode.
         The system must panic on this event
       * **none**: the task has just terminated, nothing special to do
 
+.. todo::
+    Only **none** respawn mode is supported, others still need to be implemented.
+
 Action on termination
 """""""""""""""""""""
 
@@ -313,6 +316,9 @@ one set by the job at `sys_exit()` call time.
 
 If another fault rise while executing the `exitpoint` , the system panic for
 security.
+
+.. todo::
+    This still need to be implemented.
 
 .. warning::
    this function is NOT the atexit() POSIX quivalent, which is only for normal

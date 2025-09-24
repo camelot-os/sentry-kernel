@@ -269,6 +269,9 @@ DMA event are defined in the `dma.h` header, and respect the following potential
 .. todo::
   properly separate state (returned by get_info/get_status) from events
 
+.. todo::
+  DMA unassign still need to be implemented.
+
 About signals
 ^^^^^^^^^^^^^
 

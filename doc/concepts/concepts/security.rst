@@ -67,6 +67,10 @@ The consideration are the following:
         (at syscall time or schedule time) to check kernel-related content state (MPU configuration,
         hardware registers states, etc.) Any fail lead to a security `panic()`.
 
+    .. todo::
+        Post-mortem service, `_exit` exit point and watchdogs still need to be implemented.
+
+
    6. bootup and modes
 
       * Sentry build natively supports three modes: `debug`, `autotest` and `release`
