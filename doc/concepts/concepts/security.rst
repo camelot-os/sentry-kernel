@@ -115,7 +115,7 @@ This requires that the entrypoint respect the `_start` symbol as defined in
 
 .. warning::
   The `_start` implementation, while being a part of the overall runtime, is not
-  under Sentry responsability, but instead hosted in the userspace runtime, typically
+  under Sentry responsibility, but instead hosted in the userspace runtime, typically
   libShield for POSIX or Rust Sentry HAL
 
 About compile-time hardening

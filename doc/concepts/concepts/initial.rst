@@ -8,13 +8,13 @@ Initial conception model
 Micro-kernel design
 ^^^^^^^^^^^^^^^^^^^
 
-Sentry (and more generaly Camelot) is based on a micro-kernel model. Such a
+Sentry (and more generally Camelot) is based on a micro-kernel model. Such a
 model considers that the less the supervisor code handles, the better the overall
 architecture is enforced. To achieve that, this requires some specific considerations:
 
    * some devices (short-listed number) must still be under the control of the kernel,
      because their configuration is required at very early boot time or because their
-     access is particulary security critical
+     access is particularly security critical
    * all other devices are under the responsibility of userspace tasks, meaning that
      they will directly manage them as if they were a part of the kernel, but yet
      fully partitioned and executed in user mode
@@ -33,7 +33,7 @@ Application developer model
 In small embedded systems, nearly all services are related to a given hardware
 backend (graphical stack, cryptographic service, I/O stack, etc.).
 
-Although, value-added functions should be decorelated from hardware-related functions,
+Although, value-added functions should be decorrelated from hardware-related functions,
 while the latter is able to deliver an interface to such a hardware through an abstracted
 API.
 This model allows two things:
@@ -78,7 +78,7 @@ This is a voluntary model for two reasons:
 For a given application, only race conditions and performances analysis require testing
 on the real target, while interfaces are properly defined and tested.
 
-With this metodology achieved, the business logic developer does not require:
+With this methodology achieved, the business logic developer does not require:
 
    * Sentry-specific API expertise (Rust or POSIX API usage instead)
    * embedded system low-level expertise (platform bootup, memory map, device drivers design...)
@@ -89,7 +89,7 @@ In the same way, the business logic developer can:
    * natively test and execute business logic application out of the embedded system
    * natively debug business logic functional implementation (native gdb, easy IDE integration)
 
-The residual constraint is the analisys of the overall system performances,
+The residual constraint is the analysis of the overall system performances,
 that define how multiple tasks can interact with optimal performances and scheduling. The following
 chapter describes the Sentry tasking model, in order to respond to this part.
 
@@ -116,7 +116,7 @@ listens to various events:
    * signals
 
 The Sentry kernel may support different schedulers, but the target production scheduler is
-a Round-Robin multiqueue shheduler with quantum (RRMQ) management.
+a Round-Robin multi-queue scheduler with quantum (RRMQ) management.
 Such a scheduler supports multiple queues based on each task priority, and
 manipulate each job predefined quantum when the job is spawn, defining the
 duration of its CPU usage while elected.
@@ -140,7 +140,7 @@ Task terminology
 
 .. _task_terminology:
 
-A task (terminology homogeneous with the notion of *task sets* in real-time sytems),
+A task (terminology homogeneous with the notion of *task sets* in real-time systems),
 is a user application that is responsible for executing a given project-related function.
 To this task are associated unique properties:
 
@@ -159,13 +159,13 @@ Some other properties are dynamics:
      quantum for the current schedule period.
    * current frame pointer.
    * current task handle: forged from the task label and current rerun number, identify
-     uniquely the current job on the system. More informations about handles can be
+     uniquely the current job on the system. More information about handles can be
      found in a :ref:`dedicated chapter <handles>`.
 
 A task execute a single job, which is implemented as a processor thread. Depending on
-the way the developper consider its task, the job can typically be:
+the way the developer consider its task, the job can typically be:
 
-   * a one-time, infinite, preemptible job, typically listening on external events (behave as a service...)
+   * a one-time, infinite, preemptive job, typically listening on external events (behave as a service...)
    * a sporadic job, that has a fixed duration, but can be spawned by another task when needed (watchdogs, ephemeral function...)
    * a one-shot job, executed once per bootup, whatever the trigger is (garbage collector, etc.....)
 
@@ -174,7 +174,7 @@ Based on the previous, the following terminology is defined:
    1. A **task** is an autonomous userspace application with a dedicated set of capabilities, memory mapped and scheduling properties
       that implement a functional service. A task is associated to a *label*. There is a bijection between a task and a build-time ELF
       that correspond to a given application.
-   2. A **job** is a single instanciation of the task unique thread. The task can execute consecutively, periodicaly or sporadicaly
+   2. A **job** is a single instanciation of the task unique thread. The task can execute consecutively, periodically or sporadically
       its job(s), depending on the global system configuration. A job is associated to a *task handle*. There can be multiple consecutive
       jobs that correspond to the same task.
    3. A **label** is a 16 bit length identifier defined by the task developer, unique to the task in a project.
@@ -236,11 +236,11 @@ what resource is required by its own application using this hierarchy.
 
 .. note::
    There is no way, in userspace, to get back forged capabilities other than
-   through the usage of task CONFIG_ build time definitions of capabilities
+   through the usage of task CONFIG_ build time definitions of capabilities.
 
 .. note::
    the capabitility check is fully controlled by the security manager, using
-   the task metadatas
+   the task metadata.
 
 The following capabilities are defined in Sentry:
 
@@ -259,7 +259,7 @@ The following capabilities are defined in Sentry:
    * **CAP_MEM_SHM_OWN**: hold by Kernel shm objects that maintain the ownership
    * **CAP_MEM_SHM_USE**: hold by Kernel shm objects user subpart
    * **CAP_MEM_SHM_TRANSFER**: hold by Kernel shm objects transfer subpart
-   * **CAP_TIM_HPCHRONO**: hold by the cycle and nanosec level measurement kernel subsystem
+   * **CAP_TIM_HPCHRONO**: hold by the cycle and nanoseconds level measurement kernel subsystem
    * **CAP_CRY_KRNG**: hold by the kernel RNG subsystem
 
 .. note::
@@ -352,13 +352,13 @@ In Sentry, the entrypoint is called with the following prototype:
 
 .. note::
    the entrypoint symbol name is not a requirement but instead more a convention
-   accepted by all toolchains. Entrypoint symbol can be overriden by linker script
+   accepted by all toolchains. Entrypoint symbol can be overridden by linker script
    but the usage of `_start` symbol avoid this
 
 The given arguments are used in order to inform the userspace job of the current
 run identifier and to allow initialization of the stack smashing protection.
 
-Sentry is not resposible for upper layers implementation, although, a typical call
+Sentry is not responsible for upper layers implementation, although, a typical call
 stack model would be:
 
 .. code-block:: C
@@ -383,7 +383,7 @@ stack model would be:
       __builtin__unreachable()
    }
 
-In Sentry, the `_start` symbol is, in C, under the libshield responsability. It can
+In Sentry, the `_start` symbol is, in C, under the libshield responsibility. It can
 though be implemented in Rust or any language while the ABI is respected.
 
 No kernel-level or global job mapping requirement is needed when the job is being
@@ -394,7 +394,7 @@ executed, as the Sentry kernel:
    * zeriofy the `.svc_exchange` section
    * initialize any kernel-level checked canaries (sections barriers, etc.)
 
-Considering `_start` being a part of the runtime, this allows user developpers to
+Considering `_start` being a part of the runtime, this allows user developers to
 write userspace jobs as simple as:
 
 .. code-block:: C
@@ -420,7 +420,7 @@ or in Rust:
    }
 
 It is also possible to define a reactive job, when being started by another task. In that
-later case, the job is no more an infinite loop, but instead somehting like:
+later case, the job is no more an infinite loop, but instead something like:
 
 .. code-block:: Rust
 
@@ -499,10 +499,10 @@ given task. This metadata contains:
 
    * a 64bits magic number, to enable fast invalid or empty entry detection
    * a version, that correspond to the ABPI version of the task structure. This avoids potential
-     incompativility between the Sentry kernel release and the binary blob generated by the build
+     incompatibility between the Sentry kernel release and the binary blob generated by the build
      system
    * a task handle (`taskh_t`) that uniquely identify the task
-   * various scheduling informations (priority, quantum, ...) that define the task scheduling policy
+   * various scheduling information (priority, quantum, ...) that define the task scheduling policy
    * the task capabilities, defining the level of capacities of the task on the system
    * the task memory mapping (code address and size, data address and size, bss infos, heap infos, stack address
      and size) so that the kernel knows how to initiate the task, zeroify the bss, copy the data, etc.
@@ -526,5 +526,5 @@ region size and so on.
 
 
 .. note::
-  More informations on the way task memory mapping is done is described in
+  More information on the way task memory mapping is done is described in
   :ref:`Task Layout <task_layout>` chapter

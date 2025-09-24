@@ -35,7 +35,7 @@ elements:
      the volatile memory so that the task can manipulate its uninitialized variable properly
 
    * **heap**: when it exists, hold the allocator pool. In Sentry, the allocator is
-     fully userspace and under the responsability of the userspace library. Sentry only
+     fully userspace and under the responsibility of the userspace library. Sentry only
      delivers, if needed, an empty space to hold a memory pool. The heap size is defined
      at task configuration time.
 
@@ -50,20 +50,20 @@ the Sentry kernel do the following:
 
    * copy got section from flash to RAM
    * copy data section from flash to RAM
-   * zeroify SVC-Exchange aread
+   * zeroify SVC-Exchange area
    * zeroify bss area
 
 
 The usage of Global Offset Table in Sentry allows support for relocations, which
 gives the build system the ability to modify the position of application **after**
 the application compilation and link time. This also allows reusability of
-fully generic applications ELF files while the Sentry ABI retrocompatibility is
+fully generic applications ELF files while the Sentry ABI backward compatibility is
 kept (same major version).
 
 The task mapping is done based on the task metadata table forged by the build system
 and included in the final firmware binary at a predefined section address.
 
-As the task meatadata table is an external input content for Sentry kernel:
+As the task metadata table is an external input content for Sentry kernel:
 
    1. the task metadata table aim to be kept authenticated using HMAC field To
       validate the metadata authenticity
@@ -87,23 +87,23 @@ A typical application mapping at boot time is done as defined in the following:
 
 .. note::
     For more information on the way the build system manipulate applications, forge
-    metadata information or store metadata in ELF files, see Sentry buid system documentation
+    metadata information or store metadata in ELF files, see Sentry build system documentation
 
 Forging and holding task layout
 """""""""""""""""""""""""""""""
 
 The task layout is not also based on the task code and data section, but may also
-contain dynamic ressources such as:
+contain dynamic resources such as:
 
    * mappable devices
    * Shared memories
 
-These ressources are voluntary mapped and unmapped by the job during its execution,
-and their mapping must be kept uptodate during the overall job lifecycle.
+These resources are voluntary mapped and unmapped by the job during its execution,
+and their mapping must be kept up to date during the overall job lifecycle.
 
-In Sentry, all userspace ressources are considered in the same way as they consumme
+In Sentry, all userspace resources are considered in the same way as they consume
 a memory mapping. As a consequence, application data and code are also considered as
-(required and always mapped) ressources. The full list of ressources is then:
+(required and always mapped) resources. The full list of resources is then:
 
    * task code section in flash
    * task data section in SRAM
@@ -119,27 +119,27 @@ following:
    :widths: auto
    :align: center
 
-   +------------------------+
-   |  layout                |
-   +========================+
-   |  task ressource 0      |
-   +------------------------+
-   |  task ressource 1      |
-   +------------------------+
-   |  task ressource 2      |
-   +------------------------+
-   |  task ressource 3      |
-   +------------------------+
-   |  task ressource 4      |
-   +------------------------+
-   |  task ressource 5      |
-   +------------------------+
-   |  task ressource 6      |
-   +------------------------+
+   +-----------------------+
+   |  layout               |
+   +=======================+
+   |  task resource 0      |
+   +-----------------------+
+   |  task resource 1      |
+   +-----------------------+
+   |  task resource 2      |
+   +-----------------------+
+   |  task resource 3      |
+   +-----------------------+
+   |  task resource 4      |
+   +-----------------------+
+   |  task resource 5      |
+   +-----------------------+
+   |  task resource 6      |
+   +-----------------------+
 
 .. note::
   This example is based on a system that support at most six concurrently mapped userspace
-  ressources, including the task code and data section
+  resources, including the task code and data section
 
 Task layout is forged successively:
 
@@ -147,11 +147,11 @@ Task layout is forged successively:
      all corresponding regions (for MPU-based devices) are set automatically as invalid
 
    * at task metadata parsing time: when the task metadata is parsed, the `code` and `data`
-     ressources layout are added to the table, these two layouts are properly configured by
+     resources layout are added to the table, these two layouts are properly configured by
      the memory manager given the metadata information, with the help of the arch-specific
      memory support
 
-   * each time a userspace ressource is mapped or unmapped, the corresponding layout entry is
+   * each time a userspace resource is mapped or unmapped, the corresponding layout entry is
      added or clear to invalid.
 
 
@@ -200,5 +200,5 @@ To avoid any branches and checks, each time the CPU execute the handler mode:
    * the kernel execute the current handler (systick, syscall, etc.)
 
    * the kernel fully map the next task context. If a new task has been elected, any potential previously
-     mapped ressource (device, shm) is cleared, as all userspace regions are reconfigured.
+     mapped resource (device, shm) is cleared, as all userspace regions are reconfigured.
      If the task is kept the same, the task data section is naturally remapped through the task context map
