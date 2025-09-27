@@ -42,8 +42,8 @@ The event header format respects the following fields specification:
 Event data is then stored just after the event header.
 
 .. note::
-    Event header and data is kept is the native endianess, being little or big depending on
-    the current platform endianess. There is no endianess conversion when receiving events
+    Event header and data is kept is the native endianness, being little or big depending on
+    the current platform endianness. There is no endianness conversion when receiving events
 
 
 About shared memories
@@ -60,7 +60,7 @@ user-space/kernel-space exchange when transferring data between tasks. Il also a
 the exchange of potentially bigger data content than classic kernel-based IPC.
 
 Shared memory is built so that jobs can communicate without requiring the kernel to
-handle the cata copy. As a consequence, SHM exchanges is fully under the communicating
+handle the data copy. As a consequence, SHM exchanges is fully under the communicating
 job control, and do not use at all the kernel/task SVC_EXCHANGE data area, leaving
 synchronisation mechanisms to the userspace job.
 
@@ -268,6 +268,9 @@ DMA event are defined in the `dma.h` header, and respect the following potential
 
 .. todo::
   properly separate state (returned by get_info/get_status) from events
+
+.. todo::
+  DMA unassign still need to be implemented.
 
 About signals
 ^^^^^^^^^^^^^

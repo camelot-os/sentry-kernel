@@ -19,7 +19,7 @@ Adding a new board
 
 A new board in Sentry, while the board SoC is supported, should not require any
 source modification. The board configuration and pinout should be fully defined
-throug the board device tree, and thus being considered as an input information for
+through the board device tree, and thus being considered as an input information for
 the kernel while the corresponding SoC required platform and device drivers are
 supported.
 
