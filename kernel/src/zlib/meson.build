@@ -23,9 +23,11 @@ if kconfig_data.get('CONFIG_SECU_ENABLE_EACSL', 0) == 1
             e_acsl_harden,
             '-L',
             '-G', meson.get_compiler('c', native : false).cmd_array()[0],
+            '--no-assert-print-data',
+            '--no-trace',
+            '-M',
             '--extra-cpp-args=-std=c11,-I' + meson.project_source_root() + '/' + 'kernel/include' + ',-I'  + meson.project_source_root() + '/uapi/include',
             '-o', '@OUTPUT@',
-            '--rte=pointer-call,mem',
             '@INPUT@',
         ],
     )
