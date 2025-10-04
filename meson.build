@@ -179,6 +179,7 @@ with_autotest = kconfig_data.get('CONFIG_BUILD_TARGET_AUTOTEST', 0) == 1
 with_tests = get_option('with_tests')
 with_tools = get_option('with_tools')
 with_proof = get_option('with_proof')
+with_eacsl = kconfig_data.get('CONFIG_SECU_ENABLE_EACSL', 0) == 1
 
 if with_idle_opt or with_autotest
     with_uapi_opt = true
@@ -242,6 +243,7 @@ summary(
         'doc' : with_doc_opt,
         'unit tests': with_tests,
         'formal proof': with_proof,
+        'e-ACSL runtime asertions': with_eacsl,
     },
     bool_yn: true,
     section: 'Targets',
