@@ -105,6 +105,8 @@ kstatus_t mgr_task_get_state(taskh_t t, job_state_t *state);
 
 kstatus_t mgr_task_get_metadata(taskh_t t, const task_meta_t **tsk_meta);
 
+kstatus_t mgr_task_get_domain(taskh_t t, uint8_t *domain);
+
 kstatus_t mgr_task_get_handle(uint32_t label, taskh_t *handle);
 
 kstatus_t mgr_task_set_sp(taskh_t t, stack_frame_t *newsp);
