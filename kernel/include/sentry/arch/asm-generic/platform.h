@@ -11,6 +11,7 @@
 
 #if defined(__arm__) || defined(__FRAMAC__)
 #include <sentry/arch/asm-cortex-m/platform.h>
+#include <sentry/arch/asm-cortex-m/dwt.h>
 #elif defined(__x86_64__)
 #include <sentry/arch/asm-x86_64/platform.h>
 #elif defined(CONFIG_ARCH_RV32)

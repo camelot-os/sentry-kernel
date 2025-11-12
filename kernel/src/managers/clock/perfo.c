@@ -3,11 +3,7 @@
 
 #include <inttypes.h>
 
-#if defined(__arm__)
-/* need DWT backend for cycle count */
-#include <sentry/arch/asm-cortex-m/core.h>
-#include <sentry/arch/asm-cortex-m/dwt.h>
-#endif
+#include <sentry/arch/asm-generic/platform.h>
 #include <bsp/drivers/clk/rcc.h>
 
 static uint32_t perfo_cycle_per_usec;
