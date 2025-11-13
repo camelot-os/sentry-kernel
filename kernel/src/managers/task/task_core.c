@@ -287,6 +287,24 @@ end:
     return status;
 }
 
+/**
+ * @fn return task domain for a given task handler
+ */
+kstatus_t mgr_task_get_domain(taskh_t t, uint8_t *domain)
+{
+    kstatus_t status = K_ERROR_INVPARAM;
+    task_t * tsk = task_get_from_handle(t);
+    if (unlikely(tsk == NULL || domain == NULL)) {
+        goto end;
+    }
+    /*@ assert \valid_read(tsk->metadata); */
+    /*@ assert \valid(domain); */
+    *domain = tsk->metadata->domain;
+    status = K_STATUS_OKAY;
+end:
+    return status;
+}
+
 /*
  * Forge a stack context
  */
