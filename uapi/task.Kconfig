@@ -26,7 +26,16 @@ config TASK_QUANTUM
 	int "Quantum"
 	range 0 255
 	help
-	  Task quantum, number of HZ allowed contigous periods
+	  Task quantum, number of HZ allowed contiguous periods
+
+config TASK_DOMAIN
+	int "Domain"
+	range 0 255
+	default 0
+	help
+	  Task domain.
+	  Inter-domain partitioning is made, as a first implementation, to be
+	  strictly separated (no inter-domains exchanges, cache cleaning).
 
 config TASK_AUTO_START
 	bool "Auto start"
