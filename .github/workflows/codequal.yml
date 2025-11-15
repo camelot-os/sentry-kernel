@@ -63,7 +63,7 @@ jobs:
         run: |
           defconfig configs/stm32f429i_disc1_debug_defconfig
       - name: Install Build Wrapper
-        uses: SonarSource/sonarqube-scan-action/install-build-wrapper
+        uses: SonarSource/sonarqube-scan-action/install-build-wrapper@v6
       - name: Meson Build
         uses: camelot-os/action-meson@v1
         with:
