@@ -5,9 +5,8 @@ name: Sentry kernel code quality analysis using SonarCloud
 
 on:
   push:
-  pull_request:
     branches:
-    - main
+      - main
   workflow_dispatch:
 
 jobs:
@@ -92,3 +91,4 @@ jobs:
             -Dsonar.scm.provider=git
             -Dsonar.coverageReportPaths=builddir/sonarqube.xml
             -Dsonar.verbose=true
+            -Dsonar.cfamily.compile-commands=builddir/compile_commands.json
