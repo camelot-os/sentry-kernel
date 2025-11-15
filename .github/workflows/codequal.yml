@@ -16,6 +16,8 @@ jobs:
       run:
         shell: bash
     runs-on: ubuntu-latest
+    env:
+      BUILD_WRAPPER_OUT_DIR: ${{ github.workspace }}/bw-output
     container:
       image: 'mesonbuild/ubuntu-rolling'
     steps:
@@ -72,8 +74,21 @@ jobs:
           options: '-Dconfig=.config -Ddts=dts/examples/stm32f429i_disc1_debug.dts -Ddts-include-dirs=dts -Dwith_tests=true -Db_coverage=true -Doptimization=0'
       - name: Run Build Wrapper
         run: |
+          mkdir -p ${{ env.BUILD_WRAPPER_OUT_DIR }}
           build-wrapper-linux-x86-64 --out-dir ${{ env.BUILD_WRAPPER_OUT_DIR }} ninja -C builddir test sonar
       - name: SonarQube Scan
         uses: SonarSource/sonarqube-scan-action@v6
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        with:
+          args: >
+            -Dsonar.organization=camelot-os
+            -Dsonar.projectName=sentry-kernel
+            -Dsonar.projectKey=camelot-os_sentry-kernel
+            -Dsonar.sources=kernel/src,kernel/include
+            -Dsonar.exclusions=subprojects
+            -Dsonar.working.directory=.sonar
+            -Dsonar.sourceEncoding=UTF-8
+            -Dsonar.scm.provider=git
+            -Dsonar.coverageReportPaths=builddir/sonarqube.xml
+            -Dsonar.verbose=true
