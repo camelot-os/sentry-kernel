@@ -23,13 +23,13 @@ jobs:
       - name: XXX git permission quirk XXX
         run: |
           git config --global --add safe.directory $GITHUB_WORKSPACE
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0
           fetch-tags: true
           set-safe-directory: true
       - name: Clone cross-files
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           ref:  'main'
           repository: 'camelot-os/meson-cross-files'
