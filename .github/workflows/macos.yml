@@ -27,7 +27,7 @@ jobs:
       - name: XXX git permission quirk XXX
         run: |
           git config --global --add safe.directory $GITHUB_WORKSPACE
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0
           fetch-tags: true
@@ -45,7 +45,7 @@ jobs:
     # https://github.com/actions/setup-python/issues/58
       - run: brew install dtc libssh2 curl srecord rustup
       - name: Clone cross-files
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           ref:  'main'
           repository: 'camelot-os/meson-cross-files'
