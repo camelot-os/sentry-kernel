@@ -64,7 +64,7 @@ jobs:
         run: |
           defconfig configs/stm32f429i_disc1_debug_defconfig
       - name: Install Build Wrapper
-        uses: SonarSource/sonarqube-scan-action/install-build-wrapper@v6
+        uses: SonarSource/sonarqube-scan-action/install-build-wrapper@v7
       - name: Meson Build
         uses: camelot-os/action-meson@v1
         with:
@@ -76,7 +76,7 @@ jobs:
           mkdir -p ${{ env.BUILD_WRAPPER_OUT_DIR }}
           build-wrapper-linux-x86-64 --out-dir ${{ env.BUILD_WRAPPER_OUT_DIR }} ninja -C builddir test sonar
       - name: SonarQube Scan
-        uses: SonarSource/sonarqube-scan-action@v6
+        uses: SonarSource/sonarqube-scan-action@v7
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         with:
