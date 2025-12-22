@@ -20,6 +20,7 @@ global_rust_build_args = [
     '@' + fs.parent(kconfig_rustargs) / fs.name(kconfig_rustargs),
     target_rustargs,
     '-C', 'lto=true', '-C', 'relocation-model=pic',
+    '-C', 'embed-bitcode=true',
     '-C', 'link-args=--emit-relocs',
 ]
 
