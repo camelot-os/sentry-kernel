@@ -215,7 +215,7 @@ if with_sbom_opt
   if cyclonedx_py.found()
 
     fs = import('fs')
-    fs.copyfile('requirements.txt'),
+    fs.copyfile('requirements.txt')
 
     cyclonedx_sbom = custom_target(
     output: 'sentry-pydeps.json',
