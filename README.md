@@ -300,3 +300,22 @@ The ninja targets associated to these documentations are `doc-concepts` (`doc-co
 Generated documentation is in the `$BUILDDIR/doc` directory, and are also deployed in `/usr/share/doc` in case of the usage of the `install` target.
 
 More information about the various concepts of the Sentry-kernel and its build system can be found in the `concepts` documentation.
+
+## SBOM support
+
+Sentry kernel depends on python tooling for local sources (doc, etc.) manipulation, and on some projects for code generation (kconfig and dts parsing, etc.)
+In order to get back complete SBOMs that list all these tools, the Sentry kernel support the `with_sbom` option (default: false).
+
+When enabled, two files are generated when building the kernel sdist tarball using the `meson install` target:
+
+   * `sentry-pydeps.json`, in CycloneDX format, that hold all the python dependencies used at build and install time
+   * `sentry-deps.json`, in meson Manifest format, that hold all the used subprojects name, version and licence
+
+These files are deployed in the `datadir` directory of the sdist install path (default beingg `usr/local/share`).
+
+Building the sdist directory can be made using such standard meson command:
+
+```
+meson install --destdir ./sdist -C <builddir>
+```
+

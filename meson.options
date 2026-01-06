@@ -8,6 +8,7 @@ option('with_kernel', type: 'boolean', value: true, description: 'Sentry kernel 
 option('with_uapi', type: 'boolean', value: true, description: 'Sentry UAPI library is built')
 option('with_idle', type: 'boolean', value: true, description: 'Sentry Idle task is built')
 option('with_tools', type: 'boolean', value: true, description: 'compile naitive tools')
+option('with_sbom', type: 'boolean', value: false, description: 'generate SBOMs for python and subprojects')
 option('config', type: 'string', description: 'Configuration file to use', yield: true)
 option('dts', type: 'string', description: 'Top level DTS file', yield: true)
 option('dts-include-dirs', type: 'array', value: ['dts'], yield: true,

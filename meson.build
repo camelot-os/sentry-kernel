@@ -179,6 +179,7 @@ with_autotest = kconfig_data.get('CONFIG_BUILD_TARGET_AUTOTEST', 0) == 1
 with_tests = get_option('with_tests')
 with_tools = get_option('with_tools')
 with_proof = get_option('with_proof')
+with_sbom_opt = get_option('with_sbom')
 
 if with_idle_opt or with_autotest
     with_uapi_opt = true
@@ -203,6 +204,35 @@ subdir('autotest')
 subdir('kernel')
 subdir('tools')
 subdir('doc')
+
+if with_sbom_opt
+  # install python (toolchain) dependencies and kernel build related dependencies
+  # to datadir (default being usr/local/share/) at meson install time
+
+  # install python dependencies into sentry-pydeps.json (CycloneDX format)
+  cyclonedx_py = find_program('cyclonedx-py', required: false, disabler: true)
+
+  if cyclonedx_py.found()
+
+    fs = import('fs')
+    fs.copyfile('requirements.txt')
+
+    cyclonedx_sbom = custom_target(
+    output: 'sentry-pydeps.json',
+    command: [
+        cyclonedx_py,
+        'requirements'
+    ],
+    capture: true,
+    build_by_default: true,
+    install: true,
+    install_dir: get_option('datadir'),
+    )
+  endif
+  # install meson dependencies in meson manifest format, in sentry-deps.json
+  meson.install_dependency_manifest(join_paths(get_option('datadir'), 'sentry-deps.json'))
+  
+endif
 
 if with_uapi_opt
 rust_toolchain = configure_file(
@@ -242,6 +272,7 @@ summary(
         'doc' : with_doc_opt,
         'unit tests': with_tests,
         'formal proof': with_proof,
+        'sbom': with_sbom_opt,
     },
     bool_yn: true,
     section: 'Targets',
