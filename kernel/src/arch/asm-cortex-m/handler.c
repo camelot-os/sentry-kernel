@@ -84,8 +84,13 @@ __STATIC_FORCEINLINE stack_frame_t *may_panic(stack_frame_t *frame) {
          */
         pr_debug("[%lx] Userspace Oops!", tsk);
         mgr_task_set_state(tsk, JOB_STATE_FAULT);
+#ifdef CONFIG_SECU_RESET_ON_USERFAULT
+        /* force reset on userspace fault, be cautious as it can lead to DoS */
+        system_reset();
+#else
         tsk = sched_elect();
         mgr_task_get_sp(tsk, &newframe);
+#endif
     } else {
         __do_panic();
         __builtin_unreachable();

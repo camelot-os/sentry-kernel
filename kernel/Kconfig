@@ -170,5 +170,16 @@ config SECU_ENFORCE_FAULT_INJECTION
 	  paths with supplementary checks that whould have been dead
 	  code in nominal execution
 
+config SECU_RESET_ON_USERFAULT
+	bool "Reset system on userspace fault"
+	default n
+	---help---
+	  If any user-space task generates a fault (e.g. invalid memory access,
+	  illegal instruction, division by zero, etc), the whole system is reset for
+	  security purposes.
+	  Note that this may lead to denial of service if a faulty task is
+	  continuously executed. In the same time, it would avoid potential
+	  exploitation of such faults to escalate privileges or to leak
+	  sensitive data.
 
 endmenu
