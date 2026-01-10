@@ -1,4 +1,5 @@
-[wrap-git]
-url = https://github.com/camelot-os/camelot-kconfig.git
-revision = main
-depth = 1
+[wrap-file]
+directory = kconfig-v1.0.0
+source_url = https://github.com/camelot-os/camelot-kconfig/releases/download/v1.0.0/kconfig-v1.0.0.tar.xz
+source_filename = kconfig-v1.0.0.tar.xz
+source_hash = 2835f08e5e760792047d69f9afe9eed6ad6078158539180d62214079a2b88e1a
