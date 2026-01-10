@@ -15,7 +15,7 @@
 # limitations under the License.
 
 project('sentry-kernel', 'c',
-    meson_version: '>=1.4.0',
+        version: '>=1.4.0',
     default_options: [
         'c_std=gnu11', 'cpp_std=gnu++20',
         'warning_level=3', 'optimization=s',
@@ -148,12 +148,12 @@ endif
 # meson svd subproject and associated variables
 # XXX: Using a default option here may lead to weird results if one changes the kconfig
 # may be use a generator and process in the top level project ?!?
-meson_svd_proj = subproject('meson-svd',  default_options: 'svd=@0@'.format(kconfig_data.get_unquoted('CONFIG_ARCH_SOCNAME').to_lower()))
+kadoc_proj = subproject('kadoc',  default_options: 'svd=@0@'.format(kconfig_data.get_unquoted('CONFIG_ARCH_SOCNAME').to_lower()))
 
-peripheral_defs_in = meson_svd_proj.get_variable('peripheral_defs_in')
-svd_json = meson_svd_proj.get_variable('svd_json')
-jinja_cli = meson_svd_proj.get_variable('jinja_cli')
-layout_in = meson_svd_proj.get_variable('layout_in')
+peripheral_defs_in = kadoc_proj.get_variable('peripheral_defs_in')
+svd_json = kadoc_proj.get_variable('svd_json')
+jinja_cli = kadoc_proj.get_variable('jinja_cli')
+layout_in = kadoc_proj.get_variable('layout_in')
 
 devicetree_proj = subproject('devicetree', default_options:['install=true'])
 dts_in = devicetree_proj.get_variable('devicetree_dts_in')
@@ -231,7 +231,7 @@ if with_sbom_opt
   endif
   # install meson dependencies in meson manifest format, in sentry-deps.json
   meson.install_dependency_manifest(join_paths(get_option('datadir'), 'sentry-deps.json'))
-  
+
 endif
 
 if with_uapi_opt
