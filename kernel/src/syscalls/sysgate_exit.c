@@ -23,13 +23,33 @@ stack_frame_t *gate_exit(const stack_frame_t *frame, uint32_t result)
             panic(PANIC_KERNEL_INVALID_MANAGER_RESPONSE);
         }
     } else {
+        const task_meta_t * meta = NULL;
         if (unlikely(mgr_task_set_state(current, JOB_STATE_FINISHED) != K_STATUS_OKAY)) {
             panic(PANIC_KERNEL_INVALID_MANAGER_RESPONSE);
+        }
+        /* based on task exit mode, decide what to do */
+        if (unlikely(mgr_task_get_metadata(current, &meta) != K_STATUS_OKAY)) {
+            panic(PANIC_KERNEL_INVALID_MANAGER_RESPONSE);
+        }
+        if (unlikely(meta->flags.exit_mode == JOB_FLAG_EXIT_PANIC)) {
+            /* if this job is flagged to panic on exit, panic as requested */
+            panic(PANIC_HARDWARE_UNEXPECTED_MODIFICATION);
+        }
+        /*
+         * requiring restart job are reswpaned (with a newly created handle)
+         *  Note that this job is scheduled, but not automatically elected
+         */
+        if (meta->flags.exit_mode == JOB_FLAG_EXIT_RESTART) {
+            if (unlikely(task_respawn_job(current) != K_STATUS_OKAY)) {
+                panic(PANIC_KERNEL_INVALID_MANAGER_RESPONSE);
+            }
         }
     }
     /* no syscall return code here, as the job is **never** reelected.
      * in order to ensure that such reelection do not happen, the task syscall return
      * code value is set to NON_SENSE, generating a voluntary panic() if elected again
+     * For just respawned jobs, overall user data has been remapped, so this sysreturn value
+     * will be automatically cleared during the first system call made by the newly respawned job
      */
     mgr_task_set_sysreturn(current, STATUS_NON_SENSE);
     /* now electing a new job, sched_elect() never fails */

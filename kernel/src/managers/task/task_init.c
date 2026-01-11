@@ -1,4 +1,5 @@
 // SPDX-FileCopyrightText: 2023 Ledger SAS
+// SPDX-FileCopyrightText: 2026 H2Lab Development Team
 // SPDX-License-Identifier: Apache-2.0
 
 /**
@@ -474,6 +475,53 @@ static inline kstatus_t task_init_finalize(void)
     ctx.state = TASK_MANAGER_STATE_READY;
 err:
     return ctx.status;
+}
+
+/**
+ * \brief respawn a previously exited job,
+ */
+kstatus_t task_respawn_job(taskh_t task_handle)
+{
+    kstatus_t status = K_ERROR_UNKNOWN;
+    task_t *task_ctx = task_get_from_handle(task_handle);
+    if (unlikely(task_ctx == NULL)) {
+        pr_err("invalid task context");
+        status = K_ERROR_NOENT;
+        goto end;
+    }
+    if (task_ctx->state != JOB_STATE_FINISHED) {
+        /* NOTE: a faulting job cannot be respawned, only a properly finished one can */
+        status = K_ERROR_BADSTATE;
+        goto end;
+    }
+    status = task_init_discover_sanitation(task_ctx->metadata);
+    if (unlikely(status != K_STATUS_OKAY)) {
+        goto end;
+    }
+    status = task_init_check_meta_integrity(task_ctx->metadata);
+    if (unlikely(status != K_STATUS_OKAY)) {
+        goto end;
+    }
+    status = task_init_check_tsk_integrity(task_ctx->metadata);
+    if (unlikely(status != K_STATUS_OKAY)) {
+        goto end;
+    }
+    status = task_init_initiate_localinfo(task_ctx->metadata, &task_ctx);
+    if (unlikely(status != K_STATUS_OKAY)) {
+        goto end;
+    }
+    /* from now on, the task has a new handle associated to the newly created job */
+    status = task_init_map(task_ctx);
+    if (unlikely(status != K_STATUS_OKAY)) {
+        goto end;
+    }
+    status = task_init_schedule(task_ctx);
+    if (unlikely(status != K_STATUS_OKAY)) {
+        goto end;
+    }
+    status = K_STATUS_OKAY;
+end:
+    return status;
 }
 
 /**
