@@ -286,8 +286,11 @@ spawn mode and the respawn mode.
         The system must panic on this event
       * **none**: the task has just terminated, nothing special to do
 
-.. todo::
-    Only **none** respawn mode is supported, others still need to be implemented.
+Note that giving the **panic** mode to a job means that its termination generates a system panic, which can lead
+to a deny of service impact. Only trusted tasks (such as security tasks) should be allowed to such a behavior.
+
+Only task that properly finishes can be respawned when the respawn mode is set to **restart**. Abnormal termination
+do not permit automatic respawn.
 
 Action on termination
 """""""""""""""""""""
