@@ -36,6 +36,9 @@
 /** MPU Access Permission privileged/unprivileged read-only access */
 #define MPU_REGION_PERM_RO ARM_MPU_AP_(_MPU_PERM_RO, _MPU_PERM_NP)
 
+#define MPU_REGION_ALIGN 32U
+#define MPU_REGION_ALIGN_MASK (MPU_REGION_ALIGN - 1)
+
 /*
  * XXX:
  *  For armv8, memory attribute are shared between region and programmed to
@@ -124,6 +127,37 @@
   (((XN) << MPU_RBAR_XN_Pos) & MPU_RBAR_XN_Msk))
 
 #define MPU_FASTLOAD_ALIGNED 1
+
+
+/*@
+
+  predicate aligned_32(ℤ addr) =
+    (addr & MPU_REGION_ALIGN_MASK) == 0;
+
+  predicate valid_mpu_region(ℤ base, ℤ limit) =
+       aligned_32(base)
+    && aligned_32(limit)
+    && limit >= base
+    && ((limit - base + 1) % MPU_REGION_ALIGN == 0);
+
+  predicate valid_mpu_regions{L}(ARM_MPU_Region_t *regions, integer n) =
+        \forall integer i;
+            0 <= i < n ==>
+            valid_mpu_region(regions[i].RBAR & MPU_RBAR_BASE_Msk,
+                             regions[i].RLAR & MPU_RLAR_LIMIT_Msk);
+
+  predicate non_empty_region(ℤ base, ℤ limit) =
+    (limit - base + 1) >= MPU_REGION_ALIGN;
+
+  predicate disjoint(ARM_MPU_Region_t r1, ARM_MPU_Region_t r2) =
+      r1.RBAR <= r2.RLAR || r2.RBAR <= r1.RLAR;
+
+  predicate regions_disjoint{L}(ARM_MPU_Region_t *regions, integer n) =
+      \forall integer i, j;
+        0 <= i < n && 0 <= j < n && i != j ==>
+          disjoint(regions[i], regions[j]);
+*/
+
 
 /*@
   assigns (*(MPU_Type*)MPU_BASE);
@@ -218,6 +252,8 @@ __STATIC_FORCEINLINE kstatus_t mpu_forge_resource(const struct mpu_region_desc *
 /*@
   requires \valid_read(resource + (0 .. num_resources-1));
   requires ((first_region_number + num_resources) <= CONFIG_NUM_MPU_REGIONS);
+  requires valid_mpu_regions(resource, num_resources);
+  requires regions_disjoint(resource, num_resources);
   assigns (*(MPU_Type*)MPU_BASE);
  */
 __STATIC_FORCEINLINE void __mpu_fastload(
@@ -226,6 +262,7 @@ __STATIC_FORCEINLINE void __mpu_fastload(
     uint8_t num_resources
 )
 {
+
     ARM_MPU_Load(first_region_number, resource, num_resources);
 }
 
