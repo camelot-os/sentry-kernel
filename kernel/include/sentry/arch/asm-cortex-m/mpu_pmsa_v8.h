@@ -237,6 +237,36 @@ __STATIC_FORCEINLINE kstatus_t mpu_forge_resource(const struct mpu_region_desc *
     return status;
 }
 
+
+/**
+ * Compare two ARMv8-M MPU regions defined by RBAR/RLAR
+ *
+ * @return true if regions overlap, false otherwise
+ */
+static inline secure_bool_t mpu_regions_overlap(layout_resource_t reg1, layout_resource_t reg2)
+{
+    secure_bool_t overlap = SECURE_TRUE;
+    uint32_t base_a  = reg1.RBAR & MPU_RBAR_BASE_Msk;
+    uint32_t limit_a = reg1.RLAR & MPU_RBAR_BASE_Msk;
+
+    uint32_t base_b  = reg2.RBAR & MPU_RBAR_BASE_Msk;
+    uint32_t limit_b = reg2.RLAR & MPU_RBAR_BASE_Msk;
+
+    /* Invalid or disabled regions never overlap */
+    if (limit_a < base_a || limit_b < base_b) {
+        overlap = SECURE_FALSE;
+    }
+
+    /* Convert inclusive limit to exclusive end */
+    uint64_t end_a = (uint64_t)limit_a + MPU_REGION_ALIGN;
+    uint64_t end_b = (uint64_t)limit_b + MPU_REGION_ALIGN;
+
+    if ((base_a >= end_b) || (base_b >= end_a)) {
+        overlap = SECURE_FALSE;
+    }
+    return overlap;
+}
+
 /**
  * @brief PMSAv8 MPU region fastload
  *

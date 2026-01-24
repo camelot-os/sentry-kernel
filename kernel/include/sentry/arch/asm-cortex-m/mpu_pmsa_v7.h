@@ -129,6 +129,49 @@ __STATIC_FORCEINLINE kstatus_t mpu_forge_unmapped_ressource(uint8_t id, layout_r
     return status;
 }
 
+
+/**
+ * Compare two ARMv7-M MPU regions defined by RBAR/RASR
+ *
+ * @return true if regions overlap, false otherwise
+ */
+static inline secure_bool_t mpu_regions_overlap(layout_resource_t reg1, layout_resource_t reg2)
+{
+    secure_bool_t overlap = SECURE_TRUE;
+    /* Disabled regions never overlap */
+    if (!(reg1.RASR & MPU_CTRL_ENABLE_Msk) ||
+        !(reg2.RASR & MPU_CTRL_ENABLE_Msk)) {
+            overlap = SECURE_FALSE;
+            goto end;
+    }
+
+    uint32_t base_a = reg1.RBAR & MPU_RBAR_ADDR_Msk;
+    uint32_t base_b = reg2.RBAR & MPU_RBAR_ADDR_Msk;
+
+    uint32_t size_field_a = (reg1.RASR & MPU_RASR_SIZE_Msk) >> MPU_RASR_SIZE_Pos;
+    uint32_t size_field_b = (reg2.RASR & MPU_RASR_SIZE_Msk) >> MPU_RASR_SIZE_Pos;
+
+    /* SIZE < 4 is UNPREDICTABLE per ARM ARM (minimum is 32 bytes) */
+    if (size_field_a < 4 || size_field_b < 4) {
+        /* catching error, yet not semantically correct */
+        overlap = SECURE_TRUE;
+    }
+
+    uint64_t size_a = 1ULL << (size_field_a + 1);
+    uint64_t size_b = 1ULL << (size_field_b + 1);
+
+    uint64_t end_a = (uint64_t)base_a + size_a;
+    uint64_t end_b = (uint64_t)base_b + size_b;
+
+    if ((base_a >= end_b) || (base_b >= end_a)) {
+        overlap = SECURE_FALSE;
+    }
+end:
+    return overlap;
+}
+
+
+
 /*@
   requires \valid_read(desc);
   requires \valid(resource);
@@ -207,6 +250,8 @@ __STATIC_FORCEINLINE uint32_t __mpu_get_resource_base_address(const layout_resou
 {
     return resource->RBAR & MPU_RBAR_ADDR_Msk;
 }
+
+
 
 /**
  * @brief PMSAv7 MPU region size alignment

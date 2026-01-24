@@ -797,6 +797,27 @@ kstatus_t mgr_task_add_resource(taskh_t t, uint8_t resource_id, layout_resource_
         goto err;
     }
 
+    /**
+     * before adding a new ressource to a given app context, we ensure that
+     * there is no verlap between the new ressource and already existing ones,
+     * that may lead to partial or full overlapping that impact the W^X policy
+     * enforcement.
+     * The check is done at ressource mapping time, in order to avoid overhead
+     * at task switching time.
+     * Note that this call is made during the sys_map() syscall family.
+     * The demonstration is enforced using ACSL annotations in architecture backend,
+     * and demonstrated using a specialy crafted frama-C entrypoint.
+     * Note: layout are u64 content, which is passed as value, not as pointer, to reduce
+     * resolution overhead.
+     */
+    for (uint8_t idx = 0; idx < TASK_MAX_RESSOURCES_NUM; ++idx) {
+        if (unlikely(mpu_regions_overlap(cell->layout[idx], resource))) {
+            status = K_ERROR_INVPARAM;
+            goto err;
+        }
+    }
+
+    /* Once the mapping is demonstrated valid, we can add the ressource */
     memcpy(&cell->layout[resource_id], &resource, sizeof(layout_resource_t));
     status = K_STATUS_OKAY;
 err:
