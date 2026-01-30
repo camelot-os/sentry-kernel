@@ -134,11 +134,17 @@
   predicate aligned_32(ℤ addr) =
     (addr & MPU_REGION_ALIGN_MASK) == 0;
 
+    predicate mpu_is_empty_region(ARM_MPU_Region_t r1) =
+      r1.RBAR == 0 && r1.RLAR == 0;
+
   predicate valid_mpu_region(ℤ base, ℤ limit) =
-       aligned_32(base)
-    && aligned_32(limit)
-    && limit >= base
-    && ((limit - base + 1) % MPU_REGION_ALIGN == 0);
+    ((base == 0 && limit == 0) ||
+    (
+        aligned_32(base)
+        && aligned_32(limit)
+        && limit >= base
+        && ((limit - base + 1) % MPU_REGION_ALIGN == 0)
+    ));
 
   predicate valid_mpu_regions{L}(ARM_MPU_Region_t *regions, integer n) =
         \forall integer i;
@@ -149,8 +155,14 @@
   predicate non_empty_region(ℤ base, ℤ limit) =
     (limit - base + 1) >= MPU_REGION_ALIGN;
 
+  // when either region is empty, they are considered disjoint
   predicate disjoint(ARM_MPU_Region_t r1, ARM_MPU_Region_t r2) =
-      r1.RBAR <= r2.RLAR || r2.RBAR <= r1.RLAR;
+      r1.RBAR == 0 && r1.RLAR == 0 ||
+      r2.RBAR == 0 && r2.RLAR == 0 ||
+      (
+        (r1.RBAR & MPU_RBAR_BASE_Msk) <= (r2.RLAR & MPU_RLAR_LIMIT_Msk) ||
+        (r2.RBAR & MPU_RBAR_BASE_Msk) <= (r1.RLAR & MPU_RLAR_LIMIT_Msk)
+      );
 
   predicate regions_disjoint{L}(ARM_MPU_Region_t *regions, integer n) =
       \forall integer i, j;
@@ -193,6 +205,7 @@ __STATIC_FORCEINLINE void __mpu_initialize(void)
 /*@
    requires \valid(resource);
    assigns *resource;
+   ensures mpu_is_empty_region(*resource);
  */
 __STATIC_FORCEINLINE kstatus_t mpu_forge_unmapped_ressource(uint8_t id, layout_resource_t *resource)
 {
@@ -243,28 +256,53 @@ __STATIC_FORCEINLINE kstatus_t mpu_forge_resource(const struct mpu_region_desc *
  *
  * @return true if regions overlap, false otherwise
  */
+/*@
+    requires valid_mpu_region(reg1.RBAR & MPU_RBAR_BASE_Msk,
+                              reg1.RLAR & MPU_RLAR_LIMIT_Msk);
+    requires valid_mpu_region(reg2.RBAR & MPU_RBAR_BASE_Msk,
+                              reg2.RLAR & MPU_RLAR_LIMIT_Msk);
+    assigns \nothing;
+    ensures \result == SECURE_TRUE || \result == SECURE_FALSE;
+    ensures \result == SECURE_FALSE ==>
+        disjoint(reg1, reg2);
+ */
 static inline secure_bool_t mpu_regions_overlap(layout_resource_t reg1, layout_resource_t reg2)
 {
     secure_bool_t overlap = SECURE_TRUE;
     uint32_t base_a  = reg1.RBAR & MPU_RBAR_BASE_Msk;
-    uint32_t limit_a = reg1.RLAR & MPU_RBAR_BASE_Msk;
+    uint32_t limit_a = reg1.RLAR & MPU_RLAR_LIMIT_Msk;
 
     uint32_t base_b  = reg2.RBAR & MPU_RBAR_BASE_Msk;
-    uint32_t limit_b = reg2.RLAR & MPU_RBAR_BASE_Msk;
+    uint32_t limit_b = reg2.RLAR & MPU_RLAR_LIMIT_Msk;
 
-    /* Invalid or disabled regions never overlap */
-    if (limit_a < base_a || limit_b < base_b) {
-        overlap = SECURE_FALSE;
-    }
-
-    /* Convert inclusive limit to exclusive end */
-    uint64_t end_a = (uint64_t)limit_a + MPU_REGION_ALIGN;
-    uint64_t end_b = (uint64_t)limit_b + MPU_REGION_ALIGN;
-
-    if ((base_a >= end_b) || (base_b >= end_a)) {
+    if ((base_a >= limit_b) || (base_b >= limit_a)) {
+        /*@ assert disjoint(reg1, reg2); */
         overlap = SECURE_FALSE;
     }
     return overlap;
+}
+
+/*@
+    requires \valid_read(region);
+    assigns \nothing;
+    ensures \result == SECURE_TRUE || \result == SECURE_FALSE;
+    ensures \result ==  SECURE_TRUE <==>
+        valid_mpu_region(region->RBAR & MPU_RBAR_BASE_Msk,
+                         region->RLAR & MPU_RLAR_LIMIT_Msk);
+*/
+static inline secure_bool_t mpu_region_is_valid(layout_resource_t const * const region)
+{
+    secure_bool_t is_valid = SECURE_TRUE;
+    uint32_t base  = region->RBAR & MPU_RBAR_BASE_Msk;
+    uint32_t limit = region->RLAR & MPU_RLAR_LIMIT_Msk;
+
+    if ((limit < base) ||
+        ((base & MPU_REGION_ALIGN_MASK) != 0) ||
+        ((limit & MPU_REGION_ALIGN_MASK) != 0)) {
+        is_valid = SECURE_FALSE;
+    }
+
+    return is_valid;
 }
 
 /**
@@ -292,8 +330,16 @@ __STATIC_FORCEINLINE void __mpu_fastload(
     uint8_t num_resources
 )
 {
-
+#ifndef __FRAMAC__
+    /*
+     * here we disable the effective MPU setting in Frama-C mode.
+     * Although, this can be enhanced by adding to the corresponding frama-c
+     * test the mapping informations of the MPU registers, so that it can
+     * check the correctness of the MPU configuration at register level and not
+     * only at layout_resource_t level.
+     */
     ARM_MPU_Load(first_region_number, resource, num_resources);
+#endif
 }
 
 /*@
