@@ -782,6 +782,9 @@ end:
     return status;
 }
 
+/*@
+    ensures \result == K_STATUS_OKAY || \result == K_ERROR_INVPARAM;
+*/
 kstatus_t mgr_task_add_resource(taskh_t t, uint8_t resource_id, layout_resource_t resource)
 {
     kstatus_t status;
@@ -796,6 +799,11 @@ kstatus_t mgr_task_add_resource(taskh_t t, uint8_t resource_id, layout_resource_
         status = K_ERROR_INVPARAM;
         goto err;
     }
+    if (unlikely(mpu_region_is_valid(&resource) == SECURE_FALSE)) {
+        status = K_ERROR_INVPARAM;
+        goto err;
+    }
+    /*@ assert valid_mpu_regions(&resource, 1); */
 
     /**
      * before adding a new ressource to a given app context, we ensure that
@@ -810,15 +818,31 @@ kstatus_t mgr_task_add_resource(taskh_t t, uint8_t resource_id, layout_resource_
      * Note: layout are u64 content, which is passed as value, not as pointer, to reduce
      * resolution overhead.
      */
+    /*@ ghost int is_disjoint = 0; */
+    /*@
+      loop invariant 0 <= idx <= TASK_MAX_RESSOURCES_NUM;
+      loop invariant \initialized(&cell->layout[idx]);
+      loop assigns idx;
+      loop variant TASK_MAX_RESSOURCES_NUM - idx;
+    */
     for (uint8_t idx = 0; idx < TASK_MAX_RESSOURCES_NUM; ++idx) {
-        if (unlikely(mpu_regions_overlap(cell->layout[idx], resource))) {
+        if (unlikely(mpu_regions_overlap(cell->layout[idx], resource) == SECURE_TRUE)) {
             status = K_ERROR_INVPARAM;
+            /*@ ghost is_disjoint = 1; */
             goto err;
         }
+        /*@ assert disjoint(cell->layout[idx], resource); */
+        /*
+         * for each comparison, if we reach this point, this means that the
+         * corresponding indexed region and resource do not overlap eachother.
+         * If this is true for all regions, then the new resource is disjoint
+         * from all existing ones.
+         */
     }
 
     /* Once the mapping is demonstrated valid, we can add the ressource */
     memcpy(&cell->layout[resource_id], &resource, sizeof(layout_resource_t));
+    /*@ assert is_disjoint == 0; */
     status = K_STATUS_OKAY;
 err:
     return status;

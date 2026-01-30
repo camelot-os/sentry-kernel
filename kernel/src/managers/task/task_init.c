@@ -366,9 +366,12 @@ static inline kstatus_t task_init_add_autotest(void)
     /* task added to task local task list, needed so that others managers can request it */
     ctx.numtask++;
     mgr_mm_forge_ressource(MM_REGION_TASK_TXT, *handle, &ressource);
+    /*@ assert valid_mpu_regions(&ressource, 1); */
     mgr_task_add_resource(*handle, mgr_mm_region_to_layout_id(MM_REGION_TASK_TXT), ressource);
     mgr_mm_forge_ressource(MM_REGION_TASK_DATA, *handle, &ressource);
+    /*@ assert valid_mpu_regions(&ressource, 1); */
     mgr_task_add_resource(*handle, mgr_mm_region_to_layout_id(MM_REGION_TASK_DATA), ressource);
+    /*@ assert regions_disjoint(&task_ctx->layout[0], TASK_MAX_RESSOURCES_NUM); */
     ctx.status = task_set_job_layout(task_ctx);
     if (unlikely(ctx.status != K_STATUS_OKAY)) {
         pr_err("failed to set job layout!");
@@ -421,16 +424,19 @@ static inline kstatus_t task_init_add_idle(void)
     #endif
     task_ctx->state = JOB_STATE_READY;
     task_ctx->sysretassigned = SECURE_FALSE;
-    mgr_mm_forge_empty_table(task_table[ctx.numtask].layout);
+    mgr_mm_forge_empty_table(task_ctx->layout);
     pr_info("[task handle {%x|%02x|%03x}] idle task forged",
         task_ctx->handle.rerun,
         task_ctx->handle.id,
         task_ctx->handle.family);
     ctx.numtask++;
     mgr_mm_forge_ressource(MM_REGION_TASK_TXT, *handle, &ressource);
+    /*@ assert valid_mpu_regions(&ressource, 1); */
     mgr_task_add_resource(*handle, mgr_mm_region_to_layout_id(MM_REGION_TASK_TXT), ressource);
     mgr_mm_forge_ressource(MM_REGION_TASK_DATA, *handle, &ressource);
+    /*@ assert valid_mpu_regions(&ressource, 1); */
     mgr_task_add_resource(*handle, mgr_mm_region_to_layout_id(MM_REGION_TASK_DATA), ressource);
+    /*@ assert regions_disjoint(&task_ctx->layout[0], TASK_MAX_RESSOURCES_NUM); */
     ctx.status = task_set_job_layout(task_ctx);
     if (unlikely(ctx.status != K_STATUS_OKAY)) {
         pr_err("failed to set job layout!");
