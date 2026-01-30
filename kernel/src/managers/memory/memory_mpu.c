@@ -420,12 +420,24 @@ kstatus_t mgr_mm_init(void)
  *
  * all task memory regions are set as invalid
  */
+/*@
+    requires \valid(ressource_tab + (0 .. TASK_MAX_RESSOURCES_NUM -1));
+    assigns ressource_tab[0 .. TASK_MAX_RESSOURCES_NUM -1];
+    ensures \result == K_STATUS_OKAY ==>
+      \forall integer i; 0 <= i < TASK_MAX_RESSOURCES_NUM ==>
+        mpu_is_empty_region(ressource_tab[i]);
+*/
 kstatus_t mgr_mm_forge_empty_table(layout_resource_t *ressource_tab)
 {
     kstatus_t status = K_ERROR_INVPARAM;
     if (unlikely(ressource_tab == NULL)) {
         goto err;
     }
+    /*@
+      loop assigns i, ressource_tab[0 .. TASK_MAX_RESSOURCES_NUM -1];
+      loop invariant 0 <= i <= TASK_MAX_RESSOURCES_NUM;
+      loop invariant \initialized(ressource_tab + (0 .. TASK_MAX_RESSOURCES_NUM -1));
+    */
     for (uint8_t i = 0; i < TASK_MAX_RESSOURCES_NUM;++i) {
         mpu_forge_unmapped_ressource(i, ressource_tab);
         ressource_tab++;
@@ -440,6 +452,10 @@ err:
  *
  * all task memory regions are set as invalid
  */
+/*@
+    requires \valid(ressource);
+    assigns *ressource;
+*/
 kstatus_t mgr_mm_forge_ressource(mm_region_t reg_type, taskh_t t, layout_resource_t *ressource)
 {
     kstatus_t status = K_SECURITY_INTEGRITY;
@@ -472,12 +488,6 @@ kstatus_t mgr_mm_forge_ressource(mm_region_t reg_type, taskh_t t, layout_resourc
             mpu_cfg.noexec = true;
             mpu_cfg.shareable = false;
             mpu_forge_resource(&mpu_cfg, ressource);
-            break;
-        case MM_REGION_TASK_RESSOURCE_DEVICE:
-            /* TODO for other ressources */
-            break;
-        case MM_REGION_TASK_RESSOURCE_SHM:
-            /* TODO for other ressources */
             break;
         default:
             break;
