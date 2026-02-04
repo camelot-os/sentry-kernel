@@ -783,27 +783,34 @@ end:
 }
 
 /*@
+    requires \separated(&task_table[0 .. CONFIG_MAX_TASKS].layout[0 .. TASK_MAX_RESSOURCES_NUM-1], &resource);
     ensures \result == K_STATUS_OKAY || \result == K_ERROR_INVPARAM;
+    assigns task_table[0 .. CONFIG_MAX_TASKS].layout[0 .. TASK_MAX_RESSOURCES_NUM-1];
+    ensures \result == K_STATUS_OKAY || \result == K_ERROR_INVPARAM;
+    ensures \result == K_STATUS_OKAY ==>
+        valid_mpu_regions(&resource, 1) &&
+        mpu_wx_conformity(resource);
 */
-kstatus_t mgr_task_add_resource(taskh_t t, uint8_t resource_id, layout_resource_t resource)
+kstatus_t mgr_task_add_resource(const taskh_t t, const uint8_t resource_id, const layout_resource_t resource)
 {
-    kstatus_t status;
+    kstatus_t status = K_ERROR_INVPARAM;
     task_t *cell;
 
     if (unlikely((cell = task_get_from_handle(t)) == NULL)) {
-        status = K_ERROR_INVPARAM;
         goto err;
     }
 
     if (unlikely(resource_id >= TASK_MAX_RESSOURCES_NUM)) {
-        status = K_ERROR_INVPARAM;
         goto err;
     }
     if (unlikely(mpu_region_is_valid(&resource) == SECURE_FALSE)) {
-        status = K_ERROR_INVPARAM;
         goto err;
     }
     /*@ assert valid_mpu_regions(&resource, 1); */
+    if (unlikely(mpu_region_is_w_xor_x(&resource) == SECURE_FALSE)) {
+        goto err;
+    }
+    /*@ assert mpu_wx_conformity(resource); */
 
     /**
      * before adding a new ressource to a given app context, we ensure that
@@ -827,7 +834,6 @@ kstatus_t mgr_task_add_resource(taskh_t t, uint8_t resource_id, layout_resource_
     */
     for (uint8_t idx = 0; idx < TASK_MAX_RESSOURCES_NUM; ++idx) {
         if (unlikely(mpu_regions_overlap(cell->layout[idx], resource) == SECURE_TRUE)) {
-            status = K_ERROR_INVPARAM;
             /*@ ghost is_disjoint = 1; */
             goto err;
         }
