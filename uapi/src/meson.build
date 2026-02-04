@@ -43,7 +43,7 @@ uapi_rlib = static_library(
 sentry_c_uapi_dep = declare_dependency(
     link_with: uapi_lib,
     sources: [ uapi_h ],
-    compile_args: [ global_build_args, target_arch_args ],
+    compile_args: [ exported_global_build_args, target_arch_args ],
     include_directories: [ userspace_uapi_include_dir ],
 )
 
@@ -52,5 +52,5 @@ pkg_config = import('pkgconfig')
 pkg_config.generate(
     uapi_lib,
     filebase: 'uapi',
-    extra_cflags: [ global_build_args, target_arch_args ],
+    extra_cflags: [ exported_global_build_args, target_arch_args ],
 )
