@@ -106,8 +106,7 @@ endforeach
 
 external_deps = []
 
-global_build_args = [
-    '-include', fs.parent(kconfig_h) / fs.name(kconfig_h),
+exported_global_build_args = [
     '-ffreestanding',
     '-fno-builtin',
     '-nostdlib',
@@ -119,6 +118,13 @@ global_build_args = [
     '-Wno-unused-variable', # FIXME: while in early dev
     '-Wno-unused-parameter', # FIXME: while in early dev
     activated_hardening_cflags,
+]
+
+# kconfig generated header is private header and must not be exported through
+# meson dependency nor pkg-config file.
+global_build_args = [
+    '-include', fs.parent(kconfig_h) / fs.name(kconfig_h),
+    exported_global_build_args,
 ]
 
 # Deprecated kconfig entry handling, to be removed on next major release
