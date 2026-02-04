@@ -168,6 +168,17 @@
       \forall integer i, j;
         0 <= i < n && 0 <= j < n && i != j ==>
           disjoint(regions[i], regions[j]);
+
+
+  predicate region_desc_wx_conformity(struct mpu_region_desc desc) =
+      (desc.noexec == 1) ||
+      (desc.noexec == 0 && (desc.access_perm == MPU_REGION_PERM_RO || desc.access_perm == MPU_REGION_PERM_PRIV_RO));
+
+  predicate mpu_wx_conformity(ARM_MPU_Region_t r) =
+      ((r.RBAR & MPU_RBAR_XN_Msk) == 0 && (r.RBAR & MPU_RBAR_AP_Msk) == MPU_REGION_PERM_RO) ||
+      ((r.RBAR & MPU_RBAR_XN_Msk) == 0 && (r.RBAR & MPU_RBAR_AP_Msk) == MPU_REGION_PERM_PRIV_RO) ||
+      ((r.RBAR & MPU_RBAR_XN_Msk) != 0);
+
 */
 
 
@@ -198,6 +209,7 @@ __STATIC_FORCEINLINE void __mpu_initialize(void)
         loop variant mpu_attr_size - idx;
     */
     for (uint8_t idx = 0; idx < mpu_attr_size; idx++) {
+
         ARM_MPU_SetMemAttr(idx, _mpu_attrs[idx]);
     }
 }
@@ -220,22 +232,22 @@ __STATIC_FORCEINLINE kstatus_t mpu_forge_unmapped_ressource(uint8_t id, layout_r
   requires \valid_read(desc);
   requires \valid(resource);
   assigns *resource;
-  ensures (\result == K_STATUS_OKAY);
+  ensures (\result == K_STATUS_OKAY) ==>
+      mpu_wx_conformity(*resource);
  */
 __STATIC_FORCEINLINE kstatus_t mpu_forge_resource(const struct mpu_region_desc *desc,
                                                    layout_resource_t *resource)
 {
     kstatus_t status = K_ERROR_INVPARAM;
 
-    /* W^X conformity */
-    /*@
-      assert desc->noexec == 0 ==>
-        (desc->access_perm == MPU_REGION_PERM_RO || desc->access_perm == MPU_REGION_PERM_PRIV_RO);
-     */
-    /*@
-      assert (desc->access_perm != MPU_REGION_PERM_RO && desc->access_perm != MPU_REGION_PERM_PRIV_RO) ==>
-        desc->noexec == 1;
-    */
+    if (desc->noexec == 0) {
+        /* active W^X check at descriptor level */
+        if (desc->access_perm != MPU_REGION_PERM_RO &&
+            desc->access_perm != MPU_REGION_PERM_PRIV_RO) {
+            goto err;
+        }
+    }
+    /*@ assert region_desc_wx_conformity(*desc); */
     resource->RBAR = ARM_MPU_RBAR_AP(
         desc->addr,
         desc->shareable ? ARM_MPU_SH_INNER : ARM_MPU_SH_NON,
@@ -247,6 +259,7 @@ __STATIC_FORCEINLINE kstatus_t mpu_forge_resource(const struct mpu_region_desc *
 
     status = K_STATUS_OKAY;
     /*@ assert (status == K_STATUS_OKAY); */
+err:
     return status;
 }
 
@@ -303,6 +316,33 @@ static inline secure_bool_t mpu_region_is_valid(layout_resource_t const * const 
     }
 
     return is_valid;
+}
+
+/*@
+    requires \valid_read(region);
+    assigns \nothing;
+    ensures \result == SECURE_TRUE || \result == SECURE_FALSE;
+    ensures \result ==  SECURE_TRUE <==> mpu_wx_conformity(*region);
+    ensures \result ==  SECURE_FALSE <==> !mpu_wx_conformity(*region);
+*/
+static inline secure_bool_t mpu_region_is_w_xor_x(layout_resource_t const * const region)
+{
+    secure_bool_t is_w_xor_x = SECURE_FALSE;
+    uint32_t rbar = region->RBAR;
+
+    /* Check if the region is executable */
+    if ((rbar & MPU_RBAR_XN_Msk) == 0) {
+        if (
+            ((rbar & MPU_RBAR_AP_Msk) != MPU_REGION_PERM_RO) ||
+            ((rbar & MPU_RBAR_AP_Msk) != MPU_REGION_PERM_PRIV_RO)
+        ) {
+            /* region is not W^X compliant */
+            goto end;
+        }
+    }
+    is_w_xor_x = SECURE_TRUE;
+end:
+    return is_w_xor_x;
 }
 
 /**
@@ -398,7 +438,9 @@ __STATIC_FORCEINLINE void __mpu_set_region(
     const layout_resource_t *resource
 )
 {
+#ifndef __FRAMAC__
     ARM_MPU_SetRegion(region_id, resource->RBAR, resource->RLAR);
+#endif
 }
 
 #endif /* __ARCH_ARM_PMSA_V8_H */
