@@ -74,7 +74,7 @@ jobs:
         with:
           cross_files: ${{ format('{0}/{1}', env.MESON_CROSS_FILES, 'cm33-none-eabi-gcc.ini') }}
           actions: '["prefetch", "setup"]'
-          options: '-Dconfig=.config -Ddts=dts/examples/nucleo_u5a5_autotest.dts -Ddts-include-dirs=dts -Dwith_proof=true'
+          options: '-Dconfig=.config -Ddts=dts/examples/nucleo_u5a5_autotest.dts -Ddts-include-dirs=dts -Dwith_proof=true -Dwith_tests=false -Dwith_tools=false -Dwith_uapi=true -Dwith_sbom=false -Dwith_proof=true -Dwith_doc=false'
       - name: run framaC
         run: |
           why3 config detect
