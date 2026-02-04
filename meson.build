@@ -32,6 +32,15 @@ meson.add_dist_script('support/meson/version.sh', 'set-dist', meson.project_vers
 
 compiler = meson.get_compiler('c', native: false)
 
+compiler.check_header('assert.h', required: true)
+compiler.check_header('inttypes.h', required: true)
+compiler.check_header('stdarg.h', required: true)
+compiler.check_header('stdbool.h', required: true)
+compiler.check_header('stddef.h', required: true)
+compiler.check_header('stdint.h', required: true)
+compiler.check_header('stdio.h', required: true)
+compiler.check_header('string.h', required: true)
+
 objcopy = find_program('objcopy')
 sentry_install_script = find_program('support/scripts/install.py')
 
