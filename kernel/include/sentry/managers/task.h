@@ -134,7 +134,7 @@ taskh_t mgr_task_get_idle(void);
  * @param resource_id resource layout index in task layout table
  * @param resource resource to add
  */
-kstatus_t mgr_task_add_resource(taskh_t t, uint8_t resource_id, layout_resource_t resource);
+kstatus_t mgr_task_add_resource(const taskh_t t, const uint8_t resource_id, const layout_resource_t resource);
 
 /**
  * @brief Remove the resource identified by its id from the task current layout
