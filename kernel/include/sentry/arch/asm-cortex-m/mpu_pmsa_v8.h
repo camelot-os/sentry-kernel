@@ -175,8 +175,8 @@
       (desc.noexec == 0 && (desc.access_perm == MPU_REGION_PERM_RO || desc.access_perm == MPU_REGION_PERM_PRIV_RO));
 
   predicate mpu_wx_conformity(ARM_MPU_Region_t r) =
-      ((r.RBAR & MPU_RBAR_XN_Msk) == 0 && (r.RBAR & MPU_RBAR_AP_Msk) == MPU_REGION_PERM_RO) ||
-      ((r.RBAR & MPU_RBAR_XN_Msk) == 0 && (r.RBAR & MPU_RBAR_AP_Msk) == MPU_REGION_PERM_PRIV_RO) ||
+      ((r.RBAR & MPU_RBAR_XN_Msk) == 0 && (r.RBAR & MPU_RBAR_AP_Msk) >> MPU_RBAR_AP_Pos == MPU_REGION_PERM_RO) ||
+      ((r.RBAR & MPU_RBAR_XN_Msk) == 0 && (r.RBAR & MPU_RBAR_AP_Msk) >> MPU_RBAR_AP_Pos == MPU_REGION_PERM_PRIV_RO) ||
       ((r.RBAR & MPU_RBAR_XN_Msk) != 0);
 
 */
@@ -328,13 +328,12 @@ static inline secure_bool_t mpu_region_is_valid(layout_resource_t const * const 
 static inline secure_bool_t mpu_region_is_w_xor_x(layout_resource_t const * const region)
 {
     secure_bool_t is_w_xor_x = SECURE_FALSE;
-    uint32_t rbar = region->RBAR;
 
     /* Check if the region is executable */
-    if ((rbar & MPU_RBAR_XN_Msk) == 0) {
+    if ((region->RBAR & MPU_RBAR_XN_Msk) == 0) {
         if (
-            ((rbar & MPU_RBAR_AP_Msk) != MPU_REGION_PERM_RO) ||
-            ((rbar & MPU_RBAR_AP_Msk) != MPU_REGION_PERM_PRIV_RO)
+            ((region->RBAR & MPU_RBAR_AP_Msk) >> MPU_RBAR_AP_Pos) != (MPU_REGION_PERM_RO) &&
+            ((region->RBAR & MPU_RBAR_AP_Msk) >> MPU_RBAR_AP_Pos) != (MPU_REGION_PERM_PRIV_RO)
         ) {
             /* region is not W^X compliant */
             goto end;

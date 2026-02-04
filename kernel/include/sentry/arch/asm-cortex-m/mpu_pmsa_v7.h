@@ -249,13 +249,13 @@ err:
 static inline secure_bool_t mpu_region_is_w_xor_x(layout_resource_t const * const region)
 {
     secure_bool_t is_w_xor_x = SECURE_FALSE;
-    uint32_t rbar = region->RBAR;
+    uint32_t rasr = region->RASR;
 
     /* Check if the region is executable */
-    if ((rbar & MPU_RBAR_XN_Msk) == 0) {
+    if ((rasr & MPU_RASR_XN_Msk) == 0) {
         if (
-            ((rbar & MPU_RBAR_AP_Msk) != MPU_REGION_PERM_RO) ||
-            ((rbar & MPU_RBAR_AP_Msk) != MPU_REGION_PERM_PRIV_RO)
+            ((rasr & MPU_RASR_AP_Msk) >> MPU_RASR_AP_Pos) != MPU_REGION_PERM_RO &&
+            ((rasr & MPU_RASR_AP_Msk) >> MPU_RASR_AP_Pos) != MPU_REGION_PERM_PRIV_RO
         ) {
             /* region is not W^X compliant */
             goto end;
