@@ -1,5 +1,4 @@
-# SPDX-FileCopyrightText: 2023 Ledger SAS
-# SPDX-FileCopyrightText: 2025 H2Lab
+# SPDX-FileCopyrightText: 2026 H2Lab Development Team
 # SPDX-License-Identifier: Apache-2.0
 
 kernel_eva_mm_map_entypoint = files(

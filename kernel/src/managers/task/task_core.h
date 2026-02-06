@@ -1,4 +1,5 @@
 // SPDX-FileCopyrightText: 2023 Ledger SAS
+// SPDX-FileCopyrightText: 2025 H2Lab Development Team
 // SPDX-License-Identifier: Apache-2.0
 
 #ifndef TASK_CORE_H

@@ -1,4 +1,5 @@
 // SPDX-FileCopyrightText: 2023 Ledger SAS
+// SPDX-FileCopyrightText: 2026 H2Lab Development Team
 // SPDX-License-Identifier: Apache-2.0
 
 /**
@@ -176,6 +177,7 @@ static inline secure_bool_t mpu_regions_overlap(layout_resource_t reg1, layout_r
     if (size_field_a < 4 || size_field_b < 4) {
         /* catching error, yet not semantically correct */
         overlap = SECURE_TRUE;
+        goto end;
     }
 
     uint64_t size_a = 1ULL << (size_field_a + 1);
@@ -186,6 +188,7 @@ static inline secure_bool_t mpu_regions_overlap(layout_resource_t reg1, layout_r
 
     if ((base_a >= end_b) || (base_b >= end_a)) {
         overlap = SECURE_FALSE;
+        goto end;
     }
 end:
     return overlap;
