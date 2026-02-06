@@ -1,6 +1,9 @@
 # SPDX-FileCopyrightText: 2023-2024 Ledger SAS
 # SPDX-License-Identifier: Apache-2.0
 
+# uapi C headers files generation is kept even when not building libuapi, as required by kernel
+subdir('include/uapi')
+
 if not with_uapi_opt
     subdir_done()
 endif
@@ -41,7 +44,6 @@ uapi_manifest = files('Cargo.toml')
 
 cargo_install = get_option('with-install-crates')
 
-subdir('include/uapi')
 subdir('src')
 
 cargo = find_program('cargo', required: true)
