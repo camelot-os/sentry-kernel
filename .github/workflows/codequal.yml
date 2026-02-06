@@ -70,7 +70,7 @@ jobs:
         with:
           cross_files: ${{ format('{0}/{1}', env.MESON_CROSS_FILES, 'cm4-none-eabi-gcc.ini') }}
           actions: '["prefetch", "setup"]'
-          options: '-Dconfig=.config -Ddts=dts/examples/stm32f429i_disc1_debug.dts -Ddts-include-dirs=dts -Dwith_tests=true -Db_coverage=true -Doptimization=0'
+          options: '-Dconfig=.config -Ddts=dts/examples/stm32f429i_disc1_debug.dts -Dwith_uapi=false -Dwith_idle=false -Dwith_tools=false -Ddts-include-dirs=dts -Dwith_tests=true -Db_coverage=true -Doptimization=0'
       - name: Run Build Wrapper
         run: |
           mkdir -p ${{ env.BUILD_WRAPPER_OUT_DIR }}
