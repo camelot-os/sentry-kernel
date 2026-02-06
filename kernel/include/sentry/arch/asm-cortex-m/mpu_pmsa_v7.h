@@ -348,8 +348,6 @@ __STATIC_FORCEINLINE uint32_t __mpu_get_resource_base_address(const layout_resou
     return resource->RBAR & MPU_RBAR_ADDR_Msk;
 }
 
-
-
 /**
  * @brief PMSAv7 MPU region size alignment
  * @param size memory size to map

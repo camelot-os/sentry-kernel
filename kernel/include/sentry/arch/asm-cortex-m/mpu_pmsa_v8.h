@@ -209,7 +209,6 @@ __STATIC_FORCEINLINE void __mpu_initialize(void)
         loop variant mpu_attr_size - idx;
     */
     for (uint8_t idx = 0; idx < mpu_attr_size; idx++) {
-
         ARM_MPU_SetMemAttr(idx, _mpu_attrs[idx]);
     }
 }
@@ -263,7 +262,6 @@ err:
     return status;
 }
 
-
 /**
  * Compare two ARMv8-M MPU regions defined by RBAR/RLAR
  *
@@ -314,7 +312,6 @@ static inline secure_bool_t mpu_region_is_valid(layout_resource_t const * const 
         ((limit & MPU_REGION_ALIGN_MASK) != 0)) {
         is_valid = SECURE_FALSE;
     }
-
     return is_valid;
 }
 
@@ -438,6 +435,13 @@ __STATIC_FORCEINLINE void __mpu_set_region(
 )
 {
 #ifndef __FRAMAC__
+    /*
+     * here we disable the effective MPU setting in Frama-C mode.
+     * Although, this can be enhanced by adding to the corresponding frama-c
+     * test the mapping informations of the MPU registers, so that it can
+     * check the correctness of the MPU configuration at register level and not
+     * only at layout_resource_t level.
+     */
     ARM_MPU_SetRegion(region_id, resource->RBAR, resource->RLAR);
 #endif
 }
