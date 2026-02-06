@@ -23,6 +23,9 @@ test_name = 'frama-c-mm-map-wp'
 # MPU memory-map related functions to be proved
 mm_map_correctness_targets = ','.join(
   [
+    'task_get_from_handle',
+    'mgr_task_get_num',
+    'ktaskh_to_taskh',
     'mgr_task_add_resource',
     'mpu_regions_overlap',
     'mpu_region_is_valid',
