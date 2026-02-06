@@ -127,6 +127,9 @@ end:
     return res;
 }
 
+/*@
+    assigns \nothing;
+ */
 task_t *task_get_from_handle(taskh_t h)
 {
     task_t *tsk = NULL;
@@ -825,7 +828,7 @@ kstatus_t mgr_task_add_resource(const taskh_t t, const uint8_t resource_id, cons
      * Note: layout are u64 content, which is passed as value, not as pointer, to reduce
      * resolution overhead.
      */
-    /*@ ghost int is_disjoint = 0; */
+    /*@ ghost int do_overlap = 0; */
     /*@
       loop invariant 0 <= idx <= TASK_MAX_RESSOURCES_NUM;
       loop invariant \initialized(&cell->layout[idx]);
@@ -834,7 +837,8 @@ kstatus_t mgr_task_add_resource(const taskh_t t, const uint8_t resource_id, cons
     */
     for (uint8_t idx = 0; idx < TASK_MAX_RESSOURCES_NUM; ++idx) {
         if (unlikely(mpu_regions_overlap(cell->layout[idx], resource) == SECURE_TRUE)) {
-            /*@ ghost is_disjoint = 1; */
+            /*@ ghost do_overlap = 1; */
+            /*@ assert !disjoint(cell->layout[idx], resource); */
             goto err;
         }
         /*@ assert disjoint(cell->layout[idx], resource); */
@@ -848,7 +852,7 @@ kstatus_t mgr_task_add_resource(const taskh_t t, const uint8_t resource_id, cons
 
     /* Once the mapping is demonstrated valid, we can add the ressource */
     memcpy(&cell->layout[resource_id], &resource, sizeof(layout_resource_t));
-    /*@ assert is_disjoint == 0; */
+    /*@ assert do_overlap == 0; */
     status = K_STATUS_OKAY;
 err:
     return status;

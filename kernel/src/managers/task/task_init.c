@@ -566,6 +566,11 @@ err:
 /**
  * @brief return the number of declared tasks (idle excluded)
  */
+/*@
+    requires \valid_read(&ctx);
+    assigns \nothing;
+    ensures 0 <= \result <= CONFIG_MAX_TASKS;
+*/
 uint32_t mgr_task_get_num(void)
 {
     return ctx.numtask;

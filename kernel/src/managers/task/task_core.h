@@ -24,30 +24,22 @@ typedef struct __attribute__((packed)) ktaskh  {
 
 static_assert(sizeof(ktaskh_t) == sizeof(taskh_t), "taskh_t opaque model failure!");
 
-static inline const ktaskh_t *taskh_to_ktaskh(const taskh_t * const th) {
+/*@
+    requires \valid_read(th);
+    assigns \nothing;
+*/
+static inline const ktaskh_t * taskh_to_ktaskh(const taskh_t * th) {
     /*@ assert \valid_read(th); */
-    union uth {
-        const uint32_t *th;
-        const ktaskh_t *kth;
-    };
-
-    union uth converter = {
-        .th = th
-    };
-    return converter.kth;
+    return (const ktaskh_t *)th;
 }
 
-static inline const taskh_t *ktaskh_to_taskh(const ktaskh_t * const kth) {
+/*@
+    requires \valid_read(kth);
+    assigns \nothing;
+*/
+static inline const taskh_t * ktaskh_to_taskh(const ktaskh_t * kth) {
     /*@ assert \valid_read(kth); */
-    union uth {
-        const uint32_t *th;
-        const ktaskh_t *kth;
-    };
-
-    union uth converter = {
-        .kth = kth
-    };
-    return converter.th;
+    return (const taskh_t *)kth;
 }
 
 #if CONFIG_HAS_GPDMA
