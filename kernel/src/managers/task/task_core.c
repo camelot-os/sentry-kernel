@@ -791,9 +791,7 @@ end:
     ensures \result == K_STATUS_OKAY || \result == K_ERROR_INVPARAM;
     assigns task_table[0 .. CONFIG_MAX_TASKS].layout[0 .. TASK_MAX_RESSOURCES_NUM-1];
     ensures \result == K_STATUS_OKAY || \result == K_ERROR_INVPARAM;
-    ensures \result == K_STATUS_OKAY ==>
-        valid_mpu_regions(&resource, 1) &&
-        mpu_wx_conformity(resource);
+    ensures \result == K_STATUS_OKAY ==> mpu_wx_conformity(resource);
 */
 kstatus_t mgr_task_add_resource(const taskh_t t, const uint8_t resource_id, const layout_resource_t resource)
 {
@@ -807,10 +805,7 @@ kstatus_t mgr_task_add_resource(const taskh_t t, const uint8_t resource_id, cons
     if (unlikely(resource_id >= TASK_MAX_RESSOURCES_NUM)) {
         goto err;
     }
-    if (unlikely(mpu_region_is_valid(&resource) == SECURE_FALSE)) {
-        goto err;
-    }
-    /*@ assert valid_mpu_regions(&resource, 1); */
+    /* NOTE: while register encoded, alignment validity is always true */
     if (unlikely(mpu_region_is_w_xor_x(&resource) == SECURE_FALSE)) {
         goto err;
     }

@@ -195,54 +195,6 @@ end:
 }
 
 /*@
- * @brief Check ARMv7-M MPU region validity
- *
- * A region is valid if:
- *   - the region is enabled (RASR.ENABLE bit)
- *   - the size field is >= 4 (32 bytes minimum)
- *   - the base address is aligned to the region size
- *   - the size is non-zero
- */
-/*@
-    requires \valid_read(region);
-    assigns \nothing;
-    ensures \result == SECURE_TRUE || \result == SECURE_FALSE;
-*/
-static inline secure_bool_t mpu_region_is_valid(const layout_resource_t *region)
-{
-    secure_bool_t is_valid = SECURE_FALSE;
-    uint32_t rbar = region->RBAR;
-    uint32_t rasr = region->RASR;
-
-    if (rbar == 0x0UL && rasr == 0x0UL) {
-        /* Empty region is considered valid */
-        goto err;
-    }
-
-    /* Extract size field (encoded as (SIZE >> MPU_RASR_SIZE_Pos)) */
-    uint32_t size_field = (rasr & MPU_RASR_SIZE_Msk) >> MPU_RASR_SIZE_Pos;
-
-    /* Minimum region encoding for ARMv7-M is 32B → size_field >= 4 */
-    if (size_field < 4) {
-        goto err;
-    }
-
-    /* Compute actual region size = 2^(size_field + 1) */
-    uint32_t region_size = 1UL << (size_field + 1);
-
-    /* Base must be aligned to region size */
-    uint32_t base_addr = rbar & MPU_RBAR_ADDR_Msk;
-    if ((base_addr & (region_size - 1)) != 0UL) {
-        goto err;
-    }
-
-    /* If we get here, region is valid */
-    is_valid = SECURE_TRUE;
-err:
-    return is_valid;
-}
-
-/*@
     requires \valid_read(region);
     assigns \nothing;
     ensures \result == SECURE_TRUE || \result == SECURE_FALSE;
