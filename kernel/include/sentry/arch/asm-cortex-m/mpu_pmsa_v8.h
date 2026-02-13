@@ -234,7 +234,7 @@ __STATIC_FORCEINLINE kstatus_t mpu_forge_unmapped_ressource(uint8_t id, layout_r
   assigns *resource;
   ensures (\result == K_STATUS_OKAY) ==> mpu_wx_conformity(*resource);
  */
-static kstatus_t mpu_forge_resource(const struct mpu_region_desc *desc,
+__STATIC_FORCEINLINE kstatus_t mpu_forge_resource(const struct mpu_region_desc *desc,
                                                    layout_resource_t *resource)
 {
     kstatus_t status = K_ERROR_INVPARAM;
