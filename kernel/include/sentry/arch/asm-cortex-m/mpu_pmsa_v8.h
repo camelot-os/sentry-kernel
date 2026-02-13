@@ -232,10 +232,9 @@ __STATIC_FORCEINLINE kstatus_t mpu_forge_unmapped_ressource(uint8_t id, layout_r
   requires \valid_read(desc);
   requires \valid(resource);
   assigns *resource;
-  ensures (\result == K_STATUS_OKAY) ==>
-      mpu_wx_conformity(*resource);
+  ensures (\result == K_STATUS_OKAY) ==> mpu_wx_conformity(*resource);
  */
-__STATIC_FORCEINLINE kstatus_t mpu_forge_resource(const struct mpu_region_desc *desc,
+static kstatus_t mpu_forge_resource(const struct mpu_region_desc *desc,
                                                    layout_resource_t *resource)
 {
     kstatus_t status = K_ERROR_INVPARAM;
@@ -248,13 +247,33 @@ __STATIC_FORCEINLINE kstatus_t mpu_forge_resource(const struct mpu_region_desc *
         }
     }
     /*@ assert region_desc_wx_conformity(*desc); */
+    if (unlikely(desc->size == 0 && desc->addr == 0)) {
+        /* invalid region, avoid u32 overlow */
+        goto err;
+    }
+    if (desc->access_attrs > 0xF) {
+        /* invalid access attributes */
+        goto err;
+    }
+    if (unlikely((UINT32_MAX - desc->size) < desc->addr)) {
+        /* overflow in region limit calculation */
+        goto err;
+    }
+    if (unlikely(desc->access_attrs > 0xF)) {
+        /* invalid access attributes */
+        goto err;
+    }
+    /*
+     * NOTE: ARM builtins do not check unsigned overflow, so we
+     * check them here
+     */
+    /*@ assert (desc->addr + desc->size <= UINT32_MAX); */
     resource->RBAR = ARM_MPU_RBAR_AP(
         desc->addr,
         desc->shareable ? ARM_MPU_SH_INNER : ARM_MPU_SH_NON,
         desc->access_perm,
         desc->noexec ? 1UL : 0UL
     );
-
     resource->RLAR = ARM_MPU_RLAR(desc->addr + desc->size - 1, desc->access_attrs);
 
     status = K_STATUS_OKAY;
@@ -269,10 +288,6 @@ err:
  * @return true if regions overlap, false otherwise
  */
 /*@
-    requires valid_mpu_region(reg1.RBAR & MPU_RBAR_BASE_Msk,
-                              reg1.RLAR & MPU_RLAR_LIMIT_Msk);
-    requires valid_mpu_region(reg2.RBAR & MPU_RBAR_BASE_Msk,
-                              reg2.RLAR & MPU_RLAR_LIMIT_Msk);
     assigns \nothing;
     ensures \result == SECURE_TRUE || \result == SECURE_FALSE;
     ensures \result == SECURE_FALSE ==>
@@ -292,28 +307,6 @@ static inline secure_bool_t mpu_regions_overlap(layout_resource_t reg1, layout_r
         overlap = SECURE_FALSE;
     }
     return overlap;
-}
-
-/*@
-    requires \valid_read(region);
-    assigns \nothing;
-    ensures \result == SECURE_TRUE || \result == SECURE_FALSE;
-    ensures \result ==  SECURE_TRUE <==>
-        valid_mpu_region(region->RBAR & MPU_RBAR_BASE_Msk,
-                         region->RLAR & MPU_RLAR_LIMIT_Msk);
-*/
-static inline secure_bool_t mpu_region_is_valid(layout_resource_t const * const region)
-{
-    secure_bool_t is_valid = SECURE_TRUE;
-    uint32_t base  = region->RBAR & MPU_RBAR_BASE_Msk;
-    uint32_t limit = region->RLAR & MPU_RLAR_LIMIT_Msk;
-
-    if ((limit < base) ||
-        ((base & MPU_REGION_ALIGN_MASK) != 0) ||
-        ((limit & MPU_REGION_ALIGN_MASK) != 0)) {
-        is_valid = SECURE_FALSE;
-    }
-    return is_valid;
 }
 
 /*@
