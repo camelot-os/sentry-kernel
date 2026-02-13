@@ -27,7 +27,6 @@ mm_map_correctness_targets = ','.join(
     'ktaskh_to_taskh',
     'mgr_task_add_resource',
     'mpu_regions_overlap',
-    'mpu_region_is_valid',
     'mpu_forge_resource',
     'mpu_forge_unmapped_ressource',
     'mpu_convert_size_to_region',

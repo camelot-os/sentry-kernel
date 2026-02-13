@@ -55,8 +55,14 @@ int map_resource(void)
      * the task manager itself.
      */
     volatile uint8_t resource_id = 0;
-    volatile layout_resource_t resource;
+    volatile struct mpu_region_desc mpu_cfg;
+    layout_resource_t resource;
+
     if (prepare_startup() != 0) {
+        return -1;
+    }
+    /* first, we try to forge a resource with whatever possible values */
+    if (mpu_forge_resource(&mpu_cfg, &resource) != K_STATUS_OKAY) {
         return -1;
     }
     /* as we do not check ownership but only mapping, we use idle task as vehicle */
