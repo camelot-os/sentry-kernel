@@ -1,4 +1,5 @@
 // SPDX-FileCopyrightText: 2023 Ledger SAS
+// SPDX-FileCopyrightText: 2026 H2Lab Development Team
 // SPDX-License-Identifier: Apache-2.0
 
 /**
@@ -127,6 +128,9 @@ end:
     return res;
 }
 
+/*@
+    assigns \nothing;
+ */
 task_t *task_get_from_handle(taskh_t h)
 {
     task_t *tsk = NULL;
@@ -782,22 +786,69 @@ end:
     return status;
 }
 
-kstatus_t mgr_task_add_resource(taskh_t t, uint8_t resource_id, layout_resource_t resource)
+/*@
+    requires \separated(&task_table[0 .. CONFIG_MAX_TASKS].layout[0 .. TASK_MAX_RESSOURCES_NUM-1], &resource);
+    ensures \result == K_STATUS_OKAY || \result == K_ERROR_INVPARAM;
+    assigns task_table[0 .. CONFIG_MAX_TASKS].layout[0 .. TASK_MAX_RESSOURCES_NUM-1];
+    ensures \result == K_STATUS_OKAY || \result == K_ERROR_INVPARAM;
+    ensures \result == K_STATUS_OKAY ==> mpu_wx_conformity(resource);
+*/
+kstatus_t mgr_task_add_resource(const taskh_t t, const uint8_t resource_id, const layout_resource_t resource)
 {
-    kstatus_t status;
+    kstatus_t status = K_ERROR_INVPARAM;
     task_t *cell;
 
     if (unlikely((cell = task_get_from_handle(t)) == NULL)) {
-        status = K_ERROR_INVPARAM;
         goto err;
     }
 
     if (unlikely(resource_id >= TASK_MAX_RESSOURCES_NUM)) {
-        status = K_ERROR_INVPARAM;
         goto err;
     }
+    /* NOTE: while register encoded, alignment validity is always true */
+    if (unlikely(mpu_region_is_w_xor_x(&resource) == SECURE_FALSE)) {
+        goto err;
+    }
+    /*@ assert mpu_wx_conformity(resource); */
 
+    /**
+     * before adding a new ressource to a given app context, we ensure that
+     * there is no verlap between the new ressource and already existing ones,
+     * that may lead to partial or full overlapping that impact the W^X policy
+     * enforcement.
+     * The check is done at ressource mapping time, in order to avoid overhead
+     * at task switching time.
+     * Note that this call is made during the sys_map() syscall family.
+     * The demonstration is enforced using ACSL annotations in architecture backend,
+     * and demonstrated using a specialy crafted frama-C entrypoint.
+     * Note: layout are u64 content, which is passed as value, not as pointer, to reduce
+     * resolution overhead.
+     */
+    /*@ ghost int do_overlap = 0; */
+    /*@
+      loop invariant 0 <= idx <= TASK_MAX_RESSOURCES_NUM;
+      loop invariant \initialized(&cell->layout[idx]);
+      loop assigns idx;
+      loop variant TASK_MAX_RESSOURCES_NUM - idx;
+    */
+    for (uint8_t idx = 0; idx < TASK_MAX_RESSOURCES_NUM; ++idx) {
+        if (unlikely(mpu_regions_overlap(cell->layout[idx], resource) == SECURE_TRUE)) {
+            /*@ ghost do_overlap = 1; */
+            /*@ assert !disjoint(cell->layout[idx], resource); */
+            goto err;
+        }
+        /*@ assert disjoint(cell->layout[idx], resource); */
+        /*
+         * for each comparison, if we reach this point, this means that the
+         * corresponding indexed region and resource do not overlap eachother.
+         * If this is true for all regions, then the new resource is disjoint
+         * from all existing ones.
+         */
+    }
+
+    /* Once the mapping is demonstrated valid, we can add the ressource */
     memcpy(&cell->layout[resource_id], &resource, sizeof(layout_resource_t));
+    /*@ assert do_overlap == 0; */
     status = K_STATUS_OKAY;
 err:
     return status;

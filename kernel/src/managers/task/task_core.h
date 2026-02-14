@@ -1,4 +1,5 @@
 // SPDX-FileCopyrightText: 2023 Ledger SAS
+// SPDX-FileCopyrightText: 2025 H2Lab Development Team
 // SPDX-License-Identifier: Apache-2.0
 
 #ifndef TASK_CORE_H
@@ -24,30 +25,46 @@ typedef struct __attribute__((packed)) ktaskh  {
 
 static_assert(sizeof(ktaskh_t) == sizeof(taskh_t), "taskh_t opaque model failure!");
 
-static inline const ktaskh_t *taskh_to_ktaskh(const taskh_t * const th) {
+/*@
+    requires \valid_read(th);
+    assigns \nothing;
+*/
+static inline const ktaskh_t * taskh_to_ktaskh(const taskh_t * th) {
     /*@ assert \valid_read(th); */
-    union uth {
-        const uint32_t *th;
-        const ktaskh_t *kth;
-    };
-
-    union uth converter = {
-        .th = th
-    };
-    return converter.kth;
+    /*
+     * Note: here, ktaskh_t and taskht_t have the very same size (demonstrated using
+     * the static_assert above.
+     * Moreover, taskh_t is a uint32_t opaque type, and ktaskh_t is a packed struct with
+     * bitfield, but the bitfield layout is designed to fit in a uint32_t,
+     * so the memory layout of both types is compatible.
+     * Here, we ask gcc to gently not complain about the address of packed member,
+     * as we are sure that the layout is compatible and that this is a safe operation.
+     */
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Waddress-of-packed-member"
+    return (const ktaskh_t *)th;
+#pragma GCC diagnostic pop
 }
 
-static inline const taskh_t *ktaskh_to_taskh(const ktaskh_t * const kth) {
+/*@
+    requires \valid_read(kth);
+    assigns \nothing;
+*/
+static inline const taskh_t * ktaskh_to_taskh(const ktaskh_t * kth) {
     /*@ assert \valid_read(kth); */
-    union uth {
-        const uint32_t *th;
-        const ktaskh_t *kth;
-    };
-
-    union uth converter = {
-        .kth = kth
-    };
-    return converter.th;
+    /*
+     * Note: here, ktaskh_t and taskht_t have the very same size (demonstrated using
+     * the static_assert above.
+     * Moreover, taskh_t is a uint32_t opaque type, and ktaskh_t is a packed struct with
+     * bitfield, but the bitfield layout is designed to fit in a uint32_t,
+     * so the memory layout of both types is compatible.
+     * Here, we ask gcc to gently not complain about the address of packed member,
+     * as we are sure that the layout is compatible and that this is a safe operation.
+     */
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Waddress-of-packed-member"
+    return (const taskh_t *)kth;
+#pragma GCC diagnostic pop
 }
 
 #if CONFIG_HAS_GPDMA

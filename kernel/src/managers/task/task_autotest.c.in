@@ -12,9 +12,12 @@
 /**
  * ldscript provided
  */
+/* when linking the kernel, these values are based on the kernel linkerscript, which
+ * is built from the devicetree memory mapping values */
 extern size_t _autotest_svcexchange;
 extern size_t _sautotest;
 extern size_t _eautotest;
+
 
 static task_meta_t autotest_meta;
 
@@ -38,8 +41,13 @@ void task_autotest_init(void)
     autotest_meta.magic = CONFIG_TASK_MAGIC;
     autotest_meta.flags.start_mode = JOB_FLAG_START_AUTO;
     autotest_meta.flags.exit_mode = JOB_FLAG_EXIT_RESET;
+#ifndef __FRAMAC__
     autotest_meta.s_text = (size_t)&_sautotest;
     autotest_meta.text_size = {{ "%#08xUL"|format(text["size"]) }};
+#else
+    autotest_meta.s_text = 0x800d000UL;
+    autotest_meta.text_size = 0x2000UL;
+#endif
     autotest_meta.entrypoint_offset = 0x1UL;
     autotest_meta.finalize_offset = 0x0UL; /* TBD for idle */
     autotest_meta.rodata_size = 0UL; /* fusionned in .text by now */
@@ -47,7 +55,11 @@ void task_autotest_init(void)
     autotest_meta.data_size = {{ "%#08xUL"|format(data["size"]) }};
     autotest_meta.bss_size = {{ "%#08xUL"|format(bss["size"]) }};
     autotest_meta.heap_size = 0UL;
+#ifndef __FRAMAC__
     autotest_meta.s_svcexchange = (size_t)&_autotest_svcexchange;
+#else
+    autotest_meta.s_svcexchange = 0x20008000UL;
+#endif
     autotest_meta.stack_size = 2048; /* should be highly enough */
 }
 

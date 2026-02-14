@@ -1,4 +1,5 @@
 // SPDX-FileCopyrightText: 2023 Ledger SAS
+// SPDX-FileCopyrightText: 2025 H2Lab Development Team
 // SPDX-License-Identifier: Apache-2.0
 
 /**
@@ -35,6 +36,9 @@
 #define MPU_REGION_PERM_PRIV_RO ARM_MPU_AP_(_MPU_PERM_RO, _MPU_PERM_P)
 /** MPU Access Permission privileged/unprivileged read-only access */
 #define MPU_REGION_PERM_RO ARM_MPU_AP_(_MPU_PERM_RO, _MPU_PERM_NP)
+
+#define MPU_REGION_ALIGN 32U
+#define MPU_REGION_ALIGN_MASK (MPU_REGION_ALIGN - 1)
 
 /*
  * XXX:
@@ -125,6 +129,60 @@
 
 #define MPU_FASTLOAD_ALIGNED 1
 
+
+/*@
+
+  predicate aligned_32(ℤ addr) =
+    (addr & MPU_REGION_ALIGN_MASK) == 0;
+
+    predicate mpu_is_empty_region(ARM_MPU_Region_t r1) =
+      r1.RBAR == 0 && r1.RLAR == 0;
+
+  predicate valid_mpu_region(ℤ base, ℤ limit) =
+    ((base == 0 && limit == 0) ||
+    (
+        aligned_32(base)
+        && aligned_32(limit)
+        && limit >= base
+        && ((limit - base + 1) % MPU_REGION_ALIGN == 0)
+    ));
+
+  predicate valid_mpu_regions{L}(ARM_MPU_Region_t *regions, integer n) =
+        \forall integer i;
+            0 <= i < n ==>
+            valid_mpu_region(regions[i].RBAR & MPU_RBAR_BASE_Msk,
+                             regions[i].RLAR & MPU_RLAR_LIMIT_Msk);
+
+  predicate non_empty_region(ℤ base, ℤ limit) =
+    (limit - base + 1) >= MPU_REGION_ALIGN;
+
+  // when either region is empty, they are considered disjoint
+  predicate disjoint(ARM_MPU_Region_t r1, ARM_MPU_Region_t r2) =
+      r1.RBAR == 0 && r1.RLAR == 0 ||
+      r2.RBAR == 0 && r2.RLAR == 0 ||
+      (
+        (r1.RBAR & MPU_RBAR_BASE_Msk) <= (r2.RLAR & MPU_RLAR_LIMIT_Msk) ||
+        (r2.RBAR & MPU_RBAR_BASE_Msk) <= (r1.RLAR & MPU_RLAR_LIMIT_Msk)
+      );
+
+  predicate regions_disjoint{L}(ARM_MPU_Region_t *regions, integer n) =
+      \forall integer i, j;
+        0 <= i < n && 0 <= j < n && i != j ==>
+          disjoint(regions[i], regions[j]);
+
+
+  predicate region_desc_wx_conformity(struct mpu_region_desc desc) =
+      (desc.noexec == 1) ||
+      (desc.noexec == 0 && (desc.access_perm == MPU_REGION_PERM_RO || desc.access_perm == MPU_REGION_PERM_PRIV_RO));
+
+  predicate mpu_wx_conformity(ARM_MPU_Region_t r) =
+      ((r.RBAR & MPU_RBAR_XN_Msk) == 0 && (r.RBAR & MPU_RBAR_AP_Msk) >> MPU_RBAR_AP_Pos == MPU_REGION_PERM_RO) ||
+      ((r.RBAR & MPU_RBAR_XN_Msk) == 0 && (r.RBAR & MPU_RBAR_AP_Msk) >> MPU_RBAR_AP_Pos == MPU_REGION_PERM_PRIV_RO) ||
+      ((r.RBAR & MPU_RBAR_XN_Msk) != 0);
+
+*/
+
+
 /*@
   assigns (*(MPU_Type*)MPU_BASE);
  */
@@ -159,6 +217,7 @@ __STATIC_FORCEINLINE void __mpu_initialize(void)
 /*@
    requires \valid(resource);
    assigns *resource;
+   ensures mpu_is_empty_region(*resource);
  */
 __STATIC_FORCEINLINE kstatus_t mpu_forge_unmapped_ressource(uint8_t id, layout_resource_t *resource)
 {
@@ -173,34 +232,107 @@ __STATIC_FORCEINLINE kstatus_t mpu_forge_unmapped_ressource(uint8_t id, layout_r
   requires \valid_read(desc);
   requires \valid(resource);
   assigns *resource;
-  ensures (\result == K_STATUS_OKAY);
+  ensures (\result == K_STATUS_OKAY) ==> mpu_wx_conformity(*resource);
  */
 __STATIC_FORCEINLINE kstatus_t mpu_forge_resource(const struct mpu_region_desc *desc,
                                                    layout_resource_t *resource)
 {
     kstatus_t status = K_ERROR_INVPARAM;
 
-    /* W^X conformity */
-    /*@
-      assert desc->noexec == 0 ==>
-        (desc->access_perm == MPU_REGION_PERM_RO || desc->access_perm == MPU_REGION_PERM_PRIV_RO);
+    if (desc->noexec == 0) {
+        /* active W^X check at descriptor level */
+        if (desc->access_perm != MPU_REGION_PERM_RO &&
+            desc->access_perm != MPU_REGION_PERM_PRIV_RO) {
+            goto err;
+        }
+    }
+    /*@ assert region_desc_wx_conformity(*desc); */
+    if (unlikely(desc->size == 0 && desc->addr == 0)) {
+        /* invalid region, avoid u32 overlow */
+        goto err;
+    }
+    if (desc->access_attrs > 0xF) {
+        /* invalid access attributes */
+        goto err;
+    }
+    if (unlikely((UINT32_MAX - desc->size) < desc->addr)) {
+        /* overflow in region limit calculation */
+        goto err;
+    }
+    if (unlikely(desc->access_attrs > 0xF)) {
+        /* invalid access attributes */
+        goto err;
+    }
+    /*
+     * NOTE: ARM builtins do not check unsigned overflow, so we
+     * check them here
      */
-    /*@
-      assert (desc->access_perm != MPU_REGION_PERM_RO && desc->access_perm != MPU_REGION_PERM_PRIV_RO) ==>
-        desc->noexec == 1;
-    */
+    /*@ assert (desc->addr + desc->size <= UINT32_MAX); */
     resource->RBAR = ARM_MPU_RBAR_AP(
         desc->addr,
         desc->shareable ? ARM_MPU_SH_INNER : ARM_MPU_SH_NON,
         desc->access_perm,
         desc->noexec ? 1UL : 0UL
     );
-
     resource->RLAR = ARM_MPU_RLAR(desc->addr + desc->size - 1, desc->access_attrs);
 
     status = K_STATUS_OKAY;
     /*@ assert (status == K_STATUS_OKAY); */
+err:
     return status;
+}
+
+/**
+ * Compare two ARMv8-M MPU regions defined by RBAR/RLAR
+ *
+ * @return true if regions overlap, false otherwise
+ */
+/*@
+    assigns \nothing;
+    ensures \result == SECURE_TRUE || \result == SECURE_FALSE;
+    ensures \result == SECURE_FALSE ==>
+        disjoint(reg1, reg2);
+ */
+static inline secure_bool_t mpu_regions_overlap(layout_resource_t reg1, layout_resource_t reg2)
+{
+    secure_bool_t overlap = SECURE_TRUE;
+    uint32_t base_a  = reg1.RBAR & MPU_RBAR_BASE_Msk;
+    uint32_t limit_a = reg1.RLAR & MPU_RLAR_LIMIT_Msk;
+
+    uint32_t base_b  = reg2.RBAR & MPU_RBAR_BASE_Msk;
+    uint32_t limit_b = reg2.RLAR & MPU_RLAR_LIMIT_Msk;
+
+    if ((base_a >= limit_b) || (base_b >= limit_a)) {
+        /*@ assert disjoint(reg1, reg2); */
+        overlap = SECURE_FALSE;
+    }
+    return overlap;
+}
+
+/*@
+    requires \valid_read(region);
+    assigns \nothing;
+    ensures \result == SECURE_TRUE || \result == SECURE_FALSE;
+    ensures \result ==  SECURE_TRUE <==> mpu_wx_conformity(*region);
+    ensures \result ==  SECURE_FALSE <==> !mpu_wx_conformity(*region);
+*/
+static inline secure_bool_t mpu_region_is_w_xor_x(layout_resource_t const * const region)
+{
+    secure_bool_t is_w_xor_x = SECURE_FALSE;
+
+    /* Check if the region is executable */
+    if ((region->RBAR & MPU_RBAR_XN_Msk) == 0) {
+        if (
+            ((region->RBAR & MPU_RBAR_AP_Msk) >> MPU_RBAR_AP_Pos) != (MPU_REGION_PERM_RO) &&
+            ((region->RBAR & MPU_RBAR_AP_Msk) >> MPU_RBAR_AP_Pos) != (MPU_REGION_PERM_PRIV_RO)
+        ) {
+            /* region is not W^X compliant */
+            goto end;
+        }
+    }
+    is_w_xor_x = SECURE_TRUE;
+end:
+    return is_w_xor_x;
 }
 
 /**
@@ -218,6 +350,8 @@ __STATIC_FORCEINLINE kstatus_t mpu_forge_resource(const struct mpu_region_desc *
 /*@
   requires \valid_read(resource + (0 .. num_resources-1));
   requires ((first_region_number + num_resources) <= CONFIG_NUM_MPU_REGIONS);
+  requires valid_mpu_regions(resource, num_resources);
+  requires regions_disjoint(resource, num_resources);
   assigns (*(MPU_Type*)MPU_BASE);
  */
 __STATIC_FORCEINLINE void __mpu_fastload(
@@ -226,7 +360,16 @@ __STATIC_FORCEINLINE void __mpu_fastload(
     uint8_t num_resources
 )
 {
+#ifndef __FRAMAC__
+    /*
+     * here we disable the effective MPU setting in Frama-C mode.
+     * Although, this can be enhanced by adding to the corresponding frama-c
+     * test the mapping informations of the MPU registers, so that it can
+     * check the correctness of the MPU configuration at register level and not
+     * only at layout_resource_t level.
+     */
     ARM_MPU_Load(first_region_number, resource, num_resources);
+#endif
 }
 
 /*@
@@ -285,7 +428,16 @@ __STATIC_FORCEINLINE void __mpu_set_region(
     const layout_resource_t *resource
 )
 {
+#ifndef __FRAMAC__
+    /*
+     * here we disable the effective MPU setting in Frama-C mode.
+     * Although, this can be enhanced by adding to the corresponding frama-c
+     * test the mapping informations of the MPU registers, so that it can
+     * check the correctness of the MPU configuration at register level and not
+     * only at layout_resource_t level.
+     */
     ARM_MPU_SetRegion(region_id, resource->RBAR, resource->RLAR);
+#endif
 }
 
 #endif /* __ARCH_ARM_PMSA_V8_H */

@@ -256,7 +256,10 @@ __STATIC_FORCEINLINE kstatus_t mpu_load_descriptors(
      */
     for (size_t i = 0UL; i < count; i++) {
         desc = region_descs + i;
-        mpu_forge_resource(desc, &resource);
+        if (unlikely(mpu_forge_resource(desc, &resource) != K_STATUS_OKAY)) {
+            panic(PANIC_CONFIGURATION_MISMATCH);
+            break;
+        }
         __mpu_set_region(desc->id, &resource);
     }
 #ifndef __FRAMAC__

@@ -1,4 +1,5 @@
 // SPDX-FileCopyrightText: 2023 Ledger SAS
+// SPDX-FileCopyrightText: 2026 H2Lab Development Team
 // SPDX-License-Identifier: Apache-2.0
 
 /**
@@ -107,6 +108,27 @@
 #define MPU_REGION_SIZE_4GB ARM_MPU_REGION_SIZE_4GB
 
 #define MPU_FASTLOAD_ALIGNED 0
+
+
+/*@
+
+  predicate is_power_of_two(integer x) =
+    x > 0 && (\exists integer k; k >= 0 && x == (1 << k));
+
+  predicate valid_mpu_region(ℤ base, ℤ size) =
+      size >= 32
+      && is_power_of_two(size)
+      && base % size == 0;
+
+  predicate region_desc_wx_conformity(struct mpu_region_desc desc) =
+      (desc.noexec == 0 && (desc.access_perm == MPU_REGION_PERM_RO || desc.access_perm == MPU_REGION_PERM_PRIV_RO));
+
+  predicate mpu_wx_conformity(ARM_MPU_Region_t r) =
+      ((r.RBAR & MPU_RBAR_XN_Msk) == 0 && (r.RBAR & MPU_RBAR_AP_Msk) == MPU_REGION_PERM_RO) ||
+      ((r.RBAR & MPU_RBAR_XN_Msk) != 0);
+
+*/
+
 /*@
   assigns \nothing;
  */
@@ -129,11 +151,83 @@ __STATIC_FORCEINLINE kstatus_t mpu_forge_unmapped_ressource(uint8_t id, layout_r
     return status;
 }
 
+
+/**
+ * Compare two ARMv7-M MPU regions defined by RBAR/RASR
+ *
+ * @return true if regions overlap, false otherwise
+ */
+static inline secure_bool_t mpu_regions_overlap(layout_resource_t reg1, layout_resource_t reg2)
+{
+    secure_bool_t overlap = SECURE_TRUE;
+    /* Disabled regions never overlap */
+    if (!(reg1.RASR & MPU_CTRL_ENABLE_Msk) ||
+        !(reg2.RASR & MPU_CTRL_ENABLE_Msk)) {
+            overlap = SECURE_FALSE;
+            goto end;
+    }
+
+    uint32_t base_a = reg1.RBAR & MPU_RBAR_ADDR_Msk;
+    uint32_t base_b = reg2.RBAR & MPU_RBAR_ADDR_Msk;
+
+    uint32_t size_field_a = (reg1.RASR & MPU_RASR_SIZE_Msk) >> MPU_RASR_SIZE_Pos;
+    uint32_t size_field_b = (reg2.RASR & MPU_RASR_SIZE_Msk) >> MPU_RASR_SIZE_Pos;
+
+    /* SIZE < 4 is UNPREDICTABLE per ARM ARM (minimum is 32 bytes) */
+    if (size_field_a < 4 || size_field_b < 4) {
+        /* catching error, yet not semantically correct */
+        overlap = SECURE_TRUE;
+        goto end;
+    }
+
+    uint64_t size_a = 1ULL << (size_field_a + 1);
+    uint64_t size_b = 1ULL << (size_field_b + 1);
+
+    uint64_t end_a = (uint64_t)base_a + size_a;
+    uint64_t end_b = (uint64_t)base_b + size_b;
+
+    if ((base_a >= end_b) || (base_b >= end_a)) {
+        overlap = SECURE_FALSE;
+        goto end;
+    }
+end:
+    return overlap;
+}
+
+/*@
+    requires \valid_read(region);
+    assigns \nothing;
+    ensures \result == SECURE_TRUE || \result == SECURE_FALSE;
+    ensures \result ==  SECURE_TRUE <==> mpu_wx_conformity(*region);
+    ensures \result ==  SECURE_FALSE <==> !mpu_wx_conformity(*region);
+*/
+static inline secure_bool_t mpu_region_is_w_xor_x(layout_resource_t const * const region)
+{
+    secure_bool_t is_w_xor_x = SECURE_FALSE;
+    uint32_t rasr = region->RASR;
+
+    /* Check if the region is executable */
+    if ((rasr & MPU_RASR_XN_Msk) == 0) {
+        if (
+            ((rasr & MPU_RASR_AP_Msk) >> MPU_RASR_AP_Pos) != MPU_REGION_PERM_RO &&
+            ((rasr & MPU_RASR_AP_Msk) >> MPU_RASR_AP_Pos) != MPU_REGION_PERM_PRIV_RO
+        ) {
+            /* region is not W^X compliant */
+            goto end;
+        }
+    }
+    is_w_xor_x = SECURE_TRUE;
+end:
+    return is_w_xor_x;
+}
+
+
 /*@
   requires \valid_read(desc);
   requires \valid(resource);
   assigns *resource;
-  ensures (\result == K_STATUS_OKAY);
+  ensures (\result == K_STATUS_OKAY) ==>
+      mpu_wx_conformity(*resource);
  */
 __STATIC_FORCEINLINE kstatus_t mpu_forge_resource(const struct mpu_region_desc *desc,
                                                    layout_resource_t *resource)
@@ -143,15 +237,15 @@ __STATIC_FORCEINLINE kstatus_t mpu_forge_resource(const struct mpu_region_desc *
     uint32_t rasr;
 
 
-    /* W^X conformity */
-    /*@
-      assert desc->noexec == 0 ==>
-        (desc->access_perm == MPU_REGION_PERM_RO || desc->access_perm == MPU_REGION_PERM_PRIV_RO);
-     */
-    /*@
-      assert (desc->access_perm != MPU_REGION_PERM_RO && desc->access_perm != MPU_REGION_PERM_PRIV_RO) ==>
-        desc->noexec == 1;
-    */
+    if (desc->noexec == 0) {
+        /* active W^X check */
+        if (desc->access_perm != MPU_REGION_PERM_RO &&
+            desc->access_perm != MPU_REGION_PERM_PRIV_RO) {
+            goto err;
+        }
+    }
+    /* Once check, W^X conformity can be asserted */
+    /*@ assert region_desc_wx_conformity(*desc); */
     resource->RBAR = ARM_MPU_RBAR(desc->id, desc->addr);
     resource->RASR = ARM_MPU_RASR_EX(desc->noexec ? 1UL : 0UL,
                            desc->access_perm,
@@ -159,6 +253,7 @@ __STATIC_FORCEINLINE kstatus_t mpu_forge_resource(const struct mpu_region_desc *
                            desc->mask,
                            desc->size);
     status = K_STATUS_OKAY;
+err:
     return status;
 }
 

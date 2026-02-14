@@ -14,9 +14,12 @@
 /**
  * ldscript provided
  */
+/* when linking the kernel, these values are based on the kernel linkerscript, which
+ * is built from the devicetree memory mapping values */
 extern size_t _idle_svcexchange;
 extern size_t _sidle;
 extern size_t _eidle;
+
 
 static task_meta_t idle_meta;
 
@@ -28,8 +31,13 @@ void task_idle_init(void)
     idle_meta.magic = CONFIG_TASK_MAGIC;
     idle_meta.flags.start_mode = JOB_FLAG_START_NOAUTO;
     idle_meta.flags.exit_mode = JOB_FLAG_EXIT_PANIC;
+#ifndef __FRAMAC__
     idle_meta.s_text = (size_t)&_sidle;
     idle_meta.text_size = ((size_t)&_eidle - (size_t)&_sidle);
+#else
+    idle_meta.s_text = 0x800c0000UL;
+    idle_meta.text_size = 0x500UL;
+#endif
 
 #if defined(__arm__) || defined(__FRAMAC__)
     idle_meta.entrypoint_offset = 0x1UL;
@@ -44,7 +52,11 @@ void task_idle_init(void)
     idle_meta.data_size = 4UL; /* ssp seed value initial data size */
     idle_meta.bss_size = 0UL;
     idle_meta.heap_size = 0UL;
+#ifndef __FRAMAC__
     idle_meta.s_svcexchange = (size_t)&_idle_svcexchange;
+#else
+    idle_meta.s_svcexchange = 0x20004000UL;
+#endif
     idle_meta.stack_size = 256; /* should be highly enough */
 }
 
