@@ -17,7 +17,7 @@
 		#size-cells = <1>;
 
 		kernel_code: kernel_code@8000000 {
-			reg = <0x8000000 0xb000>;
+			reg = <0x8000000 0xb800>;
 			compatible = "sentry,memory-pool";
 		};
 
