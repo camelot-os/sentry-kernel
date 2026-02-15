@@ -164,9 +164,6 @@ jobs:
           echo "Found firmware binaries:"
           ls -R /tmp/artifacts
 
-      - run: |
-          pip install intelhex
-
       # by now, only booting u5a5_no_output. To be updated with other targets as they get supported in slab-rehosting
       - name: Run E2E test for 'nucleo_u5a5_nooutput'
         run: |
@@ -176,7 +173,7 @@ jobs:
             exit 1
           fi
           echo "converting $firmware_path to binary format"
-          hex2bin.py --range 0x08000000:080f0000 "$firmware_path" /tmp/firmware.bin
+          /usr/share/python3-intelhex/bin2hex.py --range 0x08000000:080f0000 "$firmware_path" /tmp/firmware.bin
           echo "Testing firmware: $firmware_path binary converted path: /tmp/firmware.bin"
           python3 /opt/slab-rehosting/slab/examples/cortex-m/stm32/u5a5/demos/sentry-autotest/test_sentry_kernel.py --firmware-path /tmp/firmware.bin | tee /tmp/test_output.log
 
