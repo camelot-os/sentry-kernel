@@ -140,6 +140,12 @@ jobs:
         if: failure()
         run: |
           cat builddir/meson-logs/meson-log.txt
+      - name: Upload firmware artifact
+        if: success() && matrix.toolchain == 'gcc|13.2.Rel1' && matrix.operating_system == 'mesonbuild/ubuntu-rolling'
+        uses: actions/upload-artifact@v4
+        with:
+          name: firmware-${{ matrix.config.name }}
+          path: builddir/firmware.hex
 
   test:
     needs: [ build ]
