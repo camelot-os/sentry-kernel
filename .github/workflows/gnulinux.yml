@@ -147,6 +147,44 @@ jobs:
           name: firmware-${{ matrix.config.name }}
           path: builddir/firmware.hex
 
+  e2e_test:
+    needs: build
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/camelot-os/slab-runner:latest
+    steps:
+      - name: Download all firmware artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: /tmp/artifacts
+          merge-multiple: true
+
+      - name: List collected `.hex` files
+        run: |
+          echo "Found firmware binaries:"
+          ls -R /tmp/artifacts
+
+      - run: |
+          pip install intelhex
+
+      # by now, only booting u5a5_no_output. To be updated with other targets as they get supported in slab-rehosting
+      - name: Run E2E test for 'nucleo_u5a5_nooutput'
+        run: |
+          firmware_path=$(find /tmp/artifacts -type f -name "firmware-nucleo_u5a5_nooutput-*-*.hex" | head -n 1)
+          if [[ -z "$firmware_path" ]]; then
+            echo "Firmware for 'nucleo_u5a5_nooutput' not found!"
+            exit 1
+          fi
+          echo "converting $firmware_path to binary format"
+          hex2bin.py --range 0x08000000:080f0000 "$firmware_path" /tmp/firmware.bin
+          echo "Testing firmware: $firmware_path binary converted path: /tmp/firmware.bin"
+          python3 /opt/slab-rehosting/slab/examples/cortex-m/stm32/u5a5/demos/sentry-autotest/test_sentry_kernel.py --firmware-path /tmp/firmware.bin | tee /tmp/test_output.log
+
+      - name: Upload E2E test logs
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-test-logs
+
   test:
     needs: [ build ]
     defaults:
