@@ -1,0 +1,105 @@
+# SPDX-FileCopyrightText: 2025 H2Lab OSS Team
+# SPDX-License-Identifier: Apache-2.0
+
+name: Sentry kernel build on Windows
+
+on:
+  workflow_dispatch:
+  push:
+  pull_request:
+    branches:
+    - main
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+# using /home/build as home, as buildbot is using user build. Cache is still in /cache
+# This allows the usage of automated ssh key installation step
+
+jobs:
+  build:
+    name: build
+    defaults:
+      run:
+        shell: bash
+    runs-on: windows-latest
+    steps:
+      - name: install prerequisites pkg
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: MINGW64
+          update: true
+          install: >-
+            base-devel
+            git
+            wget
+            curl
+            dtc
+            libssh2
+            cmake
+            gcc
+            ninja
+            brotli
+            libffi
+            libffi-devel
+            mingw-w64-x86_64-python
+            mingw-w64-x86_64-python-pip
+            mingw-w64-x86_64-python-lxml
+            mingw-w64-x86_64-python-lief
+            mingw-w64-x86_64-python-wheel
+            mingw-w64-x86_64-python-pillow
+            mingw-w64-x86_64-python-lief
+            mingw-w64-x86_64-python-cffi
+      - name: XXX git permission quirk XXX
+        run: |
+          git config --global --add safe.directory $GITHUB_WORKSPACE
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+          set-safe-directory: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Clone cross-files
+        uses: actions/checkout@v4
+        with:
+          ref:  'main'
+          repository: 'outpost-os/meson-cross-files'
+          path: crossfiles
+      - name: Setup Rust toolchain
+        uses: dtolnay/rust-toolchain@v1
+        with:
+          toolchain: nightly
+          targets: thumbv8m.main-none-eabi
+          components: clippy,rustfmt
+      - name: Setup C toolchain
+        uses: outpost-os/action-setup-compiler@v1
+        with:
+          compiler: gcc
+          triple: arm-none-eabi
+          ref: 13.2.Rel1
+          workspace: $GITHUB_WORKSPACE
+       # using older setuptools, see https://github.com/sass/libsass-python/issues/468
+      - name: deploy local deps
+        run: |
+          pip config set global.break-system-packages true
+          pip install "setuptools<74"
+          pip install -r requirements.txt
+        shell: msys2 {0}
+      - name: defconfig
+        run: |
+          defconfig configs/nucleo_u5a5_autotest_defconfig
+        shell: msys2 {0}
+      - name: Meson Build
+        uses: outpost-os/action-meson@main
+        with:
+          cross_files: 'support/meson/msys2.ini'
+          actions: '["prefetch", "setup", "compile"]'
+          options: '-Dconfig=.config -Ddts=dts/examples/nucleo_u5a5_autotest.dts -Ddts-include-dirs=dts'
+          shell: msys2 {0}
+      - name: Meson postcheck
+        if: failure()
+        run: |
+          cat builddir/meson-logs/meson-log.txt
