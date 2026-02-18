@@ -184,6 +184,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: e2e-test-logs
+          path: /tmp/test_output.log
 
   test:
     needs: [ build ]
