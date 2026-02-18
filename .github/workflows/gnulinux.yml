@@ -143,15 +143,15 @@ jobs:
       - name: rename firmware after config name
         if: success() && matrix.toolchain == 'gcc|13.2.Rel1' && matrix.operating_system == 'mesonbuild/ubuntu-rolling'
         run: |
-          if test -f builddir/firmware.hex; then
-            cp builddir/firmware.hex firmware-${{ matrix.config.name }}.hex
+          if test -f builddir/firmware.bin; then
+            cp builddir/firmware.bin firmware-${{ matrix.config.name }}.bin
           fi
       - name: Upload firmware artifact
         if: success() && matrix.toolchain == 'gcc|13.2.Rel1' && matrix.operating_system == 'mesonbuild/ubuntu-rolling'
         uses: actions/upload-artifact@v4
         with:
           name: firmware-${{ matrix.config.name }}
-          path: firmware-${{ matrix.config.name }}.hex
+          path: firmware-${{ matrix.config.name }}.bin
 
   e2e_test:
     needs: build
@@ -165,7 +165,7 @@ jobs:
           path: /tmp/artifacts
           merge-multiple: true
 
-      - name: List collected `.hex` files
+      - name: List collected `.bin` files
         run: |
           echo "Found firmware binaries:"
           ls -R /tmp/artifacts
@@ -173,15 +173,12 @@ jobs:
       # by now, only booting u5a5_no_output. To be updated with other targets as they get supported in slab-rehosting
       - name: Run E2E test for 'nucleo_u5a5_nooutput'
         run: |
-          firmware_path=$(find /tmp/artifacts -type f -name "firmware-nucleo_u5a5_nooutput.hex" | head -n 1)
+          firmware_path=$(find /tmp/artifacts -type f -name "firmware-nucleo_u5a5_nooutput.bin" | head -n 1)
           if test -z "$firmware_path"; then
             echo "Firmware for 'nucleo_u5a5_nooutput' not found!"
             exit 1
           fi
-          echo "converting $firmware_path to binary format"
-          /usr/share/python3-intelhex/bin2hex.py --range 0x08000000:080f0000 "$firmware_path" /tmp/firmware.bin
-          echo "Testing firmware: $firmware_path binary converted path: /tmp/firmware.bin"
-          python3 /opt/slab-rehosting/slab/examples/cortex-m/stm32/u5a5/demos/sentry-autotest/test_sentry_kernel.py --firmware-path /tmp/firmware.bin | tee /tmp/test_output.log
+          python3 /opt/slab-rehosting/slab/examples/cortex-m/stm32/u5a5/demos/sentry-autotest/test_sentry_kernel.py --firmware-path "$firmware_path" | tee /tmp/test_output.log
 
       - name: Upload E2E test logs
         uses: actions/upload-artifact@v4
