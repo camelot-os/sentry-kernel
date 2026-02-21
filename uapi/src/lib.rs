@@ -19,7 +19,14 @@
 //!  are implemented in the [`mod@syscall`] module, while the upper, easy interface
 //!  is out of the scope of this very crate, and written in the shield crate instead.
 
-#![cfg_attr(not(feature = "std"), no_std)]
+#![cfg_attr(
+    not(all(target_arch = "x86_64", target_os = "linux")),
+    no_std
+)]
+
+/// Support for std in POSIX mode, only for linux/x86_64 targets
+#[cfg(all(target_arch = "x86_64", target_os = "linux"))]
+extern crate std;
 
 #[macro_use]
 mod arch;
@@ -76,7 +83,21 @@ mod exchange;
 /// but instead with an upper interface such as shield
 ///
 /// > **NOTE**: This module may not be kept public forever
+//
+#[cfg(not(all(target_arch = "x86_64", target_os = "linux")))]
+pub mod syscall;
+
+/// POSIX-based syscall implementation
 ///
+/// # Usage
+///
+/// This module is responsible for making uapi functional in POSIX mode, by providing
+/// a syscall implementation that is based on the POSIX API and thus only available
+/// for linux/x86_64 targets.
+///
+//
+#[cfg(all(target_arch = "x86_64", target_os = "linux"))]
+#[path = "posix.rs"]
 pub mod syscall;
 
 /// Sentry kernelspace/userspace shared types and values
@@ -116,5 +137,5 @@ pub use self::exchange::SentryExchangeable;
 /// Re-export Sentry uapi length fonction for Kani tests
 pub use self::exchange::length;
 
-#[cfg(not(feature = "std"))]
+#[cfg(not(all(target_arch = "x86_64", target_os = "linux")))]
 mod panic;
