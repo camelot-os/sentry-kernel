@@ -14,6 +14,8 @@ subdir('drivers')
 subdir('managers')
 subdir('syscalls')
 subdir('sched')
+subdir('eacsl')
+
 
 
 #enclave_linker_script = files('m7fw.ld')
