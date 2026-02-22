@@ -24,7 +24,7 @@
 /// server and returning the server's response as the syscall result.
 ///
 
-use crate::systypes::*;
+use crate::{SentryExchangeable, systypes::*};
 
 
 #[inline(always)]
@@ -34,7 +34,36 @@ pub fn exit(status: i32) -> Status {
 
 #[inline(always)]
 pub fn sleep(_duration_ms: SleepDuration, _mode: SleepMode) -> Status {
-    todo!("Convert local sleep API to std::thread::sleep");
+    match _duration_ms {
+        SleepDuration::D1ms => {
+            std::thread::sleep(std::time::Duration::from_millis(1));
+            Status::Ok
+        }
+        SleepDuration::D2ms => {
+            std::thread::sleep(std::time::Duration::from_millis(2));
+            Status::Ok
+        }
+        SleepDuration::D5ms => {
+            std::thread::sleep(std::time::Duration::from_millis(5));
+            Status::Ok
+        }
+        SleepDuration::D10ms => {
+            std::thread::sleep(std::time::Duration::from_millis(10));
+            Status::Ok
+        }
+        SleepDuration::D20ms => {
+            std::thread::sleep(std::time::Duration::from_millis(20));
+            Status::Ok
+        }
+        SleepDuration::D50ms => {
+            std::thread::sleep(std::time::Duration::from_millis(50));
+            Status::Ok
+        }
+        SleepDuration::ArbitraryMs(ms) => {
+            std::thread::sleep(std::time::Duration::from_millis(ms as u64));
+            Status::Ok
+        }
+    }
 }
 
 #[inline(always)]
@@ -48,15 +77,7 @@ pub fn get_process_handle(_label: TaskLabel) -> Status {
     // Pas d'équivalent POSIX direct
     todo!("get_process_handle not implemented in POSIX mode");
 }
-#[inline(always)]
-pub fn get_current_process() -> Status {
-    // POSIX: getpid()
-    let _pid = std::process::id();
-    Status::Ok
-}
-// -------------------------------------------------------------------------
-// IPC / Events
-// -------------------------------------------------------------------------
+
 #[inline(always)]
 pub fn send_ipc(_target: TaskHandle, _length: u8) -> Status {
     todo!("send_ipc not implemented in POSIX mode");
@@ -172,7 +193,18 @@ pub fn alarm(_timeout_ms: u32, _flag: AlarmFlag) -> Status {
 
 #[inline(always)]
 pub fn log(_length: usize) -> Status {
-    todo!("log not implemented in POSIX mode");
+    // usual model is to consecutively call:
+    // - str.to_kernel() to copy the log string into the exchange area
+    // - log(length) to trigger the log syscall, which will read the log string from the exchange area and print it
+    //
+    // In order to stay compatible with embedded use cases, we will keep the same model, by
+    // directly reading the log string from the exchange area and printing it,
+    // without any actual syscall, as this is a POSIX implementation and we can directly use std::println!
+    // Max log length is 128 by now, to be config-based set using CONFIG
+    let mut u8_slice: &mut [u8] = &mut [0u8; 128];
+    let _ = u8_slice.from_kernel();
+    std::println!("{}", String::from_utf8_lossy(u8_slice.as_ref()));
+    Status::Ok
 }
 
 #[inline(always)]
@@ -243,9 +275,6 @@ pub fn autotest_clear_capa(_capa: u32) -> Status {
     todo!("autotest_clear_capa not implemented in POSIX mode");
 }
 
-// -------------------------------------------------------------------------
-// Default fallback helper
-// -------------------------------------------------------------------------
 #[inline(always)]
 pub fn unsupported() -> Status {
     todo!("Unsupported syscall in POSIX GNU/Linux mode");
