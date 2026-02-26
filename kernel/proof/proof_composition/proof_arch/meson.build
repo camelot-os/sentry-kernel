@@ -40,6 +40,7 @@ test(
     '-eva-report-red-statuses',join_paths(meson.current_build_dir(), test_name + '.red'),
     '-metrics',
     '-metrics-eva-cover',
+    '-metrics-by-function',
     '-metrics-output',join_paths(meson.current_build_dir(), test_name + '-coverage.json'),
     '-save',join_paths(meson.current_build_dir(), test_name + '.session'),
     '-then',
