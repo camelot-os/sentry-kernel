@@ -52,7 +52,7 @@ err:
 /*@
   // ISO C equivalent of memset
   requires n > 0;
-  requires (empty_block(s) || \valid((uint8_t*)s + (0 .. n-1)));
+  requires valid_or_empty(s, n);
   assigns s[0 .. (n-1)] \from indirect:c, indirect:n;
   assigns \result \from s;
   ensures n > 0 ==> memarea_set(s, (char)c, n);
@@ -190,8 +190,8 @@ err:
 
 /*@
   // ISO C equivalent of memcpy
-  requires (empty_block(dest) || \valid(dest+(0..n-1)));
-  requires (empty_block(src) || \valid_read(src+(0..n-1)));
+  requires valid_or_empty(dest, n);
+  requires valid_read_or_empty(src, n);
   requires \initialized(src+(0..n-1));
   requires separation: \separated(dest+(0..n-1),src+(0..n-1));
   assigns ((uint8_t*)dest)[0 .. (n-1)] \from indirect:src, indirect:n;
