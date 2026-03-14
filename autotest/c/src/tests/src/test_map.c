@@ -14,7 +14,7 @@ void test_map_unmap_notmapped(void) {
     Status res;
     devh_t dev;
     TEST_START();
-    res = __sys_get_device_handle((uint8_t)devices[DEV_ID_I2C1].id);
+    res = __sys_get_device_handle(devices[DEV_ID_I2C1].id);
     copy_from_kernel((uint8_t*)&dev, sizeof(devh_t));
     ASSERT_EQ(res, STATUS_OK);
     res = __sys_unmap_dev(dev);
@@ -26,7 +26,7 @@ void test_map_invalidmap(void) {
     Status res;
     devh_t dev;
     TEST_START();
-    res = __sys_get_device_handle((uint8_t)devices[DEV_ID_I2C1].id);
+    res = __sys_get_device_handle(devices[DEV_ID_I2C1].id);
     copy_from_kernel((uint8_t*)&dev, sizeof(devh_t));
     ASSERT_EQ(res, STATUS_OK);
     dev += 42;
@@ -40,7 +40,7 @@ void test_map_mapunmap(void) {
     devh_t dev;
 
     TEST_START();
-    res = __sys_get_device_handle((uint8_t)devices[DEV_ID_I2C1].id);
+    res = __sys_get_device_handle(devices[DEV_ID_I2C1].id);
     copy_from_kernel((uint8_t*)&dev, sizeof(devh_t));
     ASSERT_EQ(res, STATUS_OK);
     LOG("handle is %lx", dev);

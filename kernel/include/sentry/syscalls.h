@@ -25,7 +25,7 @@ stack_frame_t *gate_gpio_toggle(stack_frame_t *frame, devh_t devhandle, uint8_t 
 
 stack_frame_t *gate_gpio_configure(stack_frame_t *frame, devh_t devhandle, uint8_t io);
 
-stack_frame_t *gate_get_devhandle(stack_frame_t *frame, uint8_t devid);
+stack_frame_t *gate_get_devhandle(stack_frame_t *frame, uint32_t devid);
 
 stack_frame_t *gate_get_shmhandle(stack_frame_t *frame, uint32_t shmid);
 

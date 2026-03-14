@@ -9,7 +9,7 @@
 #include <sentry/arch/asm-generic/panic.h>
 
 
-stack_frame_t *gate_get_devhandle(stack_frame_t *frame, uint8_t devid)
+stack_frame_t *gate_get_devhandle(stack_frame_t *frame, uint32_t devid)
 {
     taskh_t current = sched_get_current();
     stack_frame_t *next_frame = frame;

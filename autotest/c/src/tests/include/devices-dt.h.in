@@ -28,7 +28,7 @@
 enum devid {
     {% for device in dts.get_active_nodes() -%}
     {% if "0xbabe" in device_get_owner(device) -%}
-    DEV_ID_{{ device.label.upper() }},
+    DEV_ID_{{ device.label.upper() }} = {{ "0x%x"|format(device["sentry,label"]) }} ,
     {% endif -%}
     {% endfor -%}
     DEV_ID_MAX,
@@ -41,7 +41,7 @@ static const devinfo_t devices[] = {
     {% if "0xbabe" in device_get_owner(device) -%}
     {% set ns.total_devices = ns.total_devices + 1 -%}
     {
-        .id = {{ "0x%xUL"|format(loop.index - 1) }},
+        .id = {{ "0x%xUL"|format(device["sentry,label"]) }},
         {% if device.reg -%}
         .baseaddr = {{ "0x%08x"|format(device.reg[0]) }},
         .size = {{ "0x%08x"|format(device.reg[1]) }},

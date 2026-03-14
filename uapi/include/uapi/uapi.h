@@ -83,7 +83,7 @@ Status __sys_get_cycle(Precision precision);
 /**
  * Get back a given device handle from DTS auto-generated device identifier
  */
-Status __sys_get_device_handle(uint8_t devlabel);
+Status __sys_get_device_handle(uint32_t devlabel);
 
 /**
  * Get back a given DMA stream handle from DTS auto-generated device identifier

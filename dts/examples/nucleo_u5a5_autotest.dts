@@ -23,10 +23,15 @@
 
 	led0: led_0 {
 		compatible = "gpio-leds";
-		sentry,owner = <0xbabe>;
 		pinctrl-0 = <&led_pc7 &led_pc7>;
 		status = "disabled";
 	};
+};
+
+&led0 {
+	status = "okay";
+	sentry,owner = <0xbabe>;
+	sentry,label = <0x1f00>;
 };
 
 /{
@@ -123,6 +128,8 @@
 
 &led0 {
 	status = "okay";
+	sentry,owner = <0xbabe>;
+	sentry,label = <0x1f00>;
 };
 
 &flash0 {
@@ -173,6 +180,7 @@
 &i2c1 {
 	status = "okay";
 	sentry,owner = <0xbabe>;
+	sentry,label = <0x1ff02>;
 	dma-rx = <&gpdma1 13>;
 	dma-tx = <&gpdma1 12>;
 };
@@ -221,6 +229,7 @@
 &usart1{
 	status = "okay";
 	pinctrl-0 = <&usart1_tx_pa9>, <&usart1_rx_pa10>;
+	sentry,label = <0x1f02>;
 };
 
 &lpuart1{
