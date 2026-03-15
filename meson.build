@@ -315,6 +315,21 @@ firmware_hex = custom_target(
     install: true,
     install_dir: get_option('bindir'),
 )
+
+firmware_bin = custom_target(
+  'firmware_bin',
+  input : [sentry_ldscript, firmware_hex, srec_cat.full_path()],
+  output : 'firmware.bin',
+  command : [
+    py3,
+    files('support/scripts/extract_code_range.py'),
+    '@INPUT2@',  # srec_cat path
+    '@INPUT0@',  # ldscript
+    '@INPUT1@',  # hex file
+    '@OUTPUT@'
+  ],
+  build_by_default : true,
+)
 else
 warning('srec_cat utility not found!')
 warning('!!! Unable to forge final hex automatically! help yourself with ELF and HEX...')
@@ -339,6 +354,21 @@ firmware_hex = custom_target(
     build_by_default: true,
     install: true,
     install_dir: get_option('bindir'),
+)
+
+firmware_bin = custom_target(
+  'firmware_bin',
+  input : [sentry_ldscript, firmware_hex, srec_cat.full_path()],
+  output : 'firmware.bin',
+  command : [
+    py3,
+    files('support/scripts/extract_code_range.py'),
+    '@INPUT2@',  # srec_cat path
+    '@INPUT0@',  # ldscript
+    '@INPUT1@',  # hex file
+    '@OUTPUT@'
+  ],
+  build_by_default : true,
 )
 else
 warning('srec_cat utility not found!')
