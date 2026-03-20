@@ -150,6 +150,42 @@ directly added to the active queue.
 
     RRMQ scheduler is the default Sentry scheduler
 
+RMA scheduler
+^^^^^^^^^^^^^
+
+About RMA scheduling policy
+"""""""""""""""""""""""""""
+
+Classical fixed-priority preemptive scheduling policy where each task is
+assigned a static priority inversely proportional to its period. Such a scheduling
+policy is optimal for independent periodic task sets, and is widely used in real-time
+systems.
+
+The task period is taken from the **priority** field of the task metadata
+structure: a smaller value means a shorter period and therefore a higher
+scheduling priority.  The **quantum** field is not used by this scheduler.
+
+At each HW-ticker tick (sched_refresh), every active task's remaining
+counter is decremented.  When a counter reaches zero the task starts a new
+activation period: the counter is reset to the task period and, if the task
+is not currently blocked, it is marked ready.  If the newly activated task
+has a higher priority (smaller period) than the task currently running,
+a preemption is triggered.
+
+At election time (sched_elect), the ready task with the smallest period is
+selected.  A task that yields while in JOB_STATE_READY remains eligible (it
+keeps its ready flag) so that the priority ordering is preserved across
+voluntary yield calls; only a blocking syscall (sleep, IPC wait, …) removes
+the task from the ready set until it is re-activated via sched_schedule.
+
+Remember that the RMA scheduler ensure schedulability of periodic task sets,
+but does not guarantee that all tasks will meet their deadlines. In order to
+demontrate that all tasks will meet their deadlines, the task set needs to
+be analyzed using the RMA schedulability test, which is based on the task
+periods and execution times as a prerequisite.
+Sentry do not delivers such an analysis tool, but some external tools such as
+[Cheddar](http://beru.univ-brest.fr/cheddar/) can be used to perform this analysis.
+
 FIFO scheduler
 ^^^^^^^^^^^^^^
 
