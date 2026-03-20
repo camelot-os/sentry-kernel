@@ -28,10 +28,15 @@
  * a preemption is triggered.
  *
  * At election time (sched_elect), the ready task with the smallest period is
- * selected.  A task that yields while in JOB_STATE_READY remains eligible (it
- * keeps its ready flag) so that the priority ordering is preserved across
- * voluntary yield calls; only a blocking syscall (sleep, IPC wait, …) removes
- * the task from the ready set until it is re-activated via sched_schedule.
+ * selected.  A task that yields (JOB_STATE_YIELDED) is removed from the ready
+ * set and is eligible again only at the next period activation. Blocking
+ * syscalls (sleep, IPC wait, …) also remove the task from the ready set until
+ * it is re-activated via sched_schedule.
+ * This model consider that JOB_STATE_YIELDED is a transient state, that is only
+ * used to mark a task as non ready for the current period, but that does not
+ * impact the task eligibility for the next period. In consequence, a task in
+ * JOB_STATE_YIELDED is still considered as READY for the scheduler, and thus
+ * is not removed from the jobset until the next period activation.
  */
 
 /**
@@ -104,11 +109,19 @@ kstatus_t sched_rma_schedule(taskh_t t)
 {
     kstatus_t status = K_STATUS_OKAY;
     const task_meta_t *meta = NULL;
+    job_state_t state;
     uint8_t slot;
 
     /* task already tracked: re-enable for its current/next period */
     slot = sched_rma_find_slot(t);
     if (slot < CONFIG_MAX_TASKS) {
+        if (unlikely((status = mgr_task_get_state(t, &state)) != K_STATUS_OKAY)) {
+            goto end;
+        }
+        if (unlikely(state == JOB_STATE_YIELDED)) {
+            status = K_ERROR_BADSTATE;
+            goto end;
+        }
         sched_rma_ctx.jobs[slot].ready = true;
         goto end;
     }
@@ -150,8 +163,9 @@ end:
  * The ready task with the smallest period (highest frequency, highest RMA
  * priority) is selected.  The current task:
  *
- *   - remains in the ready set when its state is JOB_STATE_READY (voluntary
- *     yield or preemption): it keeps competing at its original priority;
+ *   - remains in the ready set when its state is JOB_STATE_READY;
+ *   - is removed from the ready set when its state is JOB_STATE_YIELDED and
+ *     can only be released at next period boundary;
  *   - is removed from the ready set when its state differs from
  *     JOB_STATE_READY (blocking syscall): sched_schedule() will re-activate
  *     it when the blocking condition is resolved.
@@ -172,11 +186,10 @@ taskh_t sched_rma_elect(void)
             panic(PANIC_KERNEL_INVALID_MANAGER_RESPONSE);
         }
         if (state == JOB_STATE_READY) {
-            /* voluntary yield or preemption: task remains ready for re-election */
+            /* task remains ready for re-election */
             sched_rma_ctx.current_job->ready = true;
         } else {
-            /* blocking syscall: remove from ready set until sched_schedule
-             * re-activates the task */
+            /* yield or blocking syscall: remove from ready set */
             sched_rma_ctx.current_job->ready = false;
         }
         sched_rma_ctx.current_job = NULL;
@@ -217,9 +230,9 @@ taskh_t sched_rma_get_current(void)
  * For each registered task the remaining counter is decremented.  When it
  * reaches zero:
  *   - the counter is reset to the task period (new activation);
- *   - the task is marked ready if it is not currently blocked
- *     (JOB_STATE_READY), so that a blocked task only re-enters the ready set
- *     through the sched_schedule() path (called at unblock time);
+ *   - the task is marked ready if it is currently ready or yielded
+ *     (JOB_STATE_READY/JOB_STATE_YIELDED). Yielded tasks are transitioned
+ *     back to READY on that period boundary;
  *   - if the newly activated task is not the currently running task and has a
  *     smaller period (higher priority), preemption is requested.
  *
@@ -245,7 +258,12 @@ stack_frame_t *sched_rma_refresh(stack_frame_t *frame)
 
             job_state_t state;
             if (likely(mgr_task_get_state(sched_rma_ctx.jobs[i].handler, &state) == K_STATUS_OKAY)) {
-                if (state == JOB_STATE_READY) {
+                if ((state == JOB_STATE_READY) || (state == JOB_STATE_YIELDED)) {
+                    if (state == JOB_STATE_YIELDED) {
+                        if (unlikely(mgr_task_set_state(sched_rma_ctx.jobs[i].handler, JOB_STATE_READY) != K_STATUS_OKAY)) {
+                            panic(PANIC_KERNEL_INVALID_MANAGER_RESPONSE);
+                        }
+                    }
                     sched_rma_ctx.jobs[i].ready = true;
                 }
                 /* if blocked, sched_schedule() will mark ready on wakeup */

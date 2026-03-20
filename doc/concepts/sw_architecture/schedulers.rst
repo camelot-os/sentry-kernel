@@ -82,8 +82,10 @@ of another event such as IPC wait), and call the `schedule()` API afterward, if 
 In case of job fault, the job is preempted by the fault handler, and its state is updated
 accordingly before the `elect()` call.
 
-Based on this behavior, at `elect()` time, any state that is not defined as ready automatically
-remove the job from the scheduler list, whatever the scheduler is.
+Based on this behavior, at `elect()` time, any state that is not considered ready by the
+selected scheduler automatically removes the job from the scheduler list.
+`JOB_STATE_YIELDED` is scheduler-specific: it is treated as a ready-equivalent state in
+RRMQ, while in RMA it defers job eligibility until the next period boundary.
 
 Job termination and new job
 """""""""""""""""""""""""""
@@ -126,6 +128,10 @@ In both cases the scheduler behave the same and pushes the job to a secondary qu
 *backed queue*, where jobs that have consumed all their quantum are positioned. Doing
 that, the job quantum is refill. This means that yielding jobs have their quantum refilled too.
 
+The `yield()` syscall sets the current job state to `JOB_STATE_YIELDED` before calling
+`elect()`. In RRMQ, this state is interpreted as equivalent to `JOB_STATE_READY`, then
+normalized back to `JOB_STATE_READY` when the job is reinserted in the backed queue.
+
 On the opposite, when the job is not ready (blocked), it is simply removed from the scheduler queue.
 
 Each time a job is preempted, the RRMQ scheduler elect a new job based on a priority-based
@@ -167,16 +173,19 @@ scheduling priority.  The **quantum** field is not used by this scheduler.
 
 At each HW-ticker tick (sched_refresh), every active task's remaining
 counter is decremented.  When a counter reaches zero the task starts a new
-activation period: the counter is reset to the task period and, if the task
-is not currently blocked, it is marked ready.  If the newly activated task
+activation period: the counter is reset to the task period and tasks in
+`JOB_STATE_READY` or `JOB_STATE_YIELDED` are marked ready (yielded tasks are
+transitioned back to ready for the new period). If the newly activated task
 has a higher priority (smaller period) than the task currently running,
 a preemption is triggered.
 
 At election time (sched_elect), the ready task with the smallest period is
-selected.  A task that yields while in JOB_STATE_READY remains eligible (it
-keeps its ready flag) so that the priority ordering is preserved across
-voluntary yield calls; only a blocking syscall (sleep, IPC wait, …) removes
-the task from the ready set until it is re-activated via sched_schedule.
+selected. A task that yields enters `JOB_STATE_YIELDED`, is removed from the
+ready set and is not eligible again before the next period boundary.
+Blocking syscalls (sleep, IPC wait, …) also remove the task from the ready set
+until it is re-activated via `sched_schedule()`. There is no period boundary
+specific impact on blocked tasks, as they are not in the ready set until they
+are re-activated by the time manager.
 
 Remember that the RMA scheduler ensure schedulability of periodic task sets,
 but does not guarantee that all tasks will meet their deadlines. In order to
