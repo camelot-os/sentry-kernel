@@ -29,7 +29,24 @@ config SCHED_FIFO
 	  while not entering a blocking syscall (yield, sleep, etc.). The
 	  task is eligible again each time an input event is received (IPC, signal,
 	  interrupt)
+config SCHED_RMA
+	bool "Rate Monotonic Algorithm scheduler policy (EXPERIMENTAL)"
+	help
+	  Schedule tasks using the Rate Monotonic Algorithm (RMA), a fixed-priority
+	  preemptive policy optimal for independent periodic task sets.
+	  The task period is taken from the priority field of the task metadata:
+	  a smaller value means a shorter period and therefore a higher scheduling
+	  priority.  The quantum field is not used.
+	  Tasks are re-activated at each period boundary; a task that blocks
+	  (sleep, IPC wait, …) exits the ready set and is re-admitted only when
+	  explicitly re-scheduled at wakeup time.
 
 endchoice
+
+config SCHED_NAME
+	string
+	default "RRMQ" if SCHED_RRMQ
+	default "FIFO" if SCHED_FIFO
+	default "RMA"  if SCHED_RMA
 
 endmenu

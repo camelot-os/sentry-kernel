@@ -64,6 +64,7 @@ __attribute__((noreturn)) void _entrypoint(void)
     pr_info("kernel bootup stack at %p, current frame: %p", &_bootupstack, __platform_get_current_sp());
     pr_info("booting on SoC %s", CONFIG_ARCH_SOCNAME);
     pr_info("configured dts file: %s", DTS_FILE);
+    pr_info("scheduling policy: %s", CONFIG_SCHED_NAME);
     /* initialize security manager */
     if (unlikely(mgr_security_init() != K_STATUS_OKAY)) {
         panic(PANIC_CONFIGURATION_MISMATCH);

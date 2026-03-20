@@ -272,6 +272,7 @@ summary(
         'standalone': is_standalone,
         'experimental mode': is_experimental,
         'hardening flags': activated_hardening_cflags,
+        'scheduler': kconfig_data.get_unquoted('CONFIG_SCHED_NAME', 'unknown'),
     },
     bool_yn: true,
     section: 'Configuration'

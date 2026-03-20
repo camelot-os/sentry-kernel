@@ -57,9 +57,9 @@ taskh_t sched_elect(void);
  */
 taskh_t sched_get_current(void);
 
-#if defined(CONFIG_SCHED_RRMQ)
+#if defined(CONFIG_SCHED_RRMQ) || defined(CONFIG_SCHED_RMA)
 /**
- * @brief refresh RRMQ quantum of scheduler active task, may generate election
+ * @brief refresh scheduler state on each HW tick, may generate election
  */
 stack_frame_t *sched_refresh(stack_frame_t *frame);
 #endif

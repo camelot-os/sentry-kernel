@@ -10,9 +10,13 @@ sentry_sched_fifo_c = files(
 sentry_sched_rrmq_c = files(
     'sched_rrmq.c',
 )
+sentry_sched_rma_c = files(
+    'sched_rma.c',
+)
 
 sched_source_set.add(when: 'CONFIG_SCHED_FIFO', if_true: sentry_sched_fifo_c)
 sched_source_set.add(when: 'CONFIG_SCHED_RRMQ', if_true: sentry_sched_rrmq_c)
+sched_source_set.add(when: 'CONFIG_SCHED_RMA', if_true: sentry_sched_rma_c)
 
 sched_source_set_config = sched_source_set.apply(kconfig_data, strict: false)
 
