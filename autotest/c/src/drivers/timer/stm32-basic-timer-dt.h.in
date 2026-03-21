@@ -19,7 +19,7 @@ typedef struct stm32_timer_desc {
     uint32_t base_addr; /**< IP base address */
     size_t   size;      /**< IP base address */
     uint32_t clk_msk;   /**< IP clocks mask on the given bus */
-    uint8_t label;      /**< IP unique label identifier */
+    uint32_t label;      /**< IP unique label identifier */
     uint8_t irqn;       /**< IP IRQn line (single NVIC one for basic timers) */
     uint16_t counter;   /**< timer counter value */
     uint16_t prescaler;   /**< timer prescaler value */

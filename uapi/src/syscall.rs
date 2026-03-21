@@ -624,8 +624,8 @@ pub fn gpio_configure(resource: u32, io: u8) -> Status {
 ///
 ///
 #[inline(always)]
-pub fn get_device_handle(devlabel: u8) -> Status {
-    syscall!(Syscall::GetDeviceHandle, devlabel as u32).into()
+pub fn get_device_handle(devlabel: u32) -> Status {
+    syscall!(Syscall::GetDeviceHandle, devlabel).into()
 }
 
 /// acknowledge at interrupt controller level the given interrupt

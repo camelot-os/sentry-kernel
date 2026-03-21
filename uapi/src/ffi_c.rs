@@ -125,7 +125,7 @@ pub extern "C" fn __sys_gpio_configure(resource: u32, io: u8) -> Status {
 
 /// C interface to [`crate::syscall::get_device_handle`] syscall Rust implementation
 #[unsafe(no_mangle)]
-pub extern "C" fn __sys_get_device_handle(devlabel: u8) -> Status {
+pub extern "C" fn __sys_get_device_handle(devlabel: u32) -> Status {
     crate::syscall::get_device_handle(devlabel)
 }
 

@@ -111,7 +111,8 @@ static const device_t devices[] = {
     {
         /* device {{ device.label }} declaration */
         .devinfo = {
-            .id = {{ "0x%xUL"|format(loop.index - 1) }},
+            {% set label = device['sentry,label'] -%}
+            .id = {{ "0x%xUL"|format(label) }},
             {% if device.reg -%}
             .baseaddr = {{ "0x%08x"|format(device.reg[0]) }},
             .size = {{ "0x%08x"|format(device.reg[1]) }},
@@ -193,7 +194,7 @@ static const device_t devices[] = {
     {% endfor %}
 };
 #define DEVICE_LIST_SIZE {{ "%uUL"|format(ns.total_devices) }}
-/* device list may be empty, but always in N */ 
+/* device list may be empty, but always in N */
 static_assert(DEVICE_LIST_SIZE >= 0, "invalid device list size!");
 
 #endif/*!MGR_DEVICE_DEVLIST_H*/

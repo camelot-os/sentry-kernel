@@ -29,7 +29,7 @@ pub static DEVICES: &[DevInfo] = &[
     {% if "0xbabe" in device_get_owner(device) -%}
     DevInfo {
         mappable: false,
-        id: {{ "0x%x"|format(loop.index0) }},
+        id: {{ "0x%x"|format(device["sentry,label"]) }},
         {% if device.reg -%}
         baseaddr: {{ "0x%08x"|format(device.reg[0]) }},
         size: {{ "0x%08x"|format(device.reg[1]) }},

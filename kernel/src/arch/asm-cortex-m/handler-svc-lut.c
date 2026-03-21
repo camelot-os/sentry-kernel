@@ -58,7 +58,7 @@ static stack_frame_t *lut_gpio_configure(stack_frame_t *frame) {
 }
 
 static stack_frame_t *lut_get_devhandle(stack_frame_t *frame) {
-    uint8_t devid = frame->r0;
+    uint32_t devid = frame->r0;
     return gate_get_devhandle(frame, devid);
 }
 
