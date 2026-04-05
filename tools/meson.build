@@ -18,10 +18,10 @@ if get_option('with_emulator')
         'sentry-emulator-rust-apps-e2e',
         py3,
         args: [
-            '-m',
-            'camelot.sentry_emulator',
+            '-c',
+            'from camelot.sentry_emulator.cli import main; raise SystemExit(main())',
             '--log-level',
-            'INFO',
+            'ERROR',
             '--start',
             emulator_start_app_one,
             '--start',

@@ -213,7 +213,7 @@ def test_grpc_server_receives_and_sorts_messages(
     assert daemon.store.invalid_packets == 2
 
     captured = capsys.readouterr()
-    assert "[app:7] hello from task" in captured.out
+    assert "[dummy_app_a:7] hello from task" in captured.out
 
 
 def test_exit_deactivates_context_and_stops_daemon(tmp_path: pathlib.Path) -> None:

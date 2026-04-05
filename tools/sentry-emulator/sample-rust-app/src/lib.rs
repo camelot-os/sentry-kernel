@@ -7,8 +7,22 @@ use sentry_uapi::systypes::{
 use std::thread;
 use std::time::Duration;
 
+fn emit_app_log(message: &str) {
+    let payload = message.as_bytes();
+    let st_copy = sentry_uapi::copy_to_kernel(&payload).unwrap_or(Status::Invalid);
+    if st_copy != Status::Ok {
+        eprintln!("[sample-rust-app][fallback] copy_to_kernel(log) failed: {st_copy:?}");
+        return;
+    }
+
+    let st_log = sentry_uapi::syscall::log(payload.len());
+    if st_log != Status::Ok {
+        eprintln!("[sample-rust-app][fallback] syscall::log failed: {st_log:?}");
+    }
+}
+
 fn report_status(context: &str, status: Status) {
-    eprintln!("[sample-rust-app] {context}: {status:?}");
+    emit_app_log(&format!("{context}: {status:?}"));
 }
 
 const SIGNAL_EVENT_TYPE: u8 = 2;
@@ -46,13 +60,15 @@ fn read_signal_event_from_exchange() -> Option<u32> {
         || event_magic != SIGNAL_EVENT_MAGIC
         || event_peer == 0
     {
-        eprintln!(
-            "[sample-rust-app] invalid signal event header: type={event_type} len={event_len} magic=0x{event_magic:04x} peer={event_peer}"
-        );
+        emit_app_log(&format!(
+            "invalid signal event header: type={event_type} len={event_len} magic=0x{event_magic:04x} peer={event_peer}"
+        ));
         return None;
     }
 
-    eprintln!("[sample-rust-app] signal event received from peer={event_peer} value={signal}");
+    emit_app_log(&format!(
+        "signal event received from peer={event_peer} value={signal}"
+    ));
     Some(signal)
 }
 
@@ -62,22 +78,22 @@ fn run_alarm_random_cycle_checks() {
     let st_alarm_stop = sentry_uapi::syscall::alarm(5000, AlarmFlag::AlarmStop);
     report_status("alarm(start)", st_alarm_start);
     if st_alarm_stop == Status::NoEntity {
-        eprintln!("[sample-rust-app] alarm(stop): Ok (already stopped)");
+        emit_app_log("alarm(stop): Ok (already stopped)");
     } else {
         report_status("alarm(stop)", st_alarm_stop);
     }
 
     let st_rng = sentry_uapi::syscall::get_random();
     let mut rng_value: u32 = 0;
-    report_status("get_random", st_rng);
     let st_copy_rng = sentry_uapi::copy_from_kernel(&mut rng_value).unwrap_or(Status::Invalid);
+    report_status("get_random", st_rng);
     report_status("copy_from_kernel(random)", st_copy_rng);
 
     let st_cycle = sentry_uapi::syscall::get_cycle(Precision::Milliseconds);
     let mut cycle_value: u64 = 0;
-    report_status("get_cycle", st_cycle);
     let st_copy_cycle =
         sentry_uapi::copy_from_kernel(&mut cycle_value).unwrap_or(Status::Invalid);
+    report_status("get_cycle", st_cycle);
     report_status("copy_from_kernel(cycle)", st_copy_cycle);
 }
 
@@ -93,25 +109,28 @@ pub fn run_sample_app_one(peer_label: u32) {
     // Emit a second signal to make the emulator e2e startup phase robust against transient ordering.
     let st_sig_peer_retry = sentry_uapi::syscall::send_signal(TARGET_APP_TWO_HANDLE, Signal::Usr1);
     report_status("send_signal(peer, SIGUSR1, retry)", st_sig_peer_retry);
+    run_alarm_random_cycle_checks();
 }
 
 pub fn run_sample_app_two() {
     // Wait without timeout and return only when SIGUSR1 has been serialized by daemon.
     loop {
         let st_wait_signal = sentry_uapi::syscall::wait_for_event(EventType::Signal.into(), 0);
-        report_status("wait_for_event(signal, no timeout)", st_wait_signal);
         if st_wait_signal != Status::Ok {
+            report_status("wait_for_event(signal, no timeout)", st_wait_signal);
             continue;
         }
         let Some(signal) = read_signal_event_from_exchange() else {
             continue;
         };
 
+        report_status("wait_for_event(signal, no timeout)", st_wait_signal);
+
         if signal == Signal::Usr1 as u32 {
             break;
         }
 
-        eprintln!("[sample-rust-app] ignoring other signal value={signal}");
+        emit_app_log(&format!("ignoring other signal value={signal}"));
     }
-
+    run_alarm_random_cycle_checks();
 }
