@@ -8,10 +8,8 @@
 //! through `wait_for_event`, then handles the signal path and shared checks.
 
 use sentry_uapi::systypes::{
-    AlarmFlag, EventType, Precision, Signal, Status,
+    AlarmFlag, EventType, Precision, Signal, SleepDuration, SleepMode, Status,
 };
-use std::thread;
-use std::time::Duration;
 
 /// Copy a UTF-8 log message into exchange memory and emit it with `syscall::log`.
 fn emit_app_log(message: &str) {
@@ -167,7 +165,8 @@ pub fn run_sample_app_one(peer_label: u32) {
     let _ = peer_label;
 
     // Let the receiver enter its blocking wait path before sending IPC.
-    thread::sleep(Duration::from_millis(100));
+    let st_sleep = sentry_uapi::syscall::sleep(SleepDuration::ArbitraryMs(100), SleepMode::Deep);
+    report_status("sleep(100ms)", st_sleep);
 
     let st_copy_ipc = sentry_uapi::copy_to_kernel(&IPC_TEST_MESSAGE).unwrap_or(Status::Invalid);
     if st_copy_ipc != Status::Ok {

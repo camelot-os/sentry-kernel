@@ -5,6 +5,7 @@
 
 from dataclasses import dataclass
 import logging
+import time
 from typing import Any
 
 import grpc
@@ -253,6 +254,23 @@ class EmulatorServicer(emulator_pb2_grpc.EmulatorServicer):
                 self.daemon.complete_ipc(pending_ipc)
                 return response_cls(status=STATUS_OK, detail="ok")
             return response_cls(status=STATUS_TIMEOUT, detail="timeout")
+
+        if message.syscall == "sleep":
+            if len(message.args) < 2:
+                detail = "missing sleep arguments"
+                self.logger.warning("Rejected command from %s: %s", context.peer(), detail)
+                context.set_code(grpc.StatusCode.INVALID_ARGUMENT)
+                context.set_details(detail)
+                return response_cls(status=STATUS_INVALID, detail=detail)
+
+            duration_ms = int(message.args[0])
+            if duration_ms < 0:
+                return response_cls(status=STATUS_INVALID, detail="invalid sleep duration")
+
+            # In emulator mode, sleep completion is controlled by daemon-side timing.
+            # The RPC returns only when the requested duration has elapsed.
+            time.sleep(duration_ms / 1000.0)
+            return response_cls(status=STATUS_OK, detail="ok")
 
         if message.syscall == "alarm":
             if len(message.args) < 2:

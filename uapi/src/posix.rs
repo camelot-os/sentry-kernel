@@ -196,37 +196,8 @@ pub fn exit(status: i32) -> Status {
 }
 
 #[inline(always)]
-pub fn sleep(_duration_ms: SleepDuration, _mode: SleepMode) -> Status {
-    match _duration_ms {
-        SleepDuration::D1ms => {
-            std::thread::sleep(std::time::Duration::from_millis(1));
-            Status::Ok
-        }
-        SleepDuration::D2ms => {
-            std::thread::sleep(std::time::Duration::from_millis(2));
-            Status::Ok
-        }
-        SleepDuration::D5ms => {
-            std::thread::sleep(std::time::Duration::from_millis(5));
-            Status::Ok
-        }
-        SleepDuration::D10ms => {
-            std::thread::sleep(std::time::Duration::from_millis(10));
-            Status::Ok
-        }
-        SleepDuration::D20ms => {
-            std::thread::sleep(std::time::Duration::from_millis(20));
-            Status::Ok
-        }
-        SleepDuration::D50ms => {
-            std::thread::sleep(std::time::Duration::from_millis(50));
-            Status::Ok
-        }
-        SleepDuration::ArbitraryMs(ms) => {
-            std::thread::sleep(std::time::Duration::from_millis(ms as u64));
-            Status::Ok
-        }
-    }
+pub fn sleep(duration_ms: SleepDuration, mode: SleepMode) -> Status {
+    forward_syscall("sleep", &[u32::from(duration_ms) as i128, u32::from(mode) as i128])
 }
 
 #[inline(always)]
