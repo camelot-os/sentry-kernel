@@ -377,3 +377,113 @@ def test_wait_for_event_blocking_wakes_on_signal(tmp_path: pathlib.Path) -> None
     stop_event.set()
     thread.join(timeout=2.0)
     assert not thread.is_alive()
+
+
+def test_send_ipc_blocks_until_target_reads_event(tmp_path: pathlib.Path) -> None:
+    """Ensure send_ipc is blocking until target consumes IPC with wait_for_event."""
+    app_path_a = tmp_path / "dummy_app_a.sh"
+    app_path_a.write_text("#!/bin/sh\nwhile true; do sleep 1; done\n", encoding="utf-8")
+    app_path_a.chmod(0o755)
+
+    app_path_b = tmp_path / "dummy_app_b.sh"
+    app_path_b.write_text("#!/bin/sh\nwhile true; do sleep 1; done\n", encoding="utf-8")
+    app_path_b.chmod(0o755)
+
+    daemon = GrpcEmulatorDaemon(
+        host="127.0.0.1",
+        port=0,
+        start_specs=(
+            StartSpec(app_path=app_path_a, label=7),
+            StartSpec(app_path=app_path_b, label=8),
+        ),
+    )
+    stop_event = threading.Event()
+    ready_event = threading.Event()
+
+    thread = threading.Thread(
+        target=daemon.serve_forever,
+        kwargs={"stop_event": stop_event, "ready_event": ready_event, "poll_interval": 0.05},
+        daemon=True,
+    )
+    thread.start()
+
+    assert ready_event.wait(timeout=2.0)
+
+    with grpc.insecure_channel(
+        f"{daemon.bound_address[0]}:{daemon.bound_address[1]}"
+    ) as channel:
+        stub = emulator_pb2_grpc.EmulatorStub(channel)
+
+        sender_self = stub.Dispatch(
+            emulator_pb2.DispatchRequest(syscall="get_process_handle", args=[7], label=7)
+        )
+        assert sender_self.status == 0
+        sender_self_reply = stub.Dispatch(
+            emulator_pb2.DispatchRequest(syscall="exchange_from_kernel", label=7)
+        )
+        sender_handle = int.from_bytes(sender_self_reply.payload[:4], "little")
+        assert sender_handle > 0
+
+        target_lookup = stub.Dispatch(
+            emulator_pb2.DispatchRequest(syscall="get_process_handle", args=[8], label=7)
+        )
+        assert target_lookup.status == 0
+        target_reply = stub.Dispatch(
+            emulator_pb2.DispatchRequest(syscall="exchange_from_kernel", label=7)
+        )
+        target_handle = int.from_bytes(target_reply.payload[:4], "little")
+        assert target_handle > 0
+
+        ipc_payload = b"hello-ipc-blocking"
+        to_kernel = stub.Dispatch(
+            emulator_pb2.DispatchRequest(
+                syscall="exchange_to_kernel",
+                label=7,
+                payload=ipc_payload,
+            )
+        )
+        assert to_kernel.status == 0
+
+        send_result: dict[str, object] = {}
+
+        def send_ipc_blocking() -> None:
+            with grpc.insecure_channel(
+                f"{daemon.bound_address[0]}:{daemon.bound_address[1]}"
+            ) as send_channel:
+                send_stub = emulator_pb2_grpc.EmulatorStub(send_channel)
+                send_result["response"] = send_stub.Dispatch(
+                    emulator_pb2.DispatchRequest(
+                        syscall="send_ipc",
+                        args=[target_handle, len(ipc_payload)],
+                        label=7,
+                    )
+                )
+
+        sender = threading.Thread(target=send_ipc_blocking, daemon=True)
+        sender.start()
+        time.sleep(0.05)
+        assert sender.is_alive()
+
+        wait_ipc = stub.Dispatch(
+            emulator_pb2.DispatchRequest(syscall="wait_for_event", args=[1, 1000], label=8)
+        )
+        assert wait_ipc.status == 0
+        event_reply = stub.Dispatch(
+            emulator_pb2.DispatchRequest(syscall="exchange_from_kernel", label=8)
+        )
+
+        sender.join(timeout=2.0)
+        assert not sender.is_alive()
+        assert "response" in send_result
+        assert send_result["response"].status == 0
+
+        payload = event_reply.payload
+        assert payload[0] == 1
+        assert payload[1] == len(ipc_payload)
+        assert int.from_bytes(payload[2:4], "little") == 0x4242
+        assert int.from_bytes(payload[4:8], "little") == sender_handle
+        assert payload[8 : 8 + len(ipc_payload)] == ipc_payload
+
+    stop_event.set()
+    thread.join(timeout=2.0)
+    assert not thread.is_alive()

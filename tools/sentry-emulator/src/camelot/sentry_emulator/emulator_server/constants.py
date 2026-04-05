@@ -10,6 +10,7 @@ DEFAULT_PORT: Final[int] = 44044
 UINT32_MAX: Final[int] = (1 << 32) - 1
 EXCHANGE_BUFFER_LEN: Final[int] = 128
 SIGNAL_ABORT: Final[int] = 1
+EVENT_TYPE_IPC: Final[int] = 1
 EVENT_TYPE_SIGNAL: Final[int] = 2
 SIGNAL_USR2: Final[int] = 12
 SIGNAL_ALARM: Final[int] = 2
@@ -26,5 +27,6 @@ STATUS_NO_ENTITY: Final[int] = 3
 STATUS_BUSY: Final[int] = 4
 STATUS_TIMEOUT: Final[int] = 7
 STATUS_AGAIN: Final[int] = 8
+STATUS_INTR: Final[int] = 9
 
 MAX_PENDING_SIGNALS: Final[int] = 32

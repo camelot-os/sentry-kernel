@@ -20,6 +20,7 @@ from .constants import (
     DEFAULT_HOST,
     DEFAULT_PORT,
     EVENT_MAGIC,
+    EVENT_TYPE_IPC,
     EVENT_TYPE_SIGNAL,
     EXCHANGE_BUFFER_LEN,
     MAX_PENDING_SIGNALS,
@@ -29,10 +30,11 @@ from .constants import (
     PRECISION_NANOSECONDS,
     SIGNAL_ALARM,
     STATUS_BUSY,
+    STATUS_INTR,
     STATUS_OK,
     UINT32_MAX,
 )
-from .models import AlarmRegistration, AppContext, StartSpec
+from .models import AlarmRegistration, AppContext, PendingIPC, StartSpec
 
 
 @dataclass(slots=True)
@@ -95,7 +97,13 @@ class GrpcEmulatorDaemon:
         app_context.exit_code = exit_code
         with app_context.event_condition:
             app_context.pending_signals.clear()
+            pending_ipcs = list(app_context.pending_ipcs)
+            app_context.pending_ipcs.clear()
             app_context.event_condition.notify_all()
+
+        for pending_ipc in pending_ipcs:
+            pending_ipc.completion_status = STATUS_INTR
+            pending_ipc.done.set()
 
         for registration in app_context.alarms.values():
             registration.timer.cancel()
@@ -246,6 +254,10 @@ class GrpcEmulatorDaemon:
                     registration.timer.cancel()
                 app_context.alarms.clear()
                 app_context.pending_signals.clear()
+                for pending_ipc in app_context.pending_ipcs:
+                    pending_ipc.completion_status = STATUS_INTR
+                    pending_ipc.done.set()
+                app_context.pending_ipcs.clear()
                 app_context.process = None
             self._contexts_by_label.clear()
             self._contexts_by_handle.clear()
@@ -380,6 +392,42 @@ class GrpcEmulatorDaemon:
             target.handle,
         )
         return STATUS_OK
+
+    def queue_ipc(self, target: AppContext, source_handle: int, payload: bytes) -> PendingIPC:
+        """Queue an IPC event for one application context.
+
+        Parameters
+        ----------
+        target : AppContext
+            Destination app context receiving the IPC payload.
+        source_handle : int
+            Handle of the sender process.
+        payload : bytes
+            Sender payload copied from exchange memory.
+
+        Returns
+        -------
+        PendingIPC
+            In-flight IPC transfer token used by sender to wait for completion.
+        """
+        pending = PendingIPC(source_handle=source_handle, payload=bytes(payload))
+        with target.event_condition:
+            target.pending_ipcs.append(pending)
+            target.event_condition.notify_all()
+        self.logger.debug(
+            "Queued IPC source=%d for label=%d handle=%d payload_len=%d",
+            source_handle,
+            target.label,
+            target.handle,
+            len(payload),
+        )
+        return pending
+
+    @staticmethod
+    def complete_ipc(pending_ipc: PendingIPC, status: int = STATUS_OK) -> None:
+        """Resolve a pending IPC transfer with final sender status."""
+        pending_ipc.completion_status = status
+        pending_ipc.done.set()
 
     def _alarm_fire(self, label: int, delay_ms: int) -> None:
         """Deliver one alarm tick to the context identified by label.
@@ -526,6 +574,14 @@ class GrpcEmulatorDaemon:
             return elapsed_ns // 1_000_000
         raise ValueError("invalid precision")
 
+    def _has_matching_signal(self, app_context: AppContext, mask: int) -> bool:
+        """Return whether one matching signal is immediately available."""
+        return bool(mask & EVENT_TYPE_SIGNAL) and bool(app_context.pending_signals)
+
+    def _has_matching_ipc(self, app_context: AppContext, mask: int) -> bool:
+        """Return whether one matching IPC event is immediately available."""
+        return bool(mask & EVENT_TYPE_IPC) and bool(app_context.pending_ipcs)
+
     def _dequeue_matching_signal(
         self, app_context: AppContext, mask: int
     ) -> tuple[int, int] | None:
@@ -551,6 +607,16 @@ class GrpcEmulatorDaemon:
                 return None
             return app_context.pending_signals.pop(0)
 
+    def _dequeue_matching_ipc(self, app_context: AppContext, mask: int) -> PendingIPC | None:
+        """Pop one pending IPC if the provided mask accepts IPC events."""
+        if not (mask & EVENT_TYPE_IPC):
+            return None
+
+        with app_context.event_condition:
+            if not app_context.pending_ipcs:
+                return None
+            return app_context.pending_ipcs.pop(0)
+
     def _serialize_signal_event(
         self, app_context: AppContext, signal: int, source_handle: int
     ) -> None:
@@ -569,6 +635,15 @@ class GrpcEmulatorDaemon:
             2, "little"
         ) + int(source_handle).to_bytes(4, "little", signed=False)
         payload = int(signal).to_bytes(4, "little", signed=False)
+        self.write_exchange_buffer(app_context, header + payload)
+
+    def _serialize_ipc_event(
+        self, app_context: AppContext, payload: bytes, source_handle: int
+    ) -> None:
+        """Serialize one IPC event into the app exchange buffer."""
+        header = bytes([EVENT_TYPE_IPC, len(payload)]) + EVENT_MAGIC.to_bytes(
+            2, "little"
+        ) + int(source_handle).to_bytes(4, "little", signed=False)
         self.write_exchange_buffer(app_context, header + payload)
 
     @property

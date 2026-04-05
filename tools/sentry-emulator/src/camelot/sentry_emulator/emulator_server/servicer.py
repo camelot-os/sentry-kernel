@@ -14,16 +14,19 @@ from ..grpc import emulator_pb2, emulator_pb2_grpc
 from ..protocol import ProtocolError, deserialize_request
 from .constants import (
     EXCHANGE_BUFFER_LEN,
-    EVENT_TYPE_SIGNAL,
     PRECISION_CYCLE,
     PRECISION_MILLISECONDS,
     SIGNAL_ABORT,
     SIGNAL_USR2,
     STATUS_AGAIN,
+    STATUS_INTR,
     STATUS_INVALID,
     STATUS_OK,
     STATUS_TIMEOUT,
 )
+
+IPC_EVENT_HEADER_LEN = 8
+MAX_IPC_PAYLOAD_LEN = EXCHANGE_BUFFER_LEN - IPC_EVENT_HEADER_LEN
 
 
 @dataclass(slots=True)
@@ -159,6 +162,37 @@ class EmulatorServicer(emulator_pb2_grpc.EmulatorServicer):
             status = self.daemon.queue_signal(target_context, signal, app_context.handle)
             return response_cls(status=status, detail="ok" if status == STATUS_OK else "busy")
 
+        if message.syscall == "send_ipc":
+            if len(message.args) < 2:
+                detail = "missing send_ipc arguments"
+                self.logger.warning("Rejected command from %s: %s", context.peer(), detail)
+                context.set_code(grpc.StatusCode.INVALID_ARGUMENT)
+                context.set_details(detail)
+                return response_cls(status=STATUS_INVALID, detail=detail)
+
+            target_handle = int(message.args[0])
+            ipc_len = int(message.args[1])
+            if target_handle == app_context.handle:
+                return response_cls(status=STATUS_INVALID, detail="self ipc forbidden")
+            if ipc_len < 0 or ipc_len > MAX_IPC_PAYLOAD_LEN:
+                return response_cls(status=STATUS_INVALID, detail="invalid ipc length")
+
+            target_context = self.daemon.context_for_handle(target_handle)
+            if target_context is None:
+                return response_cls(status=STATUS_INVALID, detail="unknown target handle")
+
+            payload = self.daemon.read_exchange_buffer(app_context)[:ipc_len]
+            pending_ipc = self.daemon.queue_ipc(target_context, app_context.handle, payload)
+            pending_ipc.done.wait()
+
+            final_status = pending_ipc.completion_status
+            if final_status is None:
+                final_status = STATUS_INTR
+            return response_cls(
+                status=final_status,
+                detail="ok" if final_status == STATUS_OK else "interrupted",
+            )
+
         if message.syscall == "wait_for_event":
             if len(message.args) < 2:
                 detail = "missing wait_for_event arguments"
@@ -170,10 +204,20 @@ class EmulatorServicer(emulator_pb2_grpc.EmulatorServicer):
             mask = int(message.args[0])
             timeout = int(message.args[1])
 
-            pending = self.daemon._dequeue_matching_signal(app_context, mask)
-            if pending is not None:
-                signal, source_handle = pending
+            pending_signal = self.daemon._dequeue_matching_signal(app_context, mask)
+            if pending_signal is not None:
+                signal, source_handle = pending_signal
                 self.daemon._serialize_signal_event(app_context, signal, source_handle)
+                return response_cls(status=STATUS_OK, detail="ok")
+
+            pending_ipc = self.daemon._dequeue_matching_ipc(app_context, mask)
+            if pending_ipc is not None:
+                self.daemon._serialize_ipc_event(
+                    app_context,
+                    pending_ipc.payload,
+                    pending_ipc.source_handle,
+                )
+                self.daemon.complete_ipc(pending_ipc)
                 return response_cls(status=STATUS_OK, detail="ok")
 
             if timeout == -1:
@@ -182,15 +226,33 @@ class EmulatorServicer(emulator_pb2_grpc.EmulatorServicer):
             wait_timeout = None if timeout == 0 else max(0.0, timeout / 1000.0)
             with app_context.event_condition:
                 has_event = app_context.event_condition.wait_for(
-                    lambda: bool(app_context.pending_signals) and bool(mask & EVENT_TYPE_SIGNAL),
+                    lambda: self.daemon._has_matching_signal(app_context, mask)
+                    or self.daemon._has_matching_ipc(app_context, mask),
                     timeout=wait_timeout,
                 )
                 if not has_event:
                     return response_cls(status=STATUS_TIMEOUT, detail="timeout")
-                signal, source_handle = app_context.pending_signals.pop(0)
 
-            self.daemon._serialize_signal_event(app_context, signal, source_handle)
-            return response_cls(status=STATUS_OK, detail="ok")
+                signal: int | None = None
+                source_handle: int | None = None
+                pending_ipc = None
+                if self.daemon._has_matching_signal(app_context, mask):
+                    signal, source_handle = app_context.pending_signals.pop(0)
+                elif self.daemon._has_matching_ipc(app_context, mask):
+                    pending_ipc = app_context.pending_ipcs.pop(0)
+
+            if signal is not None and source_handle is not None:
+                self.daemon._serialize_signal_event(app_context, signal, source_handle)
+                return response_cls(status=STATUS_OK, detail="ok")
+            if pending_ipc is not None:
+                self.daemon._serialize_ipc_event(
+                    app_context,
+                    pending_ipc.payload,
+                    pending_ipc.source_handle,
+                )
+                self.daemon.complete_ipc(pending_ipc)
+                return response_cls(status=STATUS_OK, detail="ok")
+            return response_cls(status=STATUS_TIMEOUT, detail="timeout")
 
         if message.syscall == "alarm":
             if len(message.args) < 2:

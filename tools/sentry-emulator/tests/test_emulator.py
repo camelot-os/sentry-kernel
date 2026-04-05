@@ -64,3 +64,8 @@ def test_cli_starts_sample_rust_apps_via_start() -> None:
     assert "App exited label=8" in completed.stderr
     assert "All startup tasks have terminated, stopping emulator daemon" in completed.stderr
     assert "Sentry emulator stopped" in completed.stderr
+
+    # IPC path must be exercised by both sample applications.
+    assert "[sample-app-one:7] send_ipc(peer): Ok" in completed.stdout
+    assert "[sample-app-two:8] wait_for_event(ipc, no timeout): Ok" in completed.stdout
+    assert "[sample-app-two:8] ipc event received" in completed.stdout

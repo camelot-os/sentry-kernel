@@ -47,6 +47,28 @@ class StartSpec:
 
 
 @dataclass(slots=True)
+class PendingIPC:
+    """One in-flight IPC transfer waiting to be consumed by target.
+
+    Attributes
+    ----------
+    source_handle : int
+        Sender process handle.
+    payload : bytes
+        Copied payload emitted by sender from its exchange buffer.
+    completion_status : int | None
+        Final status returned to sender once delivery is resolved.
+    done : threading.Event
+        Event set when the transfer is consumed or aborted.
+    """
+
+    source_handle: int
+    payload: bytes
+    completion_status: int | None = None
+    done: threading.Event = field(default_factory=threading.Event)
+
+
+@dataclass(slots=True)
 class AppContext:
     """Runtime context associated with one started application.
 
@@ -64,6 +86,8 @@ class AppContext:
         Shared 128-byte payload area used by exchange syscalls.
     pending_signals : list[tuple[int, int]]
         FIFO queue of ``(signal, source_handle)`` waiting to be consumed.
+    pending_ipcs : list[PendingIPC]
+        FIFO queue of IPC transfers waiting to be consumed.
     alarms : dict[int, AlarmRegistration]
         Registered alarms keyed by delay in milliseconds.
     event_condition : threading.Condition
@@ -80,6 +104,7 @@ class AppContext:
         default_factory=lambda: bytearray(EXCHANGE_BUFFER_LEN)
     )
     pending_signals: list[tuple[int, int]] = field(default_factory=list)
+    pending_ipcs: list[PendingIPC] = field(default_factory=list)
     alarms: dict[int, AlarmRegistration] = field(default_factory=dict)
     event_condition: threading.Condition = field(default_factory=threading.Condition)
     exit_code: int | None = None
