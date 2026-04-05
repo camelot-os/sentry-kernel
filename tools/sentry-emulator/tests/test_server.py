@@ -41,14 +41,21 @@ def test_parse_start_option_rejects_bad_label() -> None:
 def test_grpc_server_receives_and_sorts_messages(
     tmp_path: pathlib.Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
-    app_path = tmp_path / "dummy_app.sh"
-    app_path.write_text("#!/bin/sh\nwhile true; do sleep 1; done\n", encoding="utf-8")
-    app_path.chmod(0o755)
+    app_path_a = tmp_path / "dummy_app_a.sh"
+    app_path_a.write_text("#!/bin/sh\nwhile true; do sleep 1; done\n", encoding="utf-8")
+    app_path_a.chmod(0o755)
+
+    app_path_b = tmp_path / "dummy_app_b.sh"
+    app_path_b.write_text("#!/bin/sh\nwhile true; do sleep 1; done\n", encoding="utf-8")
+    app_path_b.chmod(0o755)
 
     daemon = GrpcEmulatorDaemon(
         host="127.0.0.1",
         port=0,
-        start_specs=(StartSpec(app_path=app_path, label=7),),
+        start_specs=(
+            StartSpec(app_path=app_path_a, label=7),
+            StartSpec(app_path=app_path_b, label=8),
+        ),
     )
     stop_event = threading.Event()
     ready_event = threading.Event()
@@ -94,6 +101,57 @@ def test_grpc_server_receives_and_sorts_messages(
             emulator_pb2.DispatchRequest(syscall="log", args=[15], label=7)
         )
 
+        proc_self = stub.Dispatch(
+            emulator_pb2.DispatchRequest(syscall="get_process_handle", args=[7], label=7)
+        )
+        assert proc_self.status == 0
+        self_handle_reply = stub.Dispatch(
+            emulator_pb2.DispatchRequest(syscall="exchange_from_kernel", label=7)
+        )
+        self_handle = int.from_bytes(self_handle_reply.payload[:4], "little")
+        assert self_handle > 0
+
+        proc_other = stub.Dispatch(
+            emulator_pb2.DispatchRequest(syscall="get_process_handle", args=[8], label=7)
+        )
+        assert proc_other.status == 0
+        other_handle_reply = stub.Dispatch(
+            emulator_pb2.DispatchRequest(syscall="exchange_from_kernel", label=7)
+        )
+        other_handle = int.from_bytes(other_handle_reply.payload[:4], "little")
+        assert other_handle > 0
+        assert other_handle != self_handle
+
+        send_sig = stub.Dispatch(
+            emulator_pb2.DispatchRequest(syscall="send_signal", args=[other_handle, 11], label=7)
+        )
+        assert send_sig.status == 0
+
+        alarm_start = stub.Dispatch(
+            emulator_pb2.DispatchRequest(syscall="alarm", args=[50, 1], label=7)
+        )
+        assert alarm_start.status == 0
+        alarm_stop = stub.Dispatch(
+            emulator_pb2.DispatchRequest(syscall="alarm", args=[50, 2], label=7)
+        )
+        assert alarm_stop.status == 0
+
+        rnd = stub.Dispatch(emulator_pb2.DispatchRequest(syscall="get_random", label=7))
+        assert rnd.status == 0
+        rnd_reply = stub.Dispatch(
+            emulator_pb2.DispatchRequest(syscall="exchange_from_kernel", label=7)
+        )
+        assert len(rnd_reply.payload) >= 4
+
+        cyc = stub.Dispatch(
+            emulator_pb2.DispatchRequest(syscall="get_cycle", args=[3], label=7)
+        )
+        assert cyc.status == 0
+        cyc_reply = stub.Dispatch(
+            emulator_pb2.DispatchRequest(syscall="exchange_from_kernel", label=7)
+        )
+        assert len(cyc_reply.payload) >= 8
+
     deadline = time.time() + 2.0
     while time.time() < deadline:
         if daemon.store.count_for("map_dev") == 2 and daemon.store.count_for("gpio_set") == 1:
@@ -108,4 +166,4 @@ def test_grpc_server_receives_and_sorts_messages(
     assert daemon.store.invalid_packets == 2
 
     captured = capsys.readouterr()
-    assert "hello from task" in captured.out
+    assert "[app:7] hello from task" in captured.out

@@ -12,8 +12,10 @@ from concurrent import futures
 import logging
 import os
 from pathlib import Path
+import random
 import subprocess
 import threading
+import time
 from dataclasses import dataclass, field
 from typing import Any
 from typing import Final
@@ -28,6 +30,28 @@ DEFAULT_HOST: Final[str] = "127.0.0.1"
 DEFAULT_PORT: Final[int] = 44044
 UINT32_MAX: Final[int] = (1 << 32) - 1
 EXCHANGE_BUFFER_LEN: Final[int] = 128
+SIGNAL_ABORT: Final[int] = 1
+SIGNAL_USR2: Final[int] = 12
+SIGNAL_ALARM: Final[int] = 2
+PRECISION_CYCLE: Final[int] = 0
+PRECISION_NANOSECONDS: Final[int] = 1
+PRECISION_MICROSECONDS: Final[int] = 2
+PRECISION_MILLISECONDS: Final[int] = 3
+
+STATUS_OK: Final[int] = 0
+STATUS_INVALID: Final[int] = 1
+STATUS_DENIED: Final[int] = 2
+STATUS_NO_ENTITY: Final[int] = 3
+STATUS_BUSY: Final[int] = 4
+
+MAX_PENDING_SIGNALS: Final[int] = 32
+
+
+@dataclass(slots=True)
+class AlarmRegistration:
+    delay_ms: int
+    periodic: bool
+    timer: threading.Timer
 
 
 @dataclass(frozen=True, slots=True)
@@ -62,6 +86,10 @@ class AppContext:
         Spawned process object for lifecycle management.
     exchange_buffer : bytearray
         Per-application exchange zone content.
+    pending_signals : list[int]
+        Pending signals queued for this application.
+    alarms : dict[int, AlarmRegistration]
+        Alarm registrations keyed by timeout in milliseconds.
     """
 
     label: int
@@ -71,6 +99,8 @@ class AppContext:
     exchange_buffer: bytearray = field(
         default_factory=lambda: bytearray(EXCHANGE_BUFFER_LEN)
     )
+    pending_signals: list[int] = field(default_factory=list)
+    alarms: dict[int, AlarmRegistration] = field(default_factory=dict)
 
 
 def parse_start_option(value: str) -> StartSpec:
@@ -142,8 +172,12 @@ class GrpcEmulatorDaemon:
 
     _bound_address: tuple[str, int] | None = field(default=None, init=False)
     _contexts_by_label: dict[int, AppContext] = field(default_factory=dict, init=False)
+    _contexts_by_handle: dict[int, AppContext] = field(default_factory=dict, init=False)
     _started_processes: list[subprocess.Popen[bytes]] = field(default_factory=list, init=False)
     _next_handle: int = field(default=1, init=False)
+    _rng: random.Random = field(default_factory=random.Random, init=False)
+    _lock: threading.Lock = field(default_factory=threading.Lock, init=False)
+    _start_monotonic_ns: int = field(default_factory=time.monotonic_ns, init=False)
 
     def _allocate_handle(self) -> int:
         """Allocate the next unique context handle.
@@ -208,8 +242,10 @@ class GrpcEmulatorDaemon:
             app_path=app_path,
             process=process,
         )
-        self._contexts_by_label[spec.label] = context
-        self._started_processes.append(process)
+        with self._lock:
+            self._contexts_by_label[spec.label] = context
+            self._contexts_by_handle[context.handle] = context
+            self._started_processes.append(process)
         self.logger.debug(
             "Registered app context label=%d handle=%d pid=%d",
             context.label,
@@ -248,6 +284,13 @@ class GrpcEmulatorDaemon:
                     process.kill()
                     process.wait(timeout=2)
 
+        with self._lock:
+            for app_context in self._contexts_by_label.values():
+                for registration in app_context.alarms.values():
+                    registration.timer.cancel()
+            self._contexts_by_label.clear()
+            self._contexts_by_handle.clear()
+
     def context_for_label(self, label: int) -> AppContext | None:
         """Look up the runtime context bound to a label.
 
@@ -261,7 +304,13 @@ class GrpcEmulatorDaemon:
         AppContext | None
             Matching context or ``None`` if the label is unknown.
         """
-        return self._contexts_by_label.get(label)
+        with self._lock:
+            return self._contexts_by_label.get(label)
+
+    def context_for_handle(self, handle: int) -> AppContext | None:
+        """Look up the runtime context bound to a handle."""
+        with self._lock:
+            return self._contexts_by_handle.get(handle)
 
     def write_exchange_buffer(self, app_context: AppContext, payload: bytes) -> None:
         """Write payload to the context exchange buffer.
@@ -273,9 +322,10 @@ class GrpcEmulatorDaemon:
         payload : bytes
             Source bytes copied into the buffer and zero-padded.
         """
-        app_context.exchange_buffer[:] = b"\x00" * EXCHANGE_BUFFER_LEN
-        copy_len = min(len(payload), EXCHANGE_BUFFER_LEN)
-        app_context.exchange_buffer[:copy_len] = payload[:copy_len]
+        with self._lock:
+            app_context.exchange_buffer[:] = b"\x00" * EXCHANGE_BUFFER_LEN
+            copy_len = min(len(payload), EXCHANGE_BUFFER_LEN)
+            app_context.exchange_buffer[:copy_len] = payload[:copy_len]
         self.logger.debug(
             "exchange_to_kernel label=%d handle=%d bytes=%d",
             app_context.label,
@@ -296,7 +346,8 @@ class GrpcEmulatorDaemon:
         bytes
             Full serialized exchange buffer.
         """
-        payload = bytes(app_context.exchange_buffer)
+        with self._lock:
+            payload = bytes(app_context.exchange_buffer)
         self.logger.debug(
             "exchange_from_kernel label=%d handle=%d bytes=%d",
             app_context.label,
@@ -304,6 +355,116 @@ class GrpcEmulatorDaemon:
             len(payload),
         )
         return payload
+
+    def write_u32_to_exchange_buffer(self, app_context: AppContext, value: int) -> None:
+        """Store one ``u32`` value into app exchange buffer."""
+        self.write_exchange_buffer(app_context, int(value).to_bytes(4, "little", signed=False))
+
+    def write_u64_to_exchange_buffer(self, app_context: AppContext, value: int) -> None:
+        """Store one ``u64`` value into app exchange buffer."""
+        self.write_exchange_buffer(app_context, int(value).to_bytes(8, "little", signed=False))
+
+    def queue_signal(self, target: AppContext, signal: int) -> int:
+        """Queue a signal for a target context.
+
+        Returns
+        -------
+        int
+            Emulator status code.
+        """
+        with self._lock:
+            if len(target.pending_signals) >= MAX_PENDING_SIGNALS:
+                return STATUS_BUSY
+            target.pending_signals.append(signal)
+        self.logger.debug(
+            "Queued signal=%d for label=%d handle=%d",
+            signal,
+            target.label,
+            target.handle,
+        )
+        return STATUS_OK
+
+    def _alarm_fire(self, label: int, delay_ms: int) -> None:
+        with self._lock:
+            target = self._contexts_by_label.get(label)
+        if target is None:
+            return
+        status = self.queue_signal(target, SIGNAL_ALARM)
+        if status != STATUS_OK:
+            self.logger.warning(
+                "Alarm delivery failed label=%d delay_ms=%d status=%d",
+                label,
+                delay_ms,
+                status,
+            )
+
+    def _schedule_alarm(self, app_context: AppContext, delay_ms: int, periodic: bool) -> int:
+        with self._lock:
+            if delay_ms in app_context.alarms:
+                return STATUS_BUSY
+
+        interval_s = max(0.0, delay_ms / 1000.0)
+
+        def _callback() -> None:
+            self._alarm_fire(app_context.label, delay_ms)
+            if not periodic:
+                with self._lock:
+                    app_context.alarms.pop(delay_ms, None)
+                return
+
+            with self._lock:
+                still_registered = app_context.alarms.get(delay_ms)
+                if still_registered is None:
+                    return
+
+                next_timer = threading.Timer(interval_s, _callback)
+                app_context.alarms[delay_ms] = AlarmRegistration(
+                    delay_ms=delay_ms,
+                    periodic=True,
+                    timer=next_timer,
+                )
+            next_timer.start()
+
+        timer = threading.Timer(interval_s, _callback)
+        registration = AlarmRegistration(delay_ms=delay_ms, periodic=periodic, timer=timer)
+        with self._lock:
+            app_context.alarms[delay_ms] = registration
+        timer.start()
+        self.logger.debug(
+            "Scheduled alarm label=%d handle=%d delay_ms=%d periodic=%s",
+            app_context.label,
+            app_context.handle,
+            delay_ms,
+            periodic,
+        )
+        return STATUS_OK
+
+    def _stop_alarm(self, app_context: AppContext, delay_ms: int) -> int:
+        with self._lock:
+            registration = app_context.alarms.pop(delay_ms, None)
+        if registration is None:
+            return STATUS_NO_ENTITY
+        registration.timer.cancel()
+        self.logger.debug(
+            "Stopped alarm label=%d handle=%d delay_ms=%d",
+            app_context.label,
+            app_context.handle,
+            delay_ms,
+        )
+        return STATUS_OK
+
+    def current_cycle_value(self, precision: int) -> int:
+        """Compute a synthetic cycle/timestamp value for requested precision."""
+        elapsed_ns = max(0, time.monotonic_ns() - self._start_monotonic_ns)
+        if precision == PRECISION_CYCLE:
+            return elapsed_ns
+        if precision == PRECISION_NANOSECONDS:
+            return elapsed_ns
+        if precision == PRECISION_MICROSECONDS:
+            return elapsed_ns // 1_000
+        if precision == PRECISION_MILLISECONDS:
+            return elapsed_ns // 1_000_000
+        raise ValueError("invalid precision")
 
     @property
     def bound_address(self) -> tuple[str, int]:
@@ -456,7 +617,7 @@ class _EmulatorServicer(emulator_pb2_grpc.EmulatorServicer):
             log_len = max(0, min(log_len, EXCHANGE_BUFFER_LEN))
             raw = bytes(app_context.exchange_buffer[:log_len])
             text = raw.split(b"\x00", 1)[0].decode("utf-8", errors="replace")
-            print(text, flush=True)
+            print(f"[app:{message.label}] {text}", flush=True)
             self.logger.debug(
                 "Responding syscall=%s label=%d status=0 printed_len=%d",
                 message.syscall,
@@ -464,6 +625,89 @@ class _EmulatorServicer(emulator_pb2_grpc.EmulatorServicer):
                 len(text),
             )
             return response_cls(status=0, detail="ok")
+
+        if message.syscall == "get_process_handle":
+            if not message.args:
+                detail = "missing label argument"
+                self.logger.warning("Rejected command from %s: %s", context.peer(), detail)
+                context.set_code(grpc.StatusCode.INVALID_ARGUMENT)
+                context.set_details(detail)
+                return response_cls(status=STATUS_INVALID, detail=detail)
+
+            target_label = int(message.args[0])
+            target_context = self.daemon.context_for_label(target_label)
+            if target_context is None:
+                return response_cls(status=STATUS_INVALID, detail="unknown label")
+
+            self.daemon.write_u32_to_exchange_buffer(app_context, target_context.handle)
+            return response_cls(status=STATUS_OK, detail="ok")
+
+        if message.syscall == "send_signal":
+            if len(message.args) < 2:
+                detail = "missing send_signal arguments"
+                self.logger.warning("Rejected command from %s: %s", context.peer(), detail)
+                context.set_code(grpc.StatusCode.INVALID_ARGUMENT)
+                context.set_details(detail)
+                return response_cls(status=STATUS_INVALID, detail=detail)
+
+            target_handle = int(message.args[0])
+            signal = int(message.args[1])
+            if target_handle == app_context.handle:
+                return response_cls(status=STATUS_INVALID, detail="self signal forbidden")
+            if signal < SIGNAL_ABORT or signal > SIGNAL_USR2:
+                return response_cls(status=STATUS_INVALID, detail="invalid signal")
+
+            target_context = self.daemon.context_for_handle(target_handle)
+            if target_context is None:
+                return response_cls(status=STATUS_INVALID, detail="unknown target handle")
+
+            status = self.daemon.queue_signal(target_context, signal)
+            return response_cls(status=status, detail="ok" if status == STATUS_OK else "busy")
+
+        if message.syscall == "alarm":
+            if len(message.args) < 2:
+                detail = "missing alarm arguments"
+                self.logger.warning("Rejected command from %s: %s", context.peer(), detail)
+                context.set_code(grpc.StatusCode.INVALID_ARGUMENT)
+                context.set_details(detail)
+                return response_cls(status=STATUS_INVALID, detail=detail)
+
+            delay_ms = max(0, int(message.args[0]))
+            flag = int(message.args[1])
+            if flag == 0:
+                status = self.daemon._schedule_alarm(app_context, delay_ms, periodic=False)
+                return response_cls(status=status, detail="ok" if status == STATUS_OK else "busy")
+            if flag == 1:
+                status = self.daemon._schedule_alarm(app_context, delay_ms, periodic=True)
+                return response_cls(status=status, detail="ok" if status == STATUS_OK else "busy")
+            if flag == 2:
+                status = self.daemon._stop_alarm(app_context, delay_ms)
+                return response_cls(
+                    status=status,
+                    detail="ok" if status == STATUS_OK else "no entity",
+                )
+            return response_cls(status=STATUS_INVALID, detail="invalid alarm flag")
+
+        if message.syscall == "get_random":
+            value = self.daemon._rng.getrandbits(32)
+            self.daemon.write_u32_to_exchange_buffer(app_context, value)
+            return response_cls(status=STATUS_OK, detail="ok")
+
+        if message.syscall == "get_cycle":
+            if not message.args:
+                detail = "missing precision argument"
+                self.logger.warning("Rejected command from %s: %s", context.peer(), detail)
+                context.set_code(grpc.StatusCode.INVALID_ARGUMENT)
+                context.set_details(detail)
+                return response_cls(status=STATUS_INVALID, detail=detail)
+
+            precision = int(message.args[0])
+            if precision < PRECISION_CYCLE or precision > PRECISION_MILLISECONDS:
+                return response_cls(status=STATUS_INVALID, detail="invalid precision")
+
+            cycle_value = self.daemon.current_cycle_value(precision)
+            self.daemon.write_u64_to_exchange_buffer(app_context, cycle_value)
+            return response_cls(status=STATUS_OK, detail="ok")
 
         self.store.register(message)
         # Keep this trace explicit for early integration/debug phases.
