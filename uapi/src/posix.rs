@@ -422,19 +422,6 @@ pub fn dma_resume_stream(dmah: StreamHandle) -> Status {
     forward_syscall("dma_resume_stream", &[dmah as i128])
 }
 
-// Autotest only
-#[cfg(CONFIG_BUILD_TARGET_AUTOTEST)]
-#[inline(always)]
-pub fn autotest_set_capa(_capa: u32) -> Status {
-    forward_syscall("autotest_set_capa", &[_capa as i128])
-}
-
-#[cfg(CONFIG_BUILD_TARGET_AUTOTEST)]
-#[inline(always)]
-pub fn autotest_clear_capa(_capa: u32) -> Status {
-    forward_syscall("autotest_clear_capa", &[_capa as i128])
-}
-
 #[inline(always)]
 pub fn unsupported() -> Status {
     forward_syscall("unsupported", &[])
