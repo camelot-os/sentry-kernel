@@ -1,0 +1,81 @@
+# SPDX-FileCopyrightText: 2026 H2Lab Development Team
+# SPDX-License-Identifier: Apache-2.0
+
+name: Sentry emulator end-to-end
+
+on:
+  push:
+  pull_request:
+    branches:
+    - main
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  emulator:
+    defaults:
+      run:
+        shell: bash
+    runs-on: ubuntu-latest
+    container:
+      image: mesonbuild/ubuntu-rolling
+    steps:
+      - name: XXX git permission quirk XXX
+        run: |
+          git config --global --add safe.directory $GITHUB_WORKSPACE
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+          set-safe-directory: true
+      - name: Clone cross-files
+        uses: actions/checkout@v6
+        with:
+          ref: 'main'
+          repository: 'camelot-os/meson-cross-files'
+          path: crossfiles
+      - name: Deploy cross-files
+        run: |
+          mkdir -p $HOME/.local/share/meson/cross
+          cp -a $GITHUB_WORKSPACE/crossfiles/*.ini $HOME/.local/share/meson/cross
+          echo "MESON_CROSS_FILES=$HOME/.local/share/meson/cross" >> $GITHUB_ENV
+      - name: install prerequisites pkg
+        uses: camelot-os/action-install-pkg@v1
+        with:
+          packages: 'dtc|device-tree-compiler,libssh2-1|libssh2,curl,lld'
+      - name: Setup Rust toolchain
+        uses: dtolnay/rust-toolchain@nightly
+        with:
+          toolchain: 1.86.0
+          targets: thumbv7m-none-eabi,thumbv7em-none-eabi,thumbv7em-none-eabihf,thumbv8m.base-none-eabi,thumbv8m.main-none-eabi,thumbv8m.main-none-eabihf,x86_64-unknown-linux-gnu
+          components: clippy,rustfmt
+      - name: Setup C toolchain
+        uses: camelot-os/action-setup-compiler@v1
+        with:
+          compiler: gcc
+          triple: arm-none-eabi
+          ref: '12.3.Rel1'
+          workspace: $GITHUB_WORKSPACE
+      - name: deploy local deps
+        run: |
+          pip install -r requirements.txt
+      - name: defconfig
+        run: |
+          defconfig configs/stm32f429i_disc1_debug_defconfig
+      - name: Meson setup and compile
+        uses: camelot-os/action-meson@v1
+        with:
+          cross_files: ${{ format('{0}/{1}', env.MESON_CROSS_FILES, 'cm4-none-eabi-gcc.ini') }}
+          actions: '["prefetch", "setup", "compile"]'
+          options: '-Dconfig=.config -Ddts=dts/examples/stm32f429i_disc1_debug.dts -Ddts-include-dirs=dts -Dwith_doc=false -Dwith_tests=false -Dwith_proof=false -Dwith_kernel=false -Dwith_uapi=true -Dwith_idle=false -Dwith_tools=true -Dwith_emulator=true -Dwith_sbom=false -Dwith-install-crates=false'
+      - name: Run emulator e2e test suite
+        run: |
+          cd builddir
+          meson test --suite emulator --print-errorlogs
+      - name: Meson postcheck
+        if: failure()
+        run: |
+          cat builddir/meson-logs/meson-log.txt || true
+          cat builddir/meson-logs/testlog.txt || true

@@ -15,3 +15,6 @@ weasyprint
 lief
 GitPython>=3.1.0
 cyclonedx-bom
+build
+grpcio>=1.80
+protobuf>=6.31
