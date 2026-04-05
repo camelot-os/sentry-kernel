@@ -1,6 +1,8 @@
 # SPDX-FileCopyrightText: 2026 H2Lab Development Team
 # SPDX-License-Identifier: Apache-2.0
 
+"""Integration tests for emulator server lifecycle and syscalls."""
+
 
 import pathlib
 import importlib
@@ -27,6 +29,7 @@ parse_start_option = importlib.import_module("camelot.sentry_emulator.server").p
 
 
 def test_parse_start_option_ok() -> None:
+    """Accept a well-formed startup spec with numeric label."""
     spec = parse_start_option("./app.elf,label=123")
 
     assert str(spec.app_path) == "app.elf"
@@ -34,6 +37,7 @@ def test_parse_start_option_ok() -> None:
 
 
 def test_parse_start_option_rejects_bad_label() -> None:
+    """Reject startup labels that exceed unsigned 32-bit bounds."""
     with pytest.raises(ValueError):
         parse_start_option("./app.elf,label=50000000000")
 
@@ -41,6 +45,7 @@ def test_parse_start_option_rejects_bad_label() -> None:
 def test_grpc_server_receives_and_sorts_messages(
     tmp_path: pathlib.Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
+    """Exercise end-to-end syscall flow and in-memory accounting."""
     app_path_a = tmp_path / "dummy_app_a.sh"
     app_path_a.write_text("#!/bin/sh\nwhile true; do sleep 1; done\n", encoding="utf-8")
     app_path_a.chmod(0o755)
@@ -217,6 +222,7 @@ def test_grpc_server_receives_and_sorts_messages(
 
 
 def test_exit_deactivates_context_and_stops_daemon(tmp_path: pathlib.Path) -> None:
+    """Ensure exit syscall removes contexts and stops daemon when all leave."""
     app_path_a = tmp_path / "dummy_app_a.sh"
     app_path_a.write_text("#!/bin/sh\nwhile true; do sleep 1; done\n", encoding="utf-8")
     app_path_a.chmod(0o755)
@@ -270,6 +276,7 @@ def test_exit_deactivates_context_and_stops_daemon(tmp_path: pathlib.Path) -> No
 
 
 def test_wait_for_event_blocking_wakes_on_signal(tmp_path: pathlib.Path) -> None:
+    """Ensure blocking wait returns when a matching signal is queued."""
     app_path_a = tmp_path / "dummy_app_a.sh"
     app_path_a.write_text("#!/bin/sh\nwhile true; do sleep 1; done\n", encoding="utf-8")
     app_path_a.chmod(0o755)

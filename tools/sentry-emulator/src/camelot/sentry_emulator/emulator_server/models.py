@@ -13,6 +13,18 @@ from .constants import EXCHANGE_BUFFER_LEN, UINT32_MAX
 
 @dataclass(slots=True)
 class AlarmRegistration:
+    """Bookkeeping for one active alarm registration.
+
+    Attributes
+    ----------
+    delay_ms : int
+        Alarm delay in milliseconds used as identifier in app context maps.
+    periodic : bool
+        Whether the alarm is automatically re-scheduled after firing.
+    timer : threading.Timer
+        Live timer object that triggers the alarm callback.
+    """
+
     delay_ms: int
     periodic: bool
     timer: threading.Timer
@@ -20,7 +32,15 @@ class AlarmRegistration:
 
 @dataclass(frozen=True, slots=True)
 class StartSpec:
-    """Definition of one application to start with the daemon."""
+    """Definition of one application to start with the daemon.
+
+    Attributes
+    ----------
+    app_path : Path
+        Executable path launched during daemon startup.
+    label : int
+        Application label advertised to the app runtime via environment.
+    """
 
     app_path: Path
     label: int
@@ -28,7 +48,29 @@ class StartSpec:
 
 @dataclass(slots=True)
 class AppContext:
-    """Runtime context associated with one started application."""
+    """Runtime context associated with one started application.
+
+    Attributes
+    ----------
+    label : int
+        Application label used by syscall requests.
+    handle : int
+        Stable process handle exposed by ``get_process_handle``.
+    app_path : Path
+        Executable path associated with this runtime context.
+    process : subprocess.Popen[bytes] | None
+        Child process instance once started, otherwise ``None``.
+    exchange_buffer : bytearray
+        Shared 128-byte payload area used by exchange syscalls.
+    pending_signals : list[tuple[int, int]]
+        FIFO queue of ``(signal, source_handle)`` waiting to be consumed.
+    alarms : dict[int, AlarmRegistration]
+        Registered alarms keyed by delay in milliseconds.
+    event_condition : threading.Condition
+        Condition variable used to wake waiters when new events arrive.
+    exit_code : int | None
+        Exit code captured when the context is deactivated.
+    """
 
     label: int
     handle: int
@@ -44,12 +86,34 @@ class AppContext:
 
     @property
     def app_name(self) -> str:
-        """Return a stable display name for daemon-emitted app logs."""
+        """Return a stable display name for daemon-emitted app logs.
+
+        Returns
+        -------
+        str
+            Stem of ``app_path`` when available, otherwise full filename.
+        """
         return self.app_path.stem or self.app_path.name
 
 
 def parse_start_option(value: str) -> StartSpec:
-    """Parse one ``--start`` argument value (``APP_PATH,label=<u32>``)."""
+    """Parse one ``--start`` argument value (``APP_PATH,label=<u32>``).
+
+    Parameters
+    ----------
+    value : str
+        Raw CLI value passed to ``--start``.
+
+    Returns
+    -------
+    StartSpec
+        Validated startup specification used by the daemon.
+
+    Raises
+    ------
+    ValueError
+        If format is invalid, app path is empty, or label is outside ``u32``.
+    """
     app_part, sep, label_part = value.partition(",")
     if sep == "":
         raise ValueError("--start expects 'app.elf,label=<u32>'")

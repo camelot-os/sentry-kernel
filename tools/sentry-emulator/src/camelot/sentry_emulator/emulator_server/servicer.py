@@ -28,13 +28,38 @@ from .constants import (
 
 @dataclass(slots=True)
 class EmulatorServicer(emulator_pb2_grpc.EmulatorServicer):
-    """Internal gRPC service implementation for syscall dispatch."""
+    """Internal gRPC service implementation for syscall dispatch.
+
+    Attributes
+    ----------
+    daemon : Any
+        Runtime daemon object handling app contexts and buffer operations.
+    store : SyscallStore
+        In-memory syscall bookkeeping used by tests and diagnostics.
+    logger : logging.Logger
+        Logger used for request-level tracing and warnings.
+    """
 
     daemon: Any
     store: SyscallStore
     logger: logging.Logger
 
     def Dispatch(self, request: Any, context: grpc.ServicerContext) -> Any:
+        """Handle one emulator syscall request.
+
+        Parameters
+        ----------
+        request : Any
+            gRPC ``DispatchRequest`` protobuf payload.
+        context : grpc.ServicerContext
+            gRPC request context used for peer metadata and status reporting.
+
+        Returns
+        -------
+        Any
+            ``DispatchResponse`` protobuf message carrying status, detail, and
+            optional payload.
+        """
         response_cls = getattr(emulator_pb2, "DispatchResponse")
         self.logger.debug(
             "Received request peer=%s syscall=%s args=%s label=%s payload_len=%d",

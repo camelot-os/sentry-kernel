@@ -57,12 +57,33 @@ class GrpcEmulatorDaemon:
     _start_monotonic_ns: int = field(default_factory=time.monotonic_ns, init=False)
 
     def _all_startup_contexts_stopped(self) -> bool:
+        """Report whether every configured startup context has exited.
+
+        Returns
+        -------
+        bool
+            ``True`` only when startup specs exist and no context remains active.
+        """
         if not self.start_specs:
             return False
         with self._lock:
             return not self._contexts_by_label
 
     def deactivate_context(self, app_context: AppContext, exit_code: int) -> bool:
+        """Deactivate an application context after an ``exit`` syscall.
+
+        Parameters
+        ----------
+        app_context : AppContext
+            Context to remove from active registries.
+        exit_code : int
+            Application exit code reported by userspace.
+
+        Returns
+        -------
+        bool
+            ``True`` when this deactivation leaves no startup contexts alive.
+        """
         with self._lock:
             removed_by_label = self._contexts_by_label.pop(app_context.label, None)
             removed_by_handle = self._contexts_by_handle.pop(app_context.handle, None)
@@ -90,6 +111,18 @@ class GrpcEmulatorDaemon:
         return contexts_remaining == 0 and bool(self.start_specs)
 
     def _allocate_handle(self) -> int:
+        """Allocate the next unique app handle.
+
+        Returns
+        -------
+        int
+            Unsigned 32-bit process handle.
+
+        Raises
+        ------
+        RuntimeError
+            If the handle space is exhausted.
+        """
         if self._next_handle > UINT32_MAX:
             raise RuntimeError("app context handle overflow")
         handle = self._next_handle
@@ -97,6 +130,13 @@ class GrpcEmulatorDaemon:
         return handle
 
     def _prepare_start_specs(self) -> None:
+        """Validate startup specs and create contexts before process launch.
+
+        Raises
+        ------
+        RuntimeError
+            If labels collide or one executable path is missing.
+        """
         prepared_contexts: list[AppContext] = []
         labels: set[int] = set()
         for spec in self.start_specs:
@@ -132,6 +172,13 @@ class GrpcEmulatorDaemon:
             )
 
     def _start_prepared_apps(self) -> None:
+        """Spawn all prepared startup applications.
+
+        Raises
+        ------
+        RuntimeError
+            If one prepared context is missing or process creation fails.
+        """
         for spec in self.start_specs:
             with self._lock:
                 context = self._contexts_by_label.get(spec.label)
@@ -169,6 +216,7 @@ class GrpcEmulatorDaemon:
             )
 
     def _startup_apps(self) -> None:
+        """Initialize contexts and launch configured startup apps."""
         if not self.start_specs:
             self.logger.info("No startup tasks configured")
             return
@@ -177,6 +225,7 @@ class GrpcEmulatorDaemon:
         self._start_prepared_apps()
 
     def _terminate_started_apps(self) -> None:
+        """Terminate started apps and clear all in-memory runtime contexts."""
         for process in self._started_processes:
             if process.poll() is None:
                 self.logger.debug("Stopping child process pid=%d", process.pid)
@@ -202,14 +251,47 @@ class GrpcEmulatorDaemon:
             self._contexts_by_handle.clear()
 
     def context_for_label(self, label: int) -> AppContext | None:
+        """Return the active context associated with one application label.
+
+        Parameters
+        ----------
+        label : int
+            Application label.
+
+        Returns
+        -------
+        AppContext | None
+            Matching active context or ``None`` when absent.
+        """
         with self._lock:
             return self._contexts_by_label.get(label)
 
     def context_for_handle(self, handle: int) -> AppContext | None:
+        """Return the active context associated with one process handle.
+
+        Parameters
+        ----------
+        handle : int
+            Process handle returned by ``get_process_handle``.
+
+        Returns
+        -------
+        AppContext | None
+            Matching active context or ``None`` when absent.
+        """
         with self._lock:
             return self._contexts_by_handle.get(handle)
 
     def write_exchange_buffer(self, app_context: AppContext, payload: bytes) -> None:
+        """Write bytes into one app exchange buffer with zero-padding.
+
+        Parameters
+        ----------
+        app_context : AppContext
+            Target app runtime context.
+        payload : bytes
+            Payload copied into the fixed-size exchange buffer.
+        """
         with self._lock:
             app_context.exchange_buffer[:] = b"\x00" * EXCHANGE_BUFFER_LEN
             copy_len = min(len(payload), EXCHANGE_BUFFER_LEN)
@@ -222,6 +304,18 @@ class GrpcEmulatorDaemon:
         )
 
     def read_exchange_buffer(self, app_context: AppContext) -> bytes:
+        """Read one app exchange buffer as immutable bytes.
+
+        Parameters
+        ----------
+        app_context : AppContext
+            Source app runtime context.
+
+        Returns
+        -------
+        bytes
+            Snapshot of the full fixed-size exchange buffer.
+        """
         with self._lock:
             payload = bytes(app_context.exchange_buffer)
         self.logger.debug(
@@ -233,12 +327,46 @@ class GrpcEmulatorDaemon:
         return payload
 
     def write_u32_to_exchange_buffer(self, app_context: AppContext, value: int) -> None:
+        """Serialize and write one unsigned 32-bit integer to exchange buffer.
+
+        Parameters
+        ----------
+        app_context : AppContext
+            Target app runtime context.
+        value : int
+            Value encoded in little-endian unsigned representation.
+        """
         self.write_exchange_buffer(app_context, int(value).to_bytes(4, "little", signed=False))
 
     def write_u64_to_exchange_buffer(self, app_context: AppContext, value: int) -> None:
+        """Serialize and write one unsigned 64-bit integer to exchange buffer.
+
+        Parameters
+        ----------
+        app_context : AppContext
+            Target app runtime context.
+        value : int
+            Value encoded in little-endian unsigned representation.
+        """
         self.write_exchange_buffer(app_context, int(value).to_bytes(8, "little", signed=False))
 
     def queue_signal(self, target: AppContext, signal: int, source_handle: int) -> int:
+        """Queue a signal event for one application context.
+
+        Parameters
+        ----------
+        target : AppContext
+            Destination app context receiving the signal.
+        signal : int
+            Signal value to enqueue.
+        source_handle : int
+            Handle of the sender process.
+
+        Returns
+        -------
+        int
+            ``STATUS_OK`` on success, ``STATUS_BUSY`` when queue is full.
+        """
         with target.event_condition:
             if len(target.pending_signals) >= MAX_PENDING_SIGNALS:
                 return STATUS_BUSY
@@ -254,6 +382,15 @@ class GrpcEmulatorDaemon:
         return STATUS_OK
 
     def _alarm_fire(self, label: int, delay_ms: int) -> None:
+        """Deliver one alarm tick to the context identified by label.
+
+        Parameters
+        ----------
+        label : int
+            Target application label.
+        delay_ms : int
+            Alarm delay key used for logging context.
+        """
         with self._lock:
             target = self._contexts_by_label.get(label)
         if target is None:
@@ -268,6 +405,22 @@ class GrpcEmulatorDaemon:
             )
 
     def _schedule_alarm(self, app_context: AppContext, delay_ms: int, periodic: bool) -> int:
+        """Schedule a one-shot or periodic alarm for one context.
+
+        Parameters
+        ----------
+        app_context : AppContext
+            Target app runtime context.
+        delay_ms : int
+            Alarm delay in milliseconds.
+        periodic : bool
+            Whether the alarm should re-arm itself after firing.
+
+        Returns
+        -------
+        int
+            ``STATUS_OK`` when scheduled, ``STATUS_BUSY`` on duplicate delay.
+        """
         with self._lock:
             if delay_ms in app_context.alarms:
                 return STATUS_BUSY
@@ -311,6 +464,20 @@ class GrpcEmulatorDaemon:
         return STATUS_OK
 
     def _stop_alarm(self, app_context: AppContext, delay_ms: int) -> int:
+        """Stop one previously scheduled alarm.
+
+        Parameters
+        ----------
+        app_context : AppContext
+            Target app runtime context.
+        delay_ms : int
+            Alarm delay key identifying the registration.
+
+        Returns
+        -------
+        int
+            ``STATUS_OK`` regardless of prior registration presence.
+        """
         with self._lock:
             registration = app_context.alarms.pop(delay_ms, None)
         if registration is None:
@@ -331,6 +498,23 @@ class GrpcEmulatorDaemon:
         return STATUS_OK
 
     def current_cycle_value(self, precision: int) -> int:
+        """Return monotonic elapsed time encoded for requested precision.
+
+        Parameters
+        ----------
+        precision : int
+            Precision code from ``PRECISION_*`` constants.
+
+        Returns
+        -------
+        int
+            Elapsed monotonic time converted to the requested unit.
+
+        Raises
+        ------
+        ValueError
+            If precision is not supported by the emulator API.
+        """
         elapsed_ns = max(0, time.monotonic_ns() - self._start_monotonic_ns)
         if precision == PRECISION_CYCLE:
             return elapsed_ns
@@ -345,6 +529,20 @@ class GrpcEmulatorDaemon:
     def _dequeue_matching_signal(
         self, app_context: AppContext, mask: int
     ) -> tuple[int, int] | None:
+        """Pop one pending signal if the provided mask accepts signal events.
+
+        Parameters
+        ----------
+        app_context : AppContext
+            Source app runtime context.
+        mask : int
+            Bitmask of accepted event types.
+
+        Returns
+        -------
+        tuple[int, int] | None
+            ``(signal, source_handle)`` when available, otherwise ``None``.
+        """
         if not (mask & EVENT_TYPE_SIGNAL):
             return None
 
@@ -356,6 +554,17 @@ class GrpcEmulatorDaemon:
     def _serialize_signal_event(
         self, app_context: AppContext, signal: int, source_handle: int
     ) -> None:
+        """Serialize one signal event into the app exchange buffer.
+
+        Parameters
+        ----------
+        app_context : AppContext
+            Target app runtime context.
+        signal : int
+            Signal value to encode in payload.
+        source_handle : int
+            Handle of the sender process.
+        """
         header = bytes([EVENT_TYPE_SIGNAL, 4]) + EVENT_MAGIC.to_bytes(
             2, "little"
         ) + int(source_handle).to_bytes(4, "little", signed=False)
@@ -364,6 +573,18 @@ class GrpcEmulatorDaemon:
 
     @property
     def bound_address(self) -> tuple[str, int]:
+        """Return bound host and port for the running gRPC server.
+
+        Returns
+        -------
+        tuple[str, int]
+            Bound ``(host, port)`` pair.
+
+        Raises
+        ------
+        RuntimeError
+            If server binding has not happened yet.
+        """
         if self._bound_address is None:
             raise RuntimeError("daemon is not bound yet")
         return self._bound_address
@@ -374,6 +595,22 @@ class GrpcEmulatorDaemon:
         ready_event: threading.Event | None = None,
         poll_interval: float = 0.2,
     ) -> None:
+        """Run the gRPC server loop until stop criteria are met.
+
+        Parameters
+        ----------
+        stop_event : threading.Event | None, optional
+            External stop signal, by default a fresh event local to this call.
+        ready_event : threading.Event | None, optional
+            Event set once the server is bound and started.
+        poll_interval : float, optional
+            Delay in seconds between stop-condition polls.
+
+        Raises
+        ------
+        RuntimeError
+            If gRPC binding fails or startup app preparation fails.
+        """
         event = stop_event if stop_event is not None else threading.Event()
 
         grpc_server = grpc.server(futures.ThreadPoolExecutor(max_workers=4))

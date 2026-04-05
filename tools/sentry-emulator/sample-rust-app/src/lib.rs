@@ -1,12 +1,19 @@
 // SPDX-FileCopyrightText: 2026 H2Lab Development Team
 // SPDX-License-Identifier: Apache-2.0
 
+//! Sample Rust tasks used to validate the sentry-emulator end-to-end behavior.
+//!
+//! `sample-app-one` actively sends a signal to `sample-app-two`, then runs alarm,
+//! random, and cycle syscalls. `sample-app-two` blocks on event delivery, decodes
+//! the serialized signal event from exchange memory, and runs the same checks.
+
 use sentry_uapi::systypes::{
     AlarmFlag, EventType, Precision, Signal, Status,
 };
 use std::thread;
 use std::time::Duration;
 
+/// Copy a UTF-8 log message into exchange memory and emit it with `syscall::log`.
 fn emit_app_log(message: &str) {
     let payload = message.as_bytes();
     let st_copy = sentry_uapi::copy_to_kernel(&payload).unwrap_or(Status::Invalid);
@@ -21,6 +28,7 @@ fn emit_app_log(message: &str) {
     }
 }
 
+/// Emit a structured status line for one syscall step.
 fn report_status(context: &str, status: Status) {
     emit_app_log(&format!("{context}: {status:?}"));
 }
@@ -29,6 +37,10 @@ const SIGNAL_EVENT_TYPE: u8 = 2;
 const SIGNAL_EVENT_MAGIC: u16 = 0x4242;
 const TARGET_APP_TWO_HANDLE: u32 = 2;
 
+/// Decode a signal event header and payload from exchange memory.
+///
+/// Returns `Some(signal)` when the buffer contains a valid serialized signal
+/// event, otherwise returns `None` and logs the invalid frame details.
 fn read_signal_event_from_exchange() -> Option<u32> {
     let mut raw_exchange = [0u8; 128];
     let mut raw_exchange_slice: &mut [u8] = &mut raw_exchange;
@@ -72,6 +84,7 @@ fn read_signal_event_from_exchange() -> Option<u32> {
     Some(signal)
 }
 
+/// Exercise alarm, random, and cycle syscalls and log each returned status.
 fn run_alarm_random_cycle_checks() {
     // Start periodic alarm to guarantee that an immediate stop targets a live registration.
     let st_alarm_start = sentry_uapi::syscall::alarm(5000, AlarmFlag::AlarmStartPeriodic);
@@ -97,6 +110,10 @@ fn run_alarm_random_cycle_checks() {
     report_status("copy_from_kernel(cycle)", st_copy_cycle);
 }
 
+/// Entry routine for sample app one.
+///
+/// The routine sends `SIGUSR1` to app two twice (to tolerate startup ordering),
+/// then validates additional emulator syscalls.
 pub fn run_sample_app_one(peer_label: u32) {
     let _ = peer_label;
 
@@ -112,6 +129,10 @@ pub fn run_sample_app_one(peer_label: u32) {
     run_alarm_random_cycle_checks();
 }
 
+/// Entry routine for sample app two.
+///
+/// The routine blocks on signal events until `SIGUSR1` is received, validates
+/// signal event serialization, then runs the shared syscall checks.
 pub fn run_sample_app_two() {
     // Wait without timeout and return only when SIGUSR1 has been serialized by daemon.
     loop {
