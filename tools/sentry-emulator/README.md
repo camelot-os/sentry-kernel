@@ -1,3 +1,6 @@
+<!-- SPDX-FileCopyrightText: 2026 H2Lab Development Team -->
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+
 # Camelot Sentry Emulator
 
 This package provides a gRPC daemon used by the POSIX implementation of the `sentry-uapi` crate.
