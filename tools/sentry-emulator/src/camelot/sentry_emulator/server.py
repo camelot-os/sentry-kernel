@@ -183,10 +183,12 @@ class GrpcEmulatorDaemon:
             If the label is duplicated or executable path is invalid.
         """
         if spec.label in self._contexts_by_label:
+            self.logger.error("Duplicate startup label detected: %d", spec.label)
             raise RuntimeError(f"duplicate app label: {spec.label}")
 
         app_path = spec.app_path.expanduser().resolve()
         if not app_path.exists():
+            self.logger.error("Startup executable does not exist: %s", app_path)
             raise RuntimeError(f"app does not exist: {app_path}")
 
         child_env = os.environ.copy()
@@ -194,7 +196,12 @@ class GrpcEmulatorDaemon:
         child_env["SENTRY_EMULATOR_HOST"] = self.host
         child_env["SENTRY_EMULATOR_PORT"] = str(self.port)
 
-        process = subprocess.Popen([str(app_path)], env=child_env)
+        try:
+            process = subprocess.Popen([str(app_path)], env=child_env)
+        except OSError as exc:
+            self.logger.error("Cannot start app label=%d path=%s: %s", spec.label, app_path, exc)
+            raise RuntimeError(f"cannot start app: {app_path}") from exc
+
         context = AppContext(
             label=spec.label,
             handle=self._allocate_handle(),
@@ -203,10 +210,18 @@ class GrpcEmulatorDaemon:
         )
         self._contexts_by_label[spec.label] = context
         self._started_processes.append(process)
+        self.logger.debug(
+            "Registered app context label=%d handle=%d pid=%d",
+            context.label,
+            context.handle,
+            context.process.pid,
+        )
         return context
 
     def _startup_apps(self) -> None:
         """Start and register all configured startup applications."""
+        if not self.start_specs:
+            self.logger.info("No startup tasks configured")
         for spec in self.start_specs:
             context = self._launch_start_spec(spec)
             self.logger.info(
@@ -221,10 +236,15 @@ class GrpcEmulatorDaemon:
         """Terminate all child processes started by the daemon."""
         for process in self._started_processes:
             if process.poll() is None:
+                self.logger.debug("Stopping child process pid=%d", process.pid)
                 process.terminate()
                 try:
                     process.wait(timeout=2)
                 except subprocess.TimeoutExpired:
+                    self.logger.warning(
+                        "Child process pid=%d did not stop gracefully, killing",
+                        process.pid,
+                    )
                     process.kill()
                     process.wait(timeout=2)
 
@@ -256,6 +276,12 @@ class GrpcEmulatorDaemon:
         app_context.exchange_buffer[:] = b"\x00" * EXCHANGE_BUFFER_LEN
         copy_len = min(len(payload), EXCHANGE_BUFFER_LEN)
         app_context.exchange_buffer[:copy_len] = payload[:copy_len]
+        self.logger.debug(
+            "exchange_to_kernel label=%d handle=%d bytes=%d",
+            app_context.label,
+            app_context.handle,
+            copy_len,
+        )
 
     def read_exchange_buffer(self, app_context: AppContext) -> bytes:
         """Read full exchange buffer for a context.
@@ -270,7 +296,14 @@ class GrpcEmulatorDaemon:
         bytes
             Full serialized exchange buffer.
         """
-        return bytes(app_context.exchange_buffer)
+        payload = bytes(app_context.exchange_buffer)
+        self.logger.debug(
+            "exchange_from_kernel label=%d handle=%d bytes=%d",
+            app_context.label,
+            app_context.handle,
+            len(payload),
+        )
+        return payload
 
     @property
     def bound_address(self) -> tuple[str, int]:
@@ -316,6 +349,7 @@ class GrpcEmulatorDaemon:
 
         bound_port = grpc_server.add_insecure_port(f"{self.host}:{self.port}")
         if bound_port == 0:
+            self.logger.error("Cannot bind gRPC server on %s:%d", self.host, self.port)
             raise RuntimeError(f"cannot bind gRPC server on {self.host}:{self.port}")
 
         self._bound_address = (self.host, int(bound_port))
@@ -338,6 +372,7 @@ class GrpcEmulatorDaemon:
         finally:
             grpc_server.stop(grace=0).wait()
             self._terminate_started_apps()
+            self.logger.info("Sentry emulator stopped")
 
 
 @dataclass(slots=True)
@@ -366,6 +401,14 @@ class _EmulatorServicer(emulator_pb2_grpc.EmulatorServicer):
             ``DispatchResponse`` protobuf instance.
         """
         response_cls = getattr(emulator_pb2, "DispatchResponse")
+        self.logger.debug(
+            "Received request peer=%s syscall=%s args=%s label=%s payload_len=%d",
+            context.peer(),
+            getattr(request, "syscall", "<missing>"),
+            list(getattr(request, "args", [])),
+            getattr(request, "label", "<missing>"),
+            len(getattr(request, "payload", b"")),
+        )
 
         try:
             message = deserialize_request(request)
@@ -387,13 +430,25 @@ class _EmulatorServicer(emulator_pb2_grpc.EmulatorServicer):
 
         if message.syscall == "exchange_to_kernel":
             self.daemon.write_exchange_buffer(app_context, message.payload)
+            self.logger.debug(
+                "Responding syscall=%s label=%d status=0",
+                message.syscall,
+                message.label,
+            )
             return response_cls(status=0, detail="ok")
 
         if message.syscall == "exchange_from_kernel":
+            payload = self.daemon.read_exchange_buffer(app_context)
+            self.logger.debug(
+                "Responding syscall=%s label=%d status=0 payload_len=%d",
+                message.syscall,
+                message.label,
+                len(payload),
+            )
             return response_cls(
                 status=0,
                 detail="ok",
-                payload=self.daemon.read_exchange_buffer(app_context),
+                payload=payload,
             )
 
         if message.syscall == "log":
@@ -402,6 +457,12 @@ class _EmulatorServicer(emulator_pb2_grpc.EmulatorServicer):
             raw = bytes(app_context.exchange_buffer[:log_len])
             text = raw.split(b"\x00", 1)[0].decode("utf-8", errors="replace")
             print(text, flush=True)
+            self.logger.debug(
+                "Responding syscall=%s label=%d status=0 printed_len=%d",
+                message.syscall,
+                message.label,
+                len(text),
+            )
             return response_cls(status=0, detail="ok")
 
         self.store.register(message)
@@ -413,5 +474,10 @@ class _EmulatorServicer(emulator_pb2_grpc.EmulatorServicer):
             message.syscall,
             list(message.args),
             context.peer(),
+        )
+        self.logger.debug(
+            "Responding syscall=%s label=%d status=0",
+            message.syscall,
+            message.label,
         )
         return response_cls(status=0, detail="ok")

@@ -47,7 +47,11 @@ def _build_parser() -> argparse.ArgumentParser:
         "--log-level",
         default="INFO",
         choices=["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"],
-        help="Daemon log level",
+        help=(
+            "Daemon verbosity: INFO=start/stop lifecycle, "
+            "WARNING=invalid request content, ERROR=invalid args/start failures, "
+            "DEBUG=full request/response and task events"
+        ),
     )
     parser.add_argument(
         "--start",
@@ -59,27 +63,26 @@ def _build_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def _parse_start_specs(raw_specs: list[str], parser: argparse.ArgumentParser) -> tuple[StartSpec, ...]:
+def _parse_start_specs(raw_specs: list[str]) -> tuple[StartSpec, ...]:
     """Parse and validate ``--start`` values into startup specifications.
 
     Parameters
     ----------
     raw_specs : list[str]
         Raw values provided by repeated ``--start`` arguments.
-    parser : argparse.ArgumentParser
-        Parser used to report user-facing argument errors.
-
     Returns
     -------
     tuple[StartSpec, ...]
         Validated startup specifications in input order.
+
+    Raises
+    ------
+    ValueError
+        If any ``--start`` entry has invalid syntax or values.
     """
     parsed: list[StartSpec] = []
     for raw in raw_specs:
-        try:
-            parsed.append(parse_start_option(raw))
-        except ValueError as exc:
-            parser.error(str(exc))
+        parsed.append(parse_start_option(raw))
     return tuple(parsed)
 
 
@@ -93,17 +96,30 @@ def main() -> int:
     """
     parser = _build_parser()
     args = parser.parse_args()
-    start_specs = _parse_start_specs(args.start, parser)
 
     logging.basicConfig(
         level=getattr(logging, args.log_level),
         format="%(asctime)s %(levelname)s %(name)s: %(message)s",
     )
+    logger = logging.getLogger("camelot.sentry_emulator")
+
+    if args.port < 0 or args.port > 65535:
+        logger.error("Invalid --port value: %d (expected in [0, 65535])", args.port)
+        return 2
+
+    try:
+        start_specs = _parse_start_specs(args.start)
+    except ValueError as exc:
+        logger.error("Invalid startup argument: %s", exc)
+        return 2
 
     daemon = GrpcEmulatorDaemon(host=args.host, port=args.port, start_specs=start_specs)
     try:
         daemon.serve_forever()
     except KeyboardInterrupt:
-        logging.getLogger("camelot.sentry_emulator").info("Shutdown requested")
+        logger.info("Shutdown requested")
+    except RuntimeError as exc:
+        logger.error("Daemon startup failed: %s", exc)
+        return 1
 
     return 0
