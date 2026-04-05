@@ -73,7 +73,7 @@ jobs:
       - name: Run emulator e2e test suite
         run: |
           cd builddir
-          meson test --suite emulator --print-errorlogs
+          meson test --suite emulator --verbose
       - name: Meson postcheck
         if: failure()
         run: |
