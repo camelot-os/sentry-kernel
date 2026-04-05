@@ -7,3 +7,7 @@ endif
 
 subdir('robot')
 subdir('genmetadata')
+
+if get_option('with_emulator')
+    subdir('sentry-emulator')
+endif

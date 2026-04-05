@@ -25,6 +25,125 @@
 ///
 
 use crate::{SentryExchangeable, systypes::*};
+use std::sync::OnceLock;
+use tonic::codegen::http::uri::PathAndQuery;
+use tonic::transport::Endpoint;
+use tonic::{Request, Status as GrpcStatus};
+
+const DEFAULT_EMULATOR_HOST: &str = "127.0.0.1";
+const DEFAULT_EMULATOR_PORT: u16 = 44044;
+const DEFAULT_APP_LABEL: u32 = 0;
+
+static GRPC_RUNTIME: OnceLock<Option<tokio::runtime::Runtime>> = OnceLock::new();
+static APP_LABEL: OnceLock<u32> = OnceLock::new();
+
+#[derive(Clone, PartialEq, ::prost::Message)]
+struct DispatchRequest {
+    #[prost(string, tag = "1")]
+    syscall: String,
+    #[prost(sint64, repeated, tag = "2")]
+    args: std::vec::Vec<i64>,
+    #[prost(uint32, tag = "3")]
+    label: u32,
+}
+
+#[derive(Clone, PartialEq, ::prost::Message)]
+struct DispatchResponse {
+    #[prost(sint32, tag = "1")]
+    status: i32,
+    #[prost(string, tag = "2")]
+    detail: std::string::String,
+}
+
+fn grpc_runtime() -> Option<&'static tokio::runtime::Runtime> {
+    GRPC_RUNTIME
+        .get_or_init(|| {
+            tokio::runtime::Builder::new_current_thread()
+                .enable_all()
+                .build()
+                .ok()
+        })
+        .as_ref()
+}
+
+fn emulator_uri() -> std::string::String {
+    let host = std::env::var("SENTRY_EMULATOR_HOST")
+        .ok()
+        .filter(|value| !value.is_empty())
+        .unwrap_or_else(|| DEFAULT_EMULATOR_HOST.to_string());
+    let port = std::env::var("SENTRY_EMULATOR_PORT")
+        .ok()
+        .and_then(|value| value.parse::<u16>().ok())
+        .unwrap_or(DEFAULT_EMULATOR_PORT);
+    format!("http://{host}:{port}")
+}
+
+fn app_label() -> u32 {
+    *APP_LABEL.get_or_init(|| {
+        std::env::var("SENTRY_APP_LABEL")
+            .ok()
+            .and_then(|value| value.parse::<u32>().ok())
+            .unwrap_or(DEFAULT_APP_LABEL)
+    })
+}
+
+fn status_from_i32(raw_status: i32) -> Status {
+    match raw_status {
+        0 => Status::Ok,
+        1 => Status::Invalid,
+        2 => Status::Denied,
+        3 => Status::NoEntity,
+        4 => Status::Busy,
+        5 => Status::AlreadyMapped,
+        6 => Status::Critical,
+        7 => Status::Timeout,
+        8 => Status::Again,
+        9 => Status::Intr,
+        10 => Status::Deadlk,
+        _ => Status::Invalid,
+    }
+}
+
+async fn grpc_dispatch(request: DispatchRequest) -> Result<DispatchResponse, GrpcStatus> {
+    let endpoint = Endpoint::from_shared(emulator_uri())
+        .map_err(|_| GrpcStatus::unavailable("invalid endpoint"))?;
+    let channel = endpoint
+        .connect()
+        .await
+        .map_err(|_| GrpcStatus::unavailable("cannot connect to emulator"))?;
+
+    let mut client = tonic::client::Grpc::new(channel);
+    let codec = tonic::codec::ProstCodec::default();
+    let path = PathAndQuery::from_static("/camelot.sentry.emulator.Emulator/Dispatch");
+    let response = client.unary(Request::new(request), path, codec).await?;
+    Ok(response.into_inner())
+}
+
+fn forward_syscall(syscall: &str, args: &[i128]) -> Status {
+    let grpc_args = args
+        .iter()
+        .map(|value| i64::try_from(*value).ok())
+        .collect::<Option<std::vec::Vec<i64>>>();
+
+    let Some(grpc_args) = grpc_args else {
+        return Status::Invalid;
+    };
+
+    let request = DispatchRequest {
+        syscall: syscall.to_string(),
+        args: grpc_args,
+        label: app_label(),
+    };
+
+    let Some(runtime) = grpc_runtime() else {
+        return Status::NoEntity;
+    };
+
+    match runtime.block_on(grpc_dispatch(request)) {
+        Ok(response) => status_from_i32(response.status),
+        Err(_) => Status::NoEntity,
+    }
+}
 
 
 #[inline(always)]
@@ -73,122 +192,127 @@ pub fn sched_yield() -> Status {
 }
 
 #[inline(always)]
-pub fn get_process_handle(_label: TaskLabel) -> Status {
-    // Pas d'équivalent POSIX direct
-    todo!("get_process_handle not implemented in POSIX mode");
+pub fn get_process_handle(label: TaskLabel) -> Status {
+    forward_syscall("get_process_handle", &[label as i128])
 }
 
 #[inline(always)]
-pub fn send_ipc(_target: TaskHandle, _length: u8) -> Status {
-    todo!("send_ipc not implemented in POSIX mode");
+pub fn send_ipc(target: TaskHandle, length: u8) -> Status {
+    forward_syscall("send_ipc", &[target as i128, length as i128])
 }
 #[inline(always)]
-pub fn wait_for_event(_mask: u8, _timeout: i32) -> Status {
-    todo!("wait_for_event not implemented in POSIX mode");
-}
-
-#[inline(always)]
-pub fn map_dev(_handle: DeviceHandle) -> Status {
-    todo!("map_dev not implemented in POSIX mode");
+pub fn wait_for_event(mask: u8, timeout: i32) -> Status {
+    forward_syscall("wait_for_event", &[mask as i128, timeout as i128])
 }
 
 #[inline(always)]
-pub fn unmap_dev(_handle: DeviceHandle) -> Status {
-    todo!("map_dev not implemented in POSIX mode");
+pub fn map_dev(handle: DeviceHandle) -> Status {
+    forward_syscall("map_dev", &[handle as i128])
 }
 
 #[inline(always)]
-pub fn get_shm_handle(_shm: ShmLabel) -> Status {
-    todo!("get_shm_handle not implemented in POSIX mode");
+pub fn unmap_dev(handle: DeviceHandle) -> Status {
+    forward_syscall("unmap_dev", &[handle as i128])
 }
 
 #[inline(always)]
-pub fn get_device_handle(_devlabel: u8) -> Status {
-    todo!("get_device_handle not implemented in POSIX mode");
+pub fn get_shm_handle(shm: ShmLabel) -> Status {
+    forward_syscall("get_shm_handle", &[shm as i128])
 }
 
 #[inline(always)]
-pub fn get_dma_stream_handle(_stream: StreamLabel) -> Status {
-    todo!("get_dma_stream_handle not implemented in POSIX mode");
+pub fn get_device_handle(devlabel: u32) -> Status {
+    forward_syscall("get_device_handle", &[devlabel as i128])
 }
 
 #[inline(always)]
-pub fn start(_process: TaskLabel) -> Status {
-    todo!("start not implemented in POSIX mode");
+pub fn get_dma_stream_handle(stream: StreamLabel) -> Status {
+    forward_syscall("get_dma_stream_handle", &[stream as i128])
 }
 
 #[inline(always)]
-pub fn map_shm(_shm: ShmHandle) -> Status {
-    todo!("map_shm not implemented in POSIX mode");
+pub fn start(process: TaskLabel) -> Status {
+    forward_syscall("start", &[process as i128])
 }
 
 #[inline(always)]
-pub fn unmap_shm(_shm: ShmHandle) -> Status {
-    todo!("unmap_shm not implemented in POSIX mode");
+pub fn map_shm(shm: ShmHandle) -> Status {
+    forward_syscall("map_shm", &[shm as i128])
+}
+
+#[inline(always)]
+pub fn unmap_shm(shm: ShmHandle) -> Status {
+    forward_syscall("unmap_shm", &[shm as i128])
 }
 
 #[inline(always)]
 pub fn shm_set_credential(
-    _shm: ShmHandle,
-    _id: TaskHandle,
-    _shm_perm: u32,
+    shm: ShmHandle,
+    id: TaskHandle,
+    shm_perm: u32,
 ) -> Status {
-    todo!("shm_set_credential not implemented in POSIX mode");
+    forward_syscall(
+        "shm_set_credential",
+        &[shm as i128, id as i128, shm_perm as i128],
+    )
 }
 
 #[inline(always)]
-pub fn send_signal(_target: u32, _sig: Signal) -> Status {
-    todo!("send_signal not implemented in POSIX mode");
+pub fn send_signal(target: u32, sig: Signal) -> Status {
+    forward_syscall("send_signal", &[target as i128, sig as i128])
 }
 
 #[inline(always)]
-pub fn gpio_get(_resource: u32, _io: u8) -> Status {
-    todo!("gpio_get not implemented in POSIX mode");
+pub fn gpio_get(resource: u32, io: u8) -> Status {
+    forward_syscall("gpio_get", &[resource as i128, io as i128])
 }
 
 #[inline(always)]
-pub fn gpio_set(_resource: u32, _io: u8, _val: bool) -> Status {
-    todo!("gpio_set not implemented in POSIX mode");
+pub fn gpio_set(resource: u32, io: u8, val: bool) -> Status {
+    forward_syscall(
+        "gpio_set",
+        &[resource as i128, io as i128, i128::from(val as u8)],
+    )
 }
 
 #[inline(always)]
-pub fn gpio_reset(_resource: u32, _io: u8) -> Status {
-    todo!("gpio_reset not implemented in POSIX mode");
+pub fn gpio_reset(resource: u32, io: u8) -> Status {
+    forward_syscall("gpio_reset", &[resource as i128, io as i128])
 }
 
 #[inline(always)]
-pub fn gpio_toggle(_resource: u32, _io: u8) -> Status {
-    todo!("gpio_toggle not implemented in POSIX mode");
+pub fn gpio_toggle(resource: u32, io: u8) -> Status {
+    forward_syscall("gpio_toggle", &[resource as i128, io as i128])
 }
 
 #[inline(always)]
-pub fn gpio_configure(_resource: u32, _io: u8) -> Status {
-    todo!("gpio_configure not implemented in POSIX mode");
+pub fn gpio_configure(resource: u32, io: u8) -> Status {
+    forward_syscall("gpio_configure", &[resource as i128, io as i128])
 }
 
 #[inline(always)]
-pub fn irq_acknowledge(_irq: u16) -> Status {
-    todo!("irq_acknowledge not implemented in POSIX mode");
+pub fn irq_acknowledge(irq: u16) -> Status {
+    forward_syscall("irq_acknowledge", &[irq as i128])
 }
 
 #[inline(always)]
-pub fn irq_enable(_irq: u16) -> Status {
-    todo!("irq_enable not implemented in POSIX mode");
+pub fn irq_enable(irq: u16) -> Status {
+    forward_syscall("irq_enable", &[irq as i128])
 }
 
 #[inline(always)]
-pub fn irq_disable(_irq: u16) -> Status {
-    todo!("irq_disable not implemented in POSIX mode");
+pub fn irq_disable(irq: u16) -> Status {
+    forward_syscall("irq_disable", &[irq as i128])
 }
 
 #[inline(always)]
-pub fn pm_manage(_mode: CPUSleep) -> Status {
-    todo!("pm_manage not implemented in POSIX mode");
+pub fn pm_manage(mode: CPUSleep) -> Status {
+    forward_syscall("pm_manage", &[u32::from(mode) as i128])
 }
 
 #[inline(always)]
-pub fn alarm(_timeout_ms: u32, _flag: AlarmFlag) -> Status {
-    todo!("alarm not implemented in POSIX mode");
+pub fn alarm(timeout_ms: u32, flag: AlarmFlag) -> Status {
+    forward_syscall("alarm", &[timeout_ms as i128, u32::from(flag) as i128])
 }
 
 #[inline(always)]
@@ -209,73 +333,76 @@ pub fn log(_length: usize) -> Status {
 
 #[inline(always)]
 pub fn get_random() -> Status {
-    todo!("get_random not implemented in POSIX mode");
+    forward_syscall("get_random", &[])
 }
 
 #[inline(always)]
-pub fn get_cycle(_precision: Precision) -> Status {
-    todo!("get_cycle not implemented in POSIX mode");
+pub fn get_cycle(precision: Precision) -> Status {
+    forward_syscall("get_cycle", &[precision as i128])
 }
 
 #[inline(always)]
-pub fn pm_set_clock(_clk_reg: u32, _clkmsk: u32, _val: u32) -> Status {
-    todo!("pm_set_clock not implemented in POSIX mode");
+pub fn pm_set_clock(clk_reg: u32, clkmsk: u32, val: u32) -> Status {
+    forward_syscall(
+        "pm_set_clock",
+        &[clk_reg as i128, clkmsk as i128, val as i128],
+    )
 }
 
 #[inline(always)]
-pub fn dma_start_stream(_dmah: StreamHandle) -> Status {
-    todo!("dma_start_stream not implemented in POSIX mode");
+pub fn dma_start_stream(dmah: StreamHandle) -> Status {
+    forward_syscall("dma_start_stream", &[dmah as i128])
 }
 
 #[inline(always)]
-pub fn dma_suspend_stream(_dmah: StreamHandle) -> Status {
-    todo!("dma_suspend_stream not implemented in POSIX mode");
+pub fn dma_suspend_stream(dmah: StreamHandle) -> Status {
+    forward_syscall("dma_suspend_stream", &[dmah as i128])
 }
 
 #[inline(always)]
-pub fn dma_get_stream_status(_dmah: StreamHandle) -> Status {
-    todo!("dma_get_stream_status not implemented in POSIX mode");
+pub fn dma_get_stream_status(dmah: StreamHandle) -> Status {
+    forward_syscall("dma_get_stream_status", &[dmah as i128])
 }
 
 #[inline(always)]
-pub fn shm_get_infos(_shm: ShmHandle) -> Status {
-    todo!("shm_get_infos not implemented in POSIX mode");
+pub fn shm_get_infos(shm: ShmHandle) -> Status {
+    forward_syscall("shm_get_infos", &[shm as i128])
 }
 
 #[inline(always)]
-pub fn dma_assign_stream(_dmah: StreamHandle) -> Status {
-    todo!("dma_assign_stream not implemented in POSIX mode");
+pub fn dma_assign_stream(dmah: StreamHandle) -> Status {
+    forward_syscall("dma_assign_stream", &[dmah as i128])
 }
 
 #[inline(always)]
-pub fn dma_unassign_stream(_dmah: StreamHandle) -> Status {
-    todo!("dma_unassign_stream not implemented in POSIX mode");
+pub fn dma_unassign_stream(dmah: StreamHandle) -> Status {
+    forward_syscall("dma_unassign_stream", &[dmah as i128])
 }
 
 #[inline(always)]
-pub fn dma_get_stream_info(_dmah: StreamHandle) -> Status {
-    todo!("dma_get_stream_info not implemented in POSIX mode");
+pub fn dma_get_stream_info(dmah: StreamHandle) -> Status {
+    forward_syscall("dma_get_stream_info", &[dmah as i128])
 }
 
 #[inline(always)]
-pub fn dma_resume_stream(_dmah: StreamHandle) -> Status {
-    todo!("dma_resume_stream not implemented in POSIX mode");
+pub fn dma_resume_stream(dmah: StreamHandle) -> Status {
+    forward_syscall("dma_resume_stream", &[dmah as i128])
 }
 
 // Autotest only
 #[cfg(CONFIG_BUILD_TARGET_AUTOTEST)]
 #[inline(always)]
 pub fn autotest_set_capa(_capa: u32) -> Status {
-    todo!("autotest_set_capa not implemented in POSIX mode");
+    forward_syscall("autotest_set_capa", &[_capa as i128])
 }
 
 #[cfg(CONFIG_BUILD_TARGET_AUTOTEST)]
 #[inline(always)]
 pub fn autotest_clear_capa(_capa: u32) -> Status {
-    todo!("autotest_clear_capa not implemented in POSIX mode");
+    forward_syscall("autotest_clear_capa", &[_capa as i128])
 }
 
 #[inline(always)]
 pub fn unsupported() -> Status {
-    todo!("Unsupported syscall in POSIX GNU/Linux mode");
+    forward_syscall("unsupported", &[])
 }

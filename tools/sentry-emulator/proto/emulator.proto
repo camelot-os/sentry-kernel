@@ -1,0 +1,18 @@
+syntax = "proto3";
+
+package camelot.sentry.emulator;
+
+service Emulator {
+  rpc Dispatch(DispatchRequest) returns (DispatchResponse);
+}
+
+message DispatchRequest {
+  string syscall = 1;
+  repeated sint64 args = 2;
+  uint32 label = 3;
+}
+
+message DispatchResponse {
+  sint32 status = 1;
+  string detail = 2;
+}
