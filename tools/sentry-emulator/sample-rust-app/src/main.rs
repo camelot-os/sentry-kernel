@@ -3,7 +3,7 @@
 
 
 fn main() {
-    let _ = sentry_uapi::syscall::sched_yield();
-    let _ = sentry_uapi::syscall::get_random();
-    let _ = sentry_uapi::syscall::unsupported();
+    let msg = "hello from sample-rust-app";
+    let _ = sentry_uapi::copy_to_kernel(&msg.as_bytes());
+    let _ = sentry_uapi::syscall::log(msg.len());
 }

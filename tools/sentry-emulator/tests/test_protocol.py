@@ -18,12 +18,15 @@ from camelot.sentry_emulator.protocol import ProtocolError, deserialize_request
 
 def test_deserialize_request_ok() -> None:
     message = deserialize_request(
-        emulator_pb2.DispatchRequest(syscall="map_dev", args=[1, 2, 3], label=17)
+        emulator_pb2.DispatchRequest(
+            syscall="map_dev", args=[1, 2, 3], label=17, payload=b"abc"
+        )
     )
 
     assert message.syscall == "map_dev"
     assert message.args == (1, 2, 3)
     assert message.label == 17
+    assert message.payload == b"abc"
 
 
 def test_deserialize_request_rejects_empty_syscall() -> None:

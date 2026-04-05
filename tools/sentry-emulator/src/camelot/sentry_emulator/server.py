@@ -27,6 +27,7 @@ from .protocol import ProtocolError, deserialize_request
 DEFAULT_HOST: Final[str] = "127.0.0.1"
 DEFAULT_PORT: Final[int] = 44044
 UINT32_MAX: Final[int] = (1 << 32) - 1
+EXCHANGE_BUFFER_LEN: Final[int] = 128
 
 
 @dataclass(frozen=True, slots=True)
@@ -59,12 +60,17 @@ class AppContext:
         Resolved executable path used to spawn the process.
     process : subprocess.Popen[bytes]
         Spawned process object for lifecycle management.
+    exchange_buffer : bytearray
+        Per-application exchange zone content.
     """
 
     label: int
     handle: int
     app_path: Path
     process: subprocess.Popen[bytes]
+    exchange_buffer: bytearray = field(
+        default_factory=lambda: bytearray(EXCHANGE_BUFFER_LEN)
+    )
 
 
 def parse_start_option(value: str) -> StartSpec:
@@ -237,6 +243,35 @@ class GrpcEmulatorDaemon:
         """
         return self._contexts_by_label.get(label)
 
+    def write_exchange_buffer(self, app_context: AppContext, payload: bytes) -> None:
+        """Write payload to the context exchange buffer.
+
+        Parameters
+        ----------
+        app_context : AppContext
+            Target context.
+        payload : bytes
+            Source bytes copied into the buffer and zero-padded.
+        """
+        app_context.exchange_buffer[:] = b"\x00" * EXCHANGE_BUFFER_LEN
+        copy_len = min(len(payload), EXCHANGE_BUFFER_LEN)
+        app_context.exchange_buffer[:copy_len] = payload[:copy_len]
+
+    def read_exchange_buffer(self, app_context: AppContext) -> bytes:
+        """Read full exchange buffer for a context.
+
+        Parameters
+        ----------
+        app_context : AppContext
+            Source context.
+
+        Returns
+        -------
+        bytes
+            Full serialized exchange buffer.
+        """
+        return bytes(app_context.exchange_buffer)
+
     @property
     def bound_address(self) -> tuple[str, int]:
         """Return the effective bind address once server is started.
@@ -274,8 +309,6 @@ class GrpcEmulatorDaemon:
         """
         event = stop_event if stop_event is not None else threading.Event()
 
-        self._startup_apps()
-
         grpc_server = grpc.server(futures.ThreadPoolExecutor(max_workers=4))
         emulator_pb2_grpc.add_EmulatorServicer_to_server(
             _EmulatorServicer(daemon=self, store=self.store, logger=self.logger), grpc_server
@@ -287,6 +320,8 @@ class GrpcEmulatorDaemon:
 
         self._bound_address = (self.host, int(bound_port))
         grpc_server.start()
+
+        self._startup_apps()
 
         if ready_event is not None:
             ready_event.set()
@@ -349,6 +384,25 @@ class _EmulatorServicer(emulator_pb2_grpc.EmulatorServicer):
             context.set_code(grpc.StatusCode.NOT_FOUND)
             context.set_details(detail)
             return response_cls(status=1, detail=detail)
+
+        if message.syscall == "exchange_to_kernel":
+            self.daemon.write_exchange_buffer(app_context, message.payload)
+            return response_cls(status=0, detail="ok")
+
+        if message.syscall == "exchange_from_kernel":
+            return response_cls(
+                status=0,
+                detail="ok",
+                payload=self.daemon.read_exchange_buffer(app_context),
+            )
+
+        if message.syscall == "log":
+            log_len = int(message.args[0]) if message.args else 0
+            log_len = max(0, min(log_len, EXCHANGE_BUFFER_LEN))
+            raw = bytes(app_context.exchange_buffer[:log_len])
+            text = raw.split(b"\x00", 1)[0].decode("utf-8", errors="replace")
+            print(text, flush=True)
+            return response_cls(status=0, detail="ok")
 
         self.store.register(message)
         # Keep this trace explicit for early integration/debug phases.

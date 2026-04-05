@@ -24,7 +24,7 @@
 /// server and returning the server's response as the syscall result.
 ///
 
-use crate::{SentryExchangeable, systypes::*};
+use crate::systypes::*;
 use std::sync::OnceLock;
 use tonic::codegen::http::uri::PathAndQuery;
 use tonic::transport::Endpoint;
@@ -45,6 +45,8 @@ struct DispatchRequest {
     args: std::vec::Vec<i64>,
     #[prost(uint32, tag = "3")]
     label: u32,
+    #[prost(bytes = "vec", tag = "4")]
+    payload: std::vec::Vec<u8>,
 }
 
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -53,6 +55,8 @@ struct DispatchResponse {
     status: i32,
     #[prost(string, tag = "2")]
     detail: std::string::String,
+    #[prost(bytes = "vec", tag = "3")]
+    payload: std::vec::Vec<u8>,
 }
 
 fn grpc_runtime() -> Option<&'static tokio::runtime::Runtime> {
@@ -113,35 +117,74 @@ async fn grpc_dispatch(request: DispatchRequest) -> Result<DispatchResponse, Grp
         .map_err(|_| GrpcStatus::unavailable("cannot connect to emulator"))?;
 
     let mut client = tonic::client::Grpc::new(channel);
+    client
+        .ready()
+        .await
+        .map_err(|_| GrpcStatus::unavailable("emulator client not ready"))?;
     let codec = tonic::codec::ProstCodec::default();
     let path = PathAndQuery::from_static("/camelot.sentry.emulator.Emulator/Dispatch");
     let response = client.unary(Request::new(request), path, codec).await?;
     Ok(response.into_inner())
 }
 
-fn forward_syscall(syscall: &str, args: &[i128]) -> Status {
+fn dispatch_with_payload(
+    syscall: &str,
+    args: &[i128],
+    payload: &[u8],
+) -> Result<DispatchResponse, Status> {
     let grpc_args = args
         .iter()
         .map(|value| i64::try_from(*value).ok())
         .collect::<Option<std::vec::Vec<i64>>>();
 
     let Some(grpc_args) = grpc_args else {
-        return Status::Invalid;
+        return Err(Status::Invalid);
     };
 
     let request = DispatchRequest {
         syscall: syscall.to_string(),
         args: grpc_args,
         label: app_label(),
+        payload: payload.to_vec(),
     };
 
     let Some(runtime) = grpc_runtime() else {
-        return Status::NoEntity;
+        return Err(Status::NoEntity);
     };
 
     match runtime.block_on(grpc_dispatch(request)) {
+        Ok(response) => Ok(response),
+        Err(_) => Err(Status::NoEntity),
+    }
+}
+
+fn forward_syscall(syscall: &str, args: &[i128]) -> Status {
+    match dispatch_with_payload(syscall, args, &[]) {
         Ok(response) => status_from_i32(response.status),
-        Err(_) => Status::NoEntity,
+        Err(status) => status,
+    }
+}
+
+pub(crate) fn exchange_to_daemon(data: &[u8]) -> Status {
+    match dispatch_with_payload("exchange_to_kernel", &[], data) {
+        Ok(response) => status_from_i32(response.status),
+        Err(status) => status,
+    }
+}
+
+pub(crate) fn exchange_from_daemon(data: &mut [u8]) -> Status {
+    match dispatch_with_payload("exchange_from_kernel", &[], &[]) {
+        Ok(response) => {
+            let status = status_from_i32(response.status);
+            if status != Status::Ok {
+                return status;
+            }
+
+            let copy_len = core::cmp::min(data.len(), response.payload.len());
+            data[..copy_len].copy_from_slice(&response.payload[..copy_len]);
+            Status::Ok
+        }
+        Err(status) => status,
     }
 }
 
@@ -317,18 +360,7 @@ pub fn alarm(timeout_ms: u32, flag: AlarmFlag) -> Status {
 
 #[inline(always)]
 pub fn log(_length: usize) -> Status {
-    // usual model is to consecutively call:
-    // - str.to_kernel() to copy the log string into the exchange area
-    // - log(length) to trigger the log syscall, which will read the log string from the exchange area and print it
-    //
-    // In order to stay compatible with embedded use cases, we will keep the same model, by
-    // directly reading the log string from the exchange area and printing it,
-    // without any actual syscall, as this is a POSIX implementation and we can directly use std::println!
-    // Max log length is 128 by now, to be config-based set using CONFIG
-    let mut u8_slice: &mut [u8] = &mut [0u8; 128];
-    let _ = u8_slice.from_kernel();
-    std::println!("{}", String::from_utf8_lossy(u8_slice.as_ref()));
-    Status::Ok
+    forward_syscall("log", &[_length as i128])
 }
 
 #[inline(always)]

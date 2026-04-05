@@ -25,11 +25,14 @@ class SyscallMessage:
         Positional syscall arguments as signed integers.
     label : int
         Caller application label (expected to fit in ``u32``).
+    payload : bytes
+        Raw exchange payload transported with request.
     """
 
     syscall: str
     args: tuple[int, ...]
     label: int
+    payload: bytes
 
 
 def deserialize_request(request: Any) -> SyscallMessage:
@@ -59,4 +62,5 @@ def deserialize_request(request: Any) -> SyscallMessage:
         syscall=syscall,
         args=tuple(int(arg) for arg in request.args),
         label=int(request.label),
+        payload=bytes(request.payload),
     )

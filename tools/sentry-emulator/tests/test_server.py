@@ -38,7 +38,9 @@ def test_parse_start_option_rejects_bad_label() -> None:
         parse_start_option("./app.elf,label=50000000000")
 
 
-def test_grpc_server_receives_and_sorts_messages(tmp_path: pathlib.Path) -> None:
+def test_grpc_server_receives_and_sorts_messages(
+    tmp_path: pathlib.Path, capsys: pytest.CaptureFixture[str]
+) -> None:
     app_path = tmp_path / "dummy_app.sh"
     app_path.write_text("#!/bin/sh\nwhile true; do sleep 1; done\n", encoding="utf-8")
     app_path.chmod(0o755)
@@ -76,6 +78,22 @@ def test_grpc_server_receives_and_sorts_messages(tmp_path: pathlib.Path) -> None
         with pytest.raises(grpc.RpcError):
             stub.Dispatch(emulator_pb2.DispatchRequest(syscall="map_dev", args=[1], label=99))
 
+        stub.Dispatch(
+            emulator_pb2.DispatchRequest(
+                syscall="exchange_to_kernel",
+                label=7,
+                payload=b"hello from task",
+            )
+        )
+        exchange_reply = stub.Dispatch(
+            emulator_pb2.DispatchRequest(syscall="exchange_from_kernel", label=7)
+        )
+        assert exchange_reply.payload.startswith(b"hello from task")
+
+        stub.Dispatch(
+            emulator_pb2.DispatchRequest(syscall="log", args=[15], label=7)
+        )
+
     deadline = time.time() + 2.0
     while time.time() < deadline:
         if daemon.store.count_for("map_dev") == 2 and daemon.store.count_for("gpio_set") == 1:
@@ -88,3 +106,6 @@ def test_grpc_server_receives_and_sorts_messages(tmp_path: pathlib.Path) -> None
     assert daemon.store.count_for("map_dev") == 2
     assert daemon.store.count_for("gpio_set") == 1
     assert daemon.store.invalid_packets == 2
+
+    captured = capsys.readouterr()
+    assert "hello from task" in captured.out

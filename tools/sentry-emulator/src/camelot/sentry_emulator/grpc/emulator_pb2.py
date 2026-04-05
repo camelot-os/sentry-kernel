@@ -27,7 +27,7 @@ _sym_db = _symbol_database.Default()
 
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x0e\x65mulator.proto\x12\x17\x63\x61melot.sentry.emulator\"?\n\x0f\x44ispatchRequest\x12\x0f\n\x07syscall\x18\x01 \x01(\t\x12\x0c\n\x04\x61rgs\x18\x02 \x03(\x12\x12\r\n\x05label\x18\x03 \x01(\r\"2\n\x10\x44ispatchResponse\x12\x0e\n\x06status\x18\x01 \x01(\x11\x12\x0e\n\x06\x64\x65tail\x18\x02 \x01(\t2k\n\x08\x45mulator\x12_\n\x08\x44ispatch\x12(.camelot.sentry.emulator.DispatchRequest\x1a).camelot.sentry.emulator.DispatchResponseb\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x0e\x65mulator.proto\x12\x17\x63\x61melot.sentry.emulator\"P\n\x0f\x44ispatchRequest\x12\x0f\n\x07syscall\x18\x01 \x01(\t\x12\x0c\n\x04\x61rgs\x18\x02 \x03(\x12\x12\r\n\x05label\x18\x03 \x01(\r\x12\x0f\n\x07payload\x18\x04 \x01(\x0c\"C\n\x10\x44ispatchResponse\x12\x0e\n\x06status\x18\x01 \x01(\x11\x12\x0e\n\x06\x64\x65tail\x18\x02 \x01(\t\x12\x0f\n\x07payload\x18\x03 \x01(\x0c\x32k\n\x08\x45mulator\x12_\n\x08\x44ispatch\x12(.camelot.sentry.emulator.DispatchRequest\x1a).camelot.sentry.emulator.DispatchResponseb\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
@@ -35,9 +35,9 @@ _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'emulator_pb2', _globals)
 if not _descriptor._USE_C_DESCRIPTORS:
   DESCRIPTOR._loaded_options = None
   _globals['_DISPATCHREQUEST']._serialized_start=43
-  _globals['_DISPATCHREQUEST']._serialized_end=106
-  _globals['_DISPATCHRESPONSE']._serialized_start=108
-  _globals['_DISPATCHRESPONSE']._serialized_end=158
-  _globals['_EMULATOR']._serialized_start=160
-  _globals['_EMULATOR']._serialized_end=267
+  _globals['_DISPATCHREQUEST']._serialized_end=123
+  _globals['_DISPATCHRESPONSE']._serialized_start=125
+  _globals['_DISPATCHRESPONSE']._serialized_end=192
+  _globals['_EMULATOR']._serialized_start=194
+  _globals['_EMULATOR']._serialized_end=301
 # @@protoc_insertion_point(module_scope)
