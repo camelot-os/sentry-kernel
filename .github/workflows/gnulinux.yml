@@ -46,6 +46,7 @@ jobs:
               { 'name': 'nucleo_u5a5_autotest', 'cpu': 'cm33', 'triple': 'thumbv8m.main-none-eabi' },
               { 'name': 'nucleo_u5a5_autotest_harden', 'cpu': 'cm33', 'triple': 'thumbv8m.main-none-eabi' },
               { 'name': 'nucleo_wb55_autotest', 'cpu': 'cm4', 'triple': 'thumbv7em-none-eabi' },
+              { 'name': 'nucleo_u5a5_nooutput', 'cpu': 'cm33', 'triple': 'thumbv8m.main-none-eabi' },
               { 'name': 'stm32f429i_disc1_debug', 'cpu': 'cm4', 'triple': 'thumbv7em-none-eabi' },
               { 'name': 'nucleo_l476rg_debug', 'cpu': 'cm4', 'triple': 'thumbv7em-none-eabi' },
               { 'name': 'nucleo_f401re', 'cpu': 'cm4', 'triple': 'thumbv7em-none-eabi' },
