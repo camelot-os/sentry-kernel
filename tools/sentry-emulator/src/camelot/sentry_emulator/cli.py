@@ -1,8 +1,12 @@
 # SPDX-FileCopyrightText: 2026 H2Lab Development Team
 # SPDX-License-Identifier: Apache-2.0
 
+"""Command-line interface for the Sentry emulator daemon.
 
-from __future__ import annotations
+This module defines the public executable behavior used by the
+``sentry-emulator`` console script. It validates CLI arguments, configures
+logging, builds startup application specifications, and starts the gRPC daemon.
+"""
 
 import argparse
 import logging
@@ -17,6 +21,13 @@ from .server import (
 
 
 def _build_parser() -> argparse.ArgumentParser:
+    """Create the command-line parser for the emulator daemon.
+
+    Returns
+    -------
+    argparse.ArgumentParser
+        Parser configured with network, logging, and startup options.
+    """
     parser = argparse.ArgumentParser(
         prog="sentry-emulator",
         description="Run the Camelot Sentry userspace emulator daemon.",
@@ -49,6 +60,20 @@ def _build_parser() -> argparse.ArgumentParser:
 
 
 def _parse_start_specs(raw_specs: list[str], parser: argparse.ArgumentParser) -> tuple[StartSpec, ...]:
+    """Parse and validate ``--start`` values into startup specifications.
+
+    Parameters
+    ----------
+    raw_specs : list[str]
+        Raw values provided by repeated ``--start`` arguments.
+    parser : argparse.ArgumentParser
+        Parser used to report user-facing argument errors.
+
+    Returns
+    -------
+    tuple[StartSpec, ...]
+        Validated startup specifications in input order.
+    """
     parsed: list[StartSpec] = []
     for raw in raw_specs:
         try:
@@ -59,6 +84,13 @@ def _parse_start_specs(raw_specs: list[str], parser: argparse.ArgumentParser) ->
 
 
 def main() -> int:
+    """Run the daemon CLI entrypoint.
+
+    Returns
+    -------
+    int
+        Process return code (``0`` for graceful termination).
+    """
     parser = _build_parser()
     args = parser.parse_args()
     start_specs = _parse_start_specs(args.start, parser)

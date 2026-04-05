@@ -1,8 +1,7 @@
 # SPDX-FileCopyrightText: 2026 H2Lab Development Team
 # SPDX-License-Identifier: Apache-2.0
 
-
-from __future__ import annotations
+"""Pytest bootstrap for local source-tree imports during tests."""
 
 import pathlib
 import sys

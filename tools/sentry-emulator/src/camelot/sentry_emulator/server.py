@@ -1,8 +1,12 @@
 # SPDX-FileCopyrightText: 2026 H2Lab Development Team
 # SPDX-License-Identifier: Apache-2.0
 
+"""gRPC server implementation for the Sentry userspace emulator.
 
-from __future__ import annotations
+The daemon accepts gRPC syscall dispatch requests, validates payloads,
+associates them with startup-managed application contexts, and records calls in
+an in-memory store.
+"""
 
 from concurrent import futures
 import logging
@@ -27,12 +31,36 @@ UINT32_MAX: Final[int] = (1 << 32) - 1
 
 @dataclass(frozen=True, slots=True)
 class StartSpec:
+    """Definition of one application to start with the daemon.
+
+    Attributes
+    ----------
+    app_path : Path
+        Executable path to start.
+    label : int
+        Application label used to route incoming syscall requests.
+    """
+
     app_path: Path
     label: int
 
 
 @dataclass(frozen=True, slots=True)
 class AppContext:
+    """Runtime context associated with one started application.
+
+    Attributes
+    ----------
+    label : int
+        Static application label used by requests.
+    handle : int
+        Unique ``u32`` handle allocated by the daemon.
+    app_path : Path
+        Resolved executable path used to spawn the process.
+    process : subprocess.Popen[bytes]
+        Spawned process object for lifecycle management.
+    """
+
     label: int
     handle: int
     app_path: Path
@@ -40,6 +68,23 @@ class AppContext:
 
 
 def parse_start_option(value: str) -> StartSpec:
+    """Parse one ``--start`` argument value.
+
+    Parameters
+    ----------
+    value : str
+        Argument value formatted as ``APP_PATH,label=<u32>``.
+
+    Returns
+    -------
+    StartSpec
+        Parsed startup specification.
+
+    Raises
+    ------
+    ValueError
+        If the format is invalid or label is out of ``u32`` range.
+    """
     app_part, sep, label_part = value.partition(",")
     if sep == "":
         raise ValueError("--start expects 'app.elf,label=<u32>'")
@@ -65,6 +110,22 @@ def parse_start_option(value: str) -> StartSpec:
 
 @dataclass(slots=True)
 class GrpcEmulatorDaemon:
+    """Lifecycle manager for the emulator gRPC daemon.
+
+    Parameters
+    ----------
+    host : str, optional
+        Interface to bind for gRPC service.
+    port : int, optional
+        Port to bind for gRPC service (``0`` allows dynamic allocation).
+    start_specs : tuple[StartSpec, ...], optional
+        Startup application specifications to spawn before serving.
+    store : SyscallStore, optional
+        In-memory syscall storage backend.
+    logger : logging.Logger, optional
+        Logger used for daemon diagnostics.
+    """
+
     host: str = DEFAULT_HOST
     port: int = DEFAULT_PORT
     start_specs: tuple[StartSpec, ...] = ()
@@ -79,6 +140,18 @@ class GrpcEmulatorDaemon:
     _next_handle: int = field(default=1, init=False)
 
     def _allocate_handle(self) -> int:
+        """Allocate the next unique context handle.
+
+        Returns
+        -------
+        int
+            Newly allocated ``u32`` handle.
+
+        Raises
+        ------
+        RuntimeError
+            If ``u32`` handle space is exhausted.
+        """
         if self._next_handle > UINT32_MAX:
             raise RuntimeError("app context handle overflow")
         handle = self._next_handle
@@ -86,6 +159,23 @@ class GrpcEmulatorDaemon:
         return handle
 
     def _launch_start_spec(self, spec: StartSpec) -> AppContext:
+        """Start one app and register its runtime context.
+
+        Parameters
+        ----------
+        spec : StartSpec
+            Startup specification to execute.
+
+        Returns
+        -------
+        AppContext
+            Registered context for the started app.
+
+        Raises
+        ------
+        RuntimeError
+            If the label is duplicated or executable path is invalid.
+        """
         if spec.label in self._contexts_by_label:
             raise RuntimeError(f"duplicate app label: {spec.label}")
 
@@ -110,6 +200,7 @@ class GrpcEmulatorDaemon:
         return context
 
     def _startup_apps(self) -> None:
+        """Start and register all configured startup applications."""
         for spec in self.start_specs:
             context = self._launch_start_spec(spec)
             self.logger.info(
@@ -121,6 +212,7 @@ class GrpcEmulatorDaemon:
             )
 
     def _terminate_started_apps(self) -> None:
+        """Terminate all child processes started by the daemon."""
         for process in self._started_processes:
             if process.poll() is None:
                 process.terminate()
@@ -131,10 +223,34 @@ class GrpcEmulatorDaemon:
                     process.wait(timeout=2)
 
     def context_for_label(self, label: int) -> AppContext | None:
+        """Look up the runtime context bound to a label.
+
+        Parameters
+        ----------
+        label : int
+            Application label coming from request payload.
+
+        Returns
+        -------
+        AppContext | None
+            Matching context or ``None`` if the label is unknown.
+        """
         return self._contexts_by_label.get(label)
 
     @property
     def bound_address(self) -> tuple[str, int]:
+        """Return the effective bind address once server is started.
+
+        Returns
+        -------
+        tuple[str, int]
+            Bound host and port.
+
+        Raises
+        ------
+        RuntimeError
+            If server has not been started yet.
+        """
         if self._bound_address is None:
             raise RuntimeError("daemon is not bound yet")
         return self._bound_address
@@ -145,6 +261,17 @@ class GrpcEmulatorDaemon:
         ready_event: threading.Event | None = None,
         poll_interval: float = 0.2,
     ) -> None:
+        """Start the daemon and serve requests until stop is requested.
+
+        Parameters
+        ----------
+        stop_event : threading.Event | None, optional
+            External event used to request server shutdown.
+        ready_event : threading.Event | None, optional
+            Event set once binding and server startup are complete.
+        poll_interval : float, optional
+            Poll period in seconds when waiting for ``stop_event``.
+        """
         event = stop_event if stop_event is not None else threading.Event()
 
         self._startup_apps()
@@ -180,6 +307,8 @@ class GrpcEmulatorDaemon:
 
 @dataclass(slots=True)
 class _EmulatorServicer(emulator_pb2_grpc.EmulatorServicer):
+    """Internal gRPC service implementation for syscall dispatch."""
+
     daemon: GrpcEmulatorDaemon
     store: SyscallStore
     logger: logging.Logger
@@ -187,6 +316,20 @@ class _EmulatorServicer(emulator_pb2_grpc.EmulatorServicer):
     def Dispatch(
         self, request: Any, context: grpc.ServicerContext
     ) -> Any:
+        """Handle one syscall dispatch gRPC request.
+
+        Parameters
+        ----------
+        request : Any
+            Incoming protobuf request payload.
+        context : grpc.ServicerContext
+            gRPC context used to return detailed error status.
+
+        Returns
+        -------
+        Any
+            ``DispatchResponse`` protobuf instance.
+        """
         response_cls = getattr(emulator_pb2, "DispatchResponse")
 
         try:
