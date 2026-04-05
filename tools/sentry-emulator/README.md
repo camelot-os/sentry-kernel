@@ -30,6 +30,16 @@ sentry-emulator --start ./build/my-app,label=7 --start ./build/my-other-app,labe
 Each started app receives `SENTRY_APP_LABEL`, `SENTRY_EMULATOR_HOST`, and
 `SENTRY_EMULATOR_PORT` in its environment.
 
+## Sample Rust tasks
+
+The sample Rust project now builds two binaries with the same validation flow:
+
+- `sample-app-one`
+- `sample-app-two`
+
+They are produced under `sample-rust-app/target/debug/` when building the sample
+project.
+
 ## Local build
 
 ```sh

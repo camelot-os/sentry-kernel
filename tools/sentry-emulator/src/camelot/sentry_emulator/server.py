@@ -31,8 +31,10 @@ DEFAULT_PORT: Final[int] = 44044
 UINT32_MAX: Final[int] = (1 << 32) - 1
 EXCHANGE_BUFFER_LEN: Final[int] = 128
 SIGNAL_ABORT: Final[int] = 1
+EVENT_TYPE_SIGNAL: Final[int] = 2
 SIGNAL_USR2: Final[int] = 12
 SIGNAL_ALARM: Final[int] = 2
+EVENT_MAGIC: Final[int] = 0x4242
 PRECISION_CYCLE: Final[int] = 0
 PRECISION_NANOSECONDS: Final[int] = 1
 PRECISION_MICROSECONDS: Final[int] = 2
@@ -43,6 +45,8 @@ STATUS_INVALID: Final[int] = 1
 STATUS_DENIED: Final[int] = 2
 STATUS_NO_ENTITY: Final[int] = 3
 STATUS_BUSY: Final[int] = 4
+STATUS_TIMEOUT: Final[int] = 7
+STATUS_AGAIN: Final[int] = 8
 
 MAX_PENDING_SIGNALS: Final[int] = 32
 
@@ -70,7 +74,7 @@ class StartSpec:
     label: int
 
 
-@dataclass(frozen=True, slots=True)
+@dataclass(slots=True)
 class AppContext:
     """Runtime context associated with one started application.
 
@@ -82,25 +86,29 @@ class AppContext:
         Unique ``u32`` handle allocated by the daemon.
     app_path : Path
         Resolved executable path used to spawn the process.
-    process : subprocess.Popen[bytes]
+    process : subprocess.Popen[bytes] | None
         Spawned process object for lifecycle management.
     exchange_buffer : bytearray
         Per-application exchange zone content.
-    pending_signals : list[int]
-        Pending signals queued for this application.
+    pending_signals : list[tuple[int, int]]
+        Pending signals queued as ``(signal, source_handle)`` tuples.
     alarms : dict[int, AlarmRegistration]
         Alarm registrations keyed by timeout in milliseconds.
+    event_condition : threading.Condition
+        Condition used to block ``wait_for_event`` until an event is available.
     """
 
     label: int
     handle: int
     app_path: Path
-    process: subprocess.Popen[bytes]
+    process: subprocess.Popen[bytes] | None = None
     exchange_buffer: bytearray = field(
         default_factory=lambda: bytearray(EXCHANGE_BUFFER_LEN)
     )
-    pending_signals: list[int] = field(default_factory=list)
+    pending_signals: list[tuple[int, int]] = field(default_factory=list)
     alarms: dict[int, AlarmRegistration] = field(default_factory=dict)
+    event_condition: threading.Condition = field(default_factory=threading.Condition)
+    exit_code: int | None = None
 
 
 def parse_start_option(value: str) -> StartSpec:
@@ -179,6 +187,54 @@ class GrpcEmulatorDaemon:
     _lock: threading.Lock = field(default_factory=threading.Lock, init=False)
     _start_monotonic_ns: int = field(default_factory=time.monotonic_ns, init=False)
 
+    def _all_startup_contexts_stopped(self) -> bool:
+        """Return ``True`` when all startup contexts have been deactivated."""
+        if not self.start_specs:
+            return False
+        with self._lock:
+            return not self._contexts_by_label
+
+    def deactivate_context(self, app_context: AppContext, exit_code: int) -> bool:
+        """Deactivate one application context after an ``exit`` syscall.
+
+        Parameters
+        ----------
+        app_context : AppContext
+            Context to deactivate.
+        exit_code : int
+            Application-provided process return code.
+
+        Returns
+        -------
+        bool
+            ``True`` when this deactivation makes all startup contexts inactive.
+        """
+        with self._lock:
+            removed_by_label = self._contexts_by_label.pop(app_context.label, None)
+            removed_by_handle = self._contexts_by_handle.pop(app_context.handle, None)
+            contexts_remaining = len(self._contexts_by_label)
+
+        if removed_by_label is None or removed_by_handle is None:
+            return self._all_startup_contexts_stopped()
+
+        app_context.exit_code = exit_code
+        with app_context.event_condition:
+            app_context.pending_signals.clear()
+            app_context.event_condition.notify_all()
+
+        for registration in app_context.alarms.values():
+            registration.timer.cancel()
+        app_context.alarms.clear()
+
+        self.logger.info(
+            "App exited label=%d handle=%d code=%d remaining_contexts=%d",
+            app_context.label,
+            app_context.handle,
+            exit_code,
+            contexts_remaining,
+        )
+        return contexts_remaining == 0 and bool(self.start_specs)
+
     def _allocate_handle(self) -> int:
         """Allocate the next unique context handle.
 
@@ -198,75 +254,96 @@ class GrpcEmulatorDaemon:
         self._next_handle += 1
         return handle
 
-    def _launch_start_spec(self, spec: StartSpec) -> AppContext:
-        """Start one app and register its runtime context.
+    def _prepare_start_specs(self) -> None:
+        """Create and register all startup contexts before launching apps.
 
         Parameters
         ----------
-        spec : StartSpec
-            Startup specification to execute.
-
-        Returns
-        -------
-        AppContext
-            Registered context for the started app.
-
         Raises
         ------
         RuntimeError
-            If the label is duplicated or executable path is invalid.
+            If labels are duplicated or one executable path is invalid.
         """
-        if spec.label in self._contexts_by_label:
-            self.logger.error("Duplicate startup label detected: %d", spec.label)
-            raise RuntimeError(f"duplicate app label: {spec.label}")
+        prepared_contexts: list[AppContext] = []
+        labels: set[int] = set()
+        for spec in self.start_specs:
+            if spec.label in labels or spec.label in self._contexts_by_label:
+                self.logger.error("Duplicate startup label detected: %d", spec.label)
+                raise RuntimeError(f"duplicate app label: {spec.label}")
 
-        app_path = spec.app_path.expanduser().resolve()
-        if not app_path.exists():
-            self.logger.error("Startup executable does not exist: %s", app_path)
-            raise RuntimeError(f"app does not exist: {app_path}")
+            app_path = spec.app_path.expanduser().resolve()
+            if not app_path.exists():
+                self.logger.error("Startup executable does not exist: %s", app_path)
+                raise RuntimeError(f"app does not exist: {app_path}")
 
-        child_env = os.environ.copy()
-        child_env["SENTRY_APP_LABEL"] = str(spec.label)
-        child_env["SENTRY_EMULATOR_HOST"] = self.host
-        child_env["SENTRY_EMULATOR_PORT"] = str(self.port)
+            prepared_contexts.append(
+                AppContext(
+                    label=spec.label,
+                    handle=self._allocate_handle(),
+                    app_path=app_path,
+                )
+            )
+            labels.add(spec.label)
 
-        try:
-            process = subprocess.Popen([str(app_path)], env=child_env)
-        except OSError as exc:
-            self.logger.error("Cannot start app label=%d path=%s: %s", spec.label, app_path, exc)
-            raise RuntimeError(f"cannot start app: {app_path}") from exc
-
-        context = AppContext(
-            label=spec.label,
-            handle=self._allocate_handle(),
-            app_path=app_path,
-            process=process,
-        )
         with self._lock:
-            self._contexts_by_label[spec.label] = context
-            self._contexts_by_handle[context.handle] = context
-            self._started_processes.append(process)
-        self.logger.debug(
-            "Registered app context label=%d handle=%d pid=%d",
-            context.label,
-            context.handle,
-            context.process.pid,
-        )
-        return context
+            for context in prepared_contexts:
+                self._contexts_by_label[context.label] = context
+                self._contexts_by_handle[context.handle] = context
+
+        for context in prepared_contexts:
+            self.logger.debug(
+                "Initialized app context label=%d handle=%d path=%s",
+                context.label,
+                context.handle,
+                context.app_path,
+            )
+
+    def _start_prepared_apps(self) -> None:
+        """Start all applications after contexts have been registered."""
+        for spec in self.start_specs:
+            with self._lock:
+                context = self._contexts_by_label.get(spec.label)
+
+            if context is None:
+                self.logger.error("Missing initialized context for label=%d", spec.label)
+                raise RuntimeError(f"missing app context for label: {spec.label}")
+
+            child_env = os.environ.copy()
+            child_env["SENTRY_APP_LABEL"] = str(spec.label)
+            child_env["SENTRY_EMULATOR_HOST"] = self.host
+            child_env["SENTRY_EMULATOR_PORT"] = str(self.port)
+
+            try:
+                process = subprocess.Popen([str(context.app_path)], env=child_env)
+            except OSError as exc:
+                self.logger.error(
+                    "Cannot start app label=%d path=%s: %s",
+                    spec.label,
+                    context.app_path,
+                    exc,
+                )
+                raise RuntimeError(f"cannot start app: {context.app_path}") from exc
+
+            context.process = process
+            with self._lock:
+                self._started_processes.append(process)
+
+            self.logger.info(
+                "Started app label=%d handle=%d pid=%d path=%s",
+                context.label,
+                context.handle,
+                process.pid,
+                context.app_path,
+            )
 
     def _startup_apps(self) -> None:
         """Start and register all configured startup applications."""
         if not self.start_specs:
             self.logger.info("No startup tasks configured")
-        for spec in self.start_specs:
-            context = self._launch_start_spec(spec)
-            self.logger.info(
-                "Started app label=%d handle=%d pid=%d path=%s",
-                context.label,
-                context.handle,
-                context.process.pid,
-                context.app_path,
-            )
+            return
+
+        self._prepare_start_specs()
+        self._start_prepared_apps()
 
     def _terminate_started_apps(self) -> None:
         """Terminate all child processes started by the daemon."""
@@ -288,6 +365,9 @@ class GrpcEmulatorDaemon:
             for app_context in self._contexts_by_label.values():
                 for registration in app_context.alarms.values():
                     registration.timer.cancel()
+                app_context.alarms.clear()
+                app_context.pending_signals.clear()
+                app_context.process = None
             self._contexts_by_label.clear()
             self._contexts_by_handle.clear()
 
@@ -364,7 +444,7 @@ class GrpcEmulatorDaemon:
         """Store one ``u64`` value into app exchange buffer."""
         self.write_exchange_buffer(app_context, int(value).to_bytes(8, "little", signed=False))
 
-    def queue_signal(self, target: AppContext, signal: int) -> int:
+    def queue_signal(self, target: AppContext, signal: int, source_handle: int) -> int:
         """Queue a signal for a target context.
 
         Returns
@@ -372,13 +452,15 @@ class GrpcEmulatorDaemon:
         int
             Emulator status code.
         """
-        with self._lock:
+        with target.event_condition:
             if len(target.pending_signals) >= MAX_PENDING_SIGNALS:
                 return STATUS_BUSY
-            target.pending_signals.append(signal)
+            target.pending_signals.append((signal, source_handle))
+            target.event_condition.notify_all()
         self.logger.debug(
-            "Queued signal=%d for label=%d handle=%d",
+            "Queued signal=%d source=%d for label=%d handle=%d",
             signal,
+            source_handle,
             target.label,
             target.handle,
         )
@@ -389,7 +471,7 @@ class GrpcEmulatorDaemon:
             target = self._contexts_by_label.get(label)
         if target is None:
             return
-        status = self.queue_signal(target, SIGNAL_ALARM)
+        status = self.queue_signal(target, SIGNAL_ALARM, target.handle)
         if status != STATUS_OK:
             self.logger.warning(
                 "Alarm delivery failed label=%d delay_ms=%d status=%d",
@@ -443,7 +525,13 @@ class GrpcEmulatorDaemon:
         with self._lock:
             registration = app_context.alarms.pop(delay_ms, None)
         if registration is None:
-            return STATUS_NO_ENTITY
+            self.logger.debug(
+                "Alarm already stopped label=%d handle=%d delay_ms=%d",
+                app_context.label,
+                app_context.handle,
+                delay_ms,
+            )
+            return STATUS_OK
         registration.timer.cancel()
         self.logger.debug(
             "Stopped alarm label=%d handle=%d delay_ms=%d",
@@ -465,6 +553,28 @@ class GrpcEmulatorDaemon:
         if precision == PRECISION_MILLISECONDS:
             return elapsed_ns // 1_000_000
         raise ValueError("invalid precision")
+
+    def _dequeue_matching_signal(
+        self, app_context: AppContext, mask: int
+    ) -> tuple[int, int] | None:
+        if not (mask & EVENT_TYPE_SIGNAL):
+            return None
+
+        with app_context.event_condition:
+            if not app_context.pending_signals:
+                return None
+            return app_context.pending_signals.pop(0)
+
+    def _serialize_signal_event(
+        self, app_context: AppContext, signal: int, source_handle: int
+    ) -> None:
+        header = bytes(
+            [EVENT_TYPE_SIGNAL, 4]
+        ) + EVENT_MAGIC.to_bytes(2, "little") + int(source_handle).to_bytes(
+            4, "little", signed=False
+        )
+        payload = int(signal).to_bytes(4, "little", signed=False)
+        self.write_exchange_buffer(app_context, header + payload)
 
     @property
     def bound_address(self) -> tuple[str, int]:
@@ -528,8 +638,14 @@ class GrpcEmulatorDaemon:
         )
 
         try:
-            while not event.wait(timeout=poll_interval):
-                continue
+            while True:
+                if event.wait(timeout=poll_interval):
+                    break
+                if self._all_startup_contexts_stopped():
+                    self.logger.info(
+                        "All startup tasks have terminated, stopping emulator daemon"
+                    )
+                    break
         finally:
             grpc_server.stop(grace=0).wait()
             self._terminate_started_apps()
@@ -661,8 +777,41 @@ class _EmulatorServicer(emulator_pb2_grpc.EmulatorServicer):
             if target_context is None:
                 return response_cls(status=STATUS_INVALID, detail="unknown target handle")
 
-            status = self.daemon.queue_signal(target_context, signal)
+            status = self.daemon.queue_signal(target_context, signal, app_context.handle)
             return response_cls(status=status, detail="ok" if status == STATUS_OK else "busy")
+
+        if message.syscall == "wait_for_event":
+            if len(message.args) < 2:
+                detail = "missing wait_for_event arguments"
+                self.logger.warning("Rejected command from %s: %s", context.peer(), detail)
+                context.set_code(grpc.StatusCode.INVALID_ARGUMENT)
+                context.set_details(detail)
+                return response_cls(status=STATUS_INVALID, detail=detail)
+
+            mask = int(message.args[0])
+            timeout = int(message.args[1])
+
+            pending = self.daemon._dequeue_matching_signal(app_context, mask)
+            if pending is not None:
+                signal, source_handle = pending
+                self.daemon._serialize_signal_event(app_context, signal, source_handle)
+                return response_cls(status=STATUS_OK, detail="ok")
+
+            if timeout == -1:
+                return response_cls(status=STATUS_AGAIN, detail="again")
+
+            wait_timeout = None if timeout == 0 else max(0.0, timeout / 1000.0)
+            with app_context.event_condition:
+                has_event = app_context.event_condition.wait_for(
+                    lambda: bool(app_context.pending_signals) and bool(mask & EVENT_TYPE_SIGNAL),
+                    timeout=wait_timeout,
+                )
+                if not has_event:
+                    return response_cls(status=STATUS_TIMEOUT, detail="timeout")
+                signal, source_handle = app_context.pending_signals.pop(0)
+
+            self.daemon._serialize_signal_event(app_context, signal, source_handle)
+            return response_cls(status=STATUS_OK, detail="ok")
 
         if message.syscall == "alarm":
             if len(message.args) < 2:
@@ -708,6 +857,12 @@ class _EmulatorServicer(emulator_pb2_grpc.EmulatorServicer):
             cycle_value = self.daemon.current_cycle_value(precision)
             self.daemon.write_u64_to_exchange_buffer(app_context, cycle_value)
             return response_cls(status=STATUS_OK, detail="ok")
+
+        if message.syscall == "exit":
+            exit_code = int(message.args[0]) if message.args else 0
+            all_done = self.daemon.deactivate_context(app_context, exit_code)
+            detail = "all tasks exited" if all_done else "context deactivated"
+            return response_cls(status=STATUS_OK, detail=detail)
 
         self.store.register(message)
         # Keep this trace explicit for early integration/debug phases.

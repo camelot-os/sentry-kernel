@@ -1,0 +1,117 @@
+// SPDX-FileCopyrightText: 2026 H2Lab Development Team
+// SPDX-License-Identifier: Apache-2.0
+
+use sentry_uapi::systypes::{
+    AlarmFlag, EventType, Precision, Signal, Status,
+};
+use std::thread;
+use std::time::Duration;
+
+fn report_status(context: &str, status: Status) {
+    eprintln!("[sample-rust-app] {context}: {status:?}");
+}
+
+const SIGNAL_EVENT_TYPE: u8 = 2;
+const SIGNAL_EVENT_MAGIC: u16 = 0x4242;
+const TARGET_APP_TWO_HANDLE: u32 = 2;
+
+fn read_signal_event_from_exchange() -> Option<u32> {
+    let mut raw_exchange = [0u8; 128];
+    let mut raw_exchange_slice: &mut [u8] = &mut raw_exchange;
+    let st_copy_event =
+        sentry_uapi::copy_from_kernel(&mut raw_exchange_slice).unwrap_or(Status::Invalid);
+    report_status("copy_from_kernel(raw signal event)", st_copy_event);
+    if st_copy_event != Status::Ok {
+        return None;
+    }
+
+    let event_type = raw_exchange[0];
+    let event_len = raw_exchange[1];
+    let event_magic = u16::from_le_bytes([raw_exchange[2], raw_exchange[3]]);
+    let event_peer = u32::from_le_bytes([
+        raw_exchange[4],
+        raw_exchange[5],
+        raw_exchange[6],
+        raw_exchange[7],
+    ]);
+    let signal = u32::from_le_bytes([
+        raw_exchange[8],
+        raw_exchange[9],
+        raw_exchange[10],
+        raw_exchange[11],
+    ]);
+
+    if event_type != SIGNAL_EVENT_TYPE
+        || event_len != 4
+        || event_magic != SIGNAL_EVENT_MAGIC
+        || event_peer == 0
+    {
+        eprintln!(
+            "[sample-rust-app] invalid signal event header: type={event_type} len={event_len} magic=0x{event_magic:04x} peer={event_peer}"
+        );
+        return None;
+    }
+
+    eprintln!("[sample-rust-app] signal event received from peer={event_peer} value={signal}");
+    Some(signal)
+}
+
+fn run_alarm_random_cycle_checks() {
+    // Start periodic alarm to guarantee that an immediate stop targets a live registration.
+    let st_alarm_start = sentry_uapi::syscall::alarm(5000, AlarmFlag::AlarmStartPeriodic);
+    let st_alarm_stop = sentry_uapi::syscall::alarm(5000, AlarmFlag::AlarmStop);
+    report_status("alarm(start)", st_alarm_start);
+    if st_alarm_stop == Status::NoEntity {
+        eprintln!("[sample-rust-app] alarm(stop): Ok (already stopped)");
+    } else {
+        report_status("alarm(stop)", st_alarm_stop);
+    }
+
+    let st_rng = sentry_uapi::syscall::get_random();
+    let mut rng_value: u32 = 0;
+    report_status("get_random", st_rng);
+    let st_copy_rng = sentry_uapi::copy_from_kernel(&mut rng_value).unwrap_or(Status::Invalid);
+    report_status("copy_from_kernel(random)", st_copy_rng);
+
+    let st_cycle = sentry_uapi::syscall::get_cycle(Precision::Milliseconds);
+    let mut cycle_value: u64 = 0;
+    report_status("get_cycle", st_cycle);
+    let st_copy_cycle =
+        sentry_uapi::copy_from_kernel(&mut cycle_value).unwrap_or(Status::Invalid);
+    report_status("copy_from_kernel(cycle)", st_copy_cycle);
+}
+
+pub fn run_sample_app_one(peer_label: u32) {
+    let _ = peer_label;
+
+    // Let the receiver enter its blocking wait path before sending the signal.
+    thread::sleep(Duration::from_millis(100));
+
+    let st_sig_peer = sentry_uapi::syscall::send_signal(TARGET_APP_TWO_HANDLE, Signal::Usr1);
+    report_status("send_signal(peer, SIGUSR1)", st_sig_peer);
+
+    // Emit a second signal to make the emulator e2e startup phase robust against transient ordering.
+    let st_sig_peer_retry = sentry_uapi::syscall::send_signal(TARGET_APP_TWO_HANDLE, Signal::Usr1);
+    report_status("send_signal(peer, SIGUSR1, retry)", st_sig_peer_retry);
+}
+
+pub fn run_sample_app_two() {
+    // Wait without timeout and return only when SIGUSR1 has been serialized by daemon.
+    loop {
+        let st_wait_signal = sentry_uapi::syscall::wait_for_event(EventType::Signal.into(), 0);
+        report_status("wait_for_event(signal, no timeout)", st_wait_signal);
+        if st_wait_signal != Status::Ok {
+            continue;
+        }
+        let Some(signal) = read_signal_event_from_exchange() else {
+            continue;
+        };
+
+        if signal == Signal::Usr1 as u32 {
+            break;
+        }
+
+        eprintln!("[sample-rust-app] ignoring other signal value={signal}");
+    }
+
+}

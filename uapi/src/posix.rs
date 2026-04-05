@@ -191,6 +191,7 @@ pub(crate) fn exchange_from_daemon(data: &mut [u8]) -> Status {
 
 #[inline(always)]
 pub fn exit(status: i32) -> Status {
+    let _ = forward_syscall("exit", &[status as i128]);
     std::process::exit(status);
 }
 

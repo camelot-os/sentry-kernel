@@ -50,6 +50,9 @@ fallback_version = "0.0.0+unknown"
 pythonpath = ["src"]
 addopts = "-q"
 testpaths = ["tests"]
+markers = [
+  "emulator: end-to-end tests that launch the emulator with real startup apps",
+]
 
 [tool.mypy]
 python_version = "3.11"

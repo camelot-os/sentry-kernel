@@ -9,6 +9,25 @@ import sys
 from camelot.sentry_emulator import cli
 
 
+def test_parser_accepts_multiple_start_arguments() -> None:
+    """Repeated --start options should be collected in order."""
+    parser = cli._build_parser()
+
+    args = parser.parse_args(
+        [
+            "--start",
+            "sample-app-one,label=7",
+            "--start",
+            "sample-app-two,label=8",
+        ]
+    )
+
+    assert args.start == [
+        "sample-app-one,label=7",
+        "sample-app-two,label=8",
+    ]
+
+
 def test_main_returns_non_zero_and_logs_error_on_invalid_port(
     monkeypatch, caplog
 ) -> None:
