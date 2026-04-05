@@ -188,6 +188,11 @@ impl ExchangeHeader {
     }
 
     #[cfg(test)]
+    /// # Safety
+    /// - `EXCHANGE_AREA` must be correctly aligned for `ExchangeHeader`.
+    /// - `EXCHANGE_AREA` must be large enough to contain a full `ExchangeHeader`.
+    /// - The caller must ensure exclusive mutable access to `EXCHANGE_AREA`
+    ///   for the entire lifetime of the returned reference.
     pub unsafe fn from_exchange_mut(self) -> &'static mut Self {
         unsafe { self.from_addr_mut() }
     }

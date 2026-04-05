@@ -29,7 +29,7 @@ default = []
 std = []
 
 [lints.rust]
-unexpected_cfgs = { level = "warn", check-cfg = ['cfg(CONFIG_BUILD_TARGET_AUTOTEST)'] }
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(CONFIG_BUILD_TARGET_AUTOTEST)', 'cfg(kani)'] }
 
 [profile.release]
 opt-level = "z"

@@ -23,7 +23,6 @@
 /// will behave as a proxy to the server, forwarding the syscall number and arguments to the
 /// server and returning the server's response as the syscall result.
 ///
-
 use crate::systypes::*;
 use std::sync::OnceLock;
 use tonic::codegen::http::uri::PathAndQuery;
@@ -188,7 +187,6 @@ pub(crate) fn exchange_from_daemon(data: &mut [u8]) -> Status {
     }
 }
 
-
 #[inline(always)]
 pub fn exit(status: i32) -> Status {
     let _ = forward_syscall("exit", &[status as i128]);
@@ -197,7 +195,10 @@ pub fn exit(status: i32) -> Status {
 
 #[inline(always)]
 pub fn sleep(duration_ms: SleepDuration, mode: SleepMode) -> Status {
-    forward_syscall("sleep", &[u32::from(duration_ms) as i128, u32::from(mode) as i128])
+    forward_syscall(
+        "sleep",
+        &[u32::from(duration_ms) as i128, u32::from(mode) as i128],
+    )
 }
 
 #[inline(always)]
@@ -261,11 +262,7 @@ pub fn unmap_shm(shm: ShmHandle) -> Status {
 }
 
 #[inline(always)]
-pub fn shm_set_credential(
-    shm: ShmHandle,
-    id: TaskHandle,
-    shm_perm: u32,
-) -> Status {
+pub fn shm_set_credential(shm: ShmHandle, id: TaskHandle, shm_perm: u32) -> Status {
     forward_syscall(
         "shm_set_credential",
         &[shm as i128, id as i128, shm_perm as i128],

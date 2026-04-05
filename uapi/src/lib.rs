@@ -19,10 +19,7 @@
 //!  are implemented in the [`mod@syscall`] module, while the upper, easy interface
 //!  is out of the scope of this very crate, and written in the shield crate instead.
 
-#![cfg_attr(
-    not(all(target_arch = "x86_64", target_os = "linux")),
-    no_std
-)]
+#![cfg_attr(not(all(target_arch = "x86_64", target_os = "linux")), no_std)]
 
 /// Support for std in POSIX mode, only for linux/x86_64 targets
 #[cfg(all(target_arch = "x86_64", target_os = "linux"))]
