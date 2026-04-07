@@ -82,8 +82,10 @@ of another event such as IPC wait), and call the `schedule()` API afterward, if 
 In case of job fault, the job is preempted by the fault handler, and its state is updated
 accordingly before the `elect()` call.
 
-Based on this behavior, at `elect()` time, any state that is not defined as ready automatically
-remove the job from the scheduler list, whatever the scheduler is.
+Based on this behavior, at `elect()` time, any state that is not considered ready by the
+selected scheduler automatically removes the job from the scheduler list.
+`JOB_STATE_YIELDED` is scheduler-specific: it is treated as a ready-equivalent state in
+RRMQ, while in RMA it defers job eligibility until the next period boundary.
 
 Job termination and new job
 """""""""""""""""""""""""""
@@ -126,6 +128,10 @@ In both cases the scheduler behave the same and pushes the job to a secondary qu
 *backed queue*, where jobs that have consumed all their quantum are positioned. Doing
 that, the job quantum is refill. This means that yielding jobs have their quantum refilled too.
 
+The `yield()` syscall sets the current job state to `JOB_STATE_YIELDED` before calling
+`elect()`. In RRMQ, this state is interpreted as equivalent to `JOB_STATE_READY`, then
+normalized back to `JOB_STATE_READY` when the job is reinserted in the backed queue.
+
 On the opposite, when the job is not ready (blocked), it is simply removed from the scheduler queue.
 
 Each time a job is preempted, the RRMQ scheduler elect a new job based on a priority-based
@@ -149,6 +155,45 @@ directly added to the active queue.
 .. note::
 
     RRMQ scheduler is the default Sentry scheduler
+
+RMA scheduler
+^^^^^^^^^^^^^
+
+About RMA scheduling policy
+"""""""""""""""""""""""""""
+
+Classical fixed-priority preemptive scheduling policy where each task is
+assigned a static priority inversely proportional to its period. Such a scheduling
+policy is optimal for independent periodic task sets, and is widely used in real-time
+systems.
+
+The task period is taken from the **priority** field of the task metadata
+structure: a smaller value means a shorter period and therefore a higher
+scheduling priority.  The **quantum** field is not used by this scheduler.
+
+At each HW-ticker tick (sched_refresh), every active task's remaining
+counter is decremented.  When a counter reaches zero the task starts a new
+activation period: the counter is reset to the task period and tasks in
+`JOB_STATE_READY` or `JOB_STATE_YIELDED` are marked ready (yielded tasks are
+transitioned back to ready for the new period). If the newly activated task
+has a higher priority (smaller period) than the task currently running,
+a preemption is triggered.
+
+At election time (sched_elect), the ready task with the smallest period is
+selected. A task that yields enters `JOB_STATE_YIELDED`, is removed from the
+ready set and is not eligible again before the next period boundary.
+Blocking syscalls (sleep, IPC wait, …) also remove the task from the ready set
+until it is re-activated via `sched_schedule()`. There is no period boundary
+specific impact on blocked tasks, as they are not in the ready set until they
+are re-activated by the time manager.
+
+Remember that the RMA scheduler ensure schedulability of periodic task sets,
+but does not guarantee that all tasks will meet their deadlines. In order to
+demontrate that all tasks will meet their deadlines, the task set needs to
+be analyzed using the RMA schedulability test, which is based on the task
+periods and execution times as a prerequisite.
+Sentry do not delivers such an analysis tool, but some external tools such as
+[Cheddar](http://beru.univ-brest.fr/cheddar/) can be used to perform this analysis.
 
 FIFO scheduler
 ^^^^^^^^^^^^^^

@@ -139,7 +139,7 @@ static kstatus_t sched_rrmq_add_to_jobset(taskh_t t, task_rrmq_jobset_t *jobset)
     if (unlikely((status = mgr_task_get_state(t, &state)) != K_STATUS_OKAY)) {
         goto err;
     }
-    if (unlikely(state != JOB_STATE_READY)) {
+    if (unlikely((state != JOB_STATE_READY) && (state != JOB_STATE_YIELDED))) {
         status = K_ERROR_INVPARAM;
         goto err;
     }
@@ -200,9 +200,15 @@ taskh_t sched_rrmq_elect(void)
            sched_rrmq_ctx.current_job->handler);
         panic(PANIC_KERNEL_INVALID_MANAGER_RESPONSE);
     }
-    if (state == JOB_STATE_READY) {
+    if ((state == JOB_STATE_READY) || (state == JOB_STATE_YIELDED)) {
         /* task is not blocked (yield() maybe) and is still eligible, but
          * for next time slot, with a fresh quantum */
+        /* not that in RRMQ policy, YIELDED is not significant, and thus is associated to READY */
+        if (unlikely(state == JOB_STATE_YIELDED)) {
+            if (unlikely(mgr_task_set_state(sched_rrmq_ctx.current_job->handler, JOB_STATE_READY) != K_STATUS_OKAY)) {
+                panic(PANIC_KERNEL_INVALID_MANAGER_RESPONSE);
+            }
+        }
         sched_rrmq_add_to_jobset(sched_rrmq_ctx.current_job->handler, sched_rrmq_ctx.backed_jobset);
     } else {
         /* task is delayed, so removed from scheduler. sys_sleep() will typically use another
