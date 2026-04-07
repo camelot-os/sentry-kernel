@@ -161,7 +161,7 @@ jobs:
       image: ghcr.io/camelot-os/slab-runner:latest
     steps:
       - name: Download all firmware artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           path: /tmp/artifacts
           merge-multiple: true
