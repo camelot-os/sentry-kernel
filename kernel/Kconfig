@@ -182,4 +182,10 @@ config SECU_RESET_ON_USERFAULT
 	  exploitation of such faults to escalate privileges or to leak
 	  sensitive data.
 
+config SECU_METADATA_SHA256_CHECK
+	bool "Check tasks metadata table sha256 checksum validity (EXPERIMENTAL)"
+	default n
+	---help---
+	  Check that the sha256 field of the metadata table is valid
+
 endmenu

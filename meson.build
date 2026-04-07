@@ -200,6 +200,8 @@ if with_idle_opt or with_autotest
     with_uapi_opt = true
 endif
 
+uapi_inc = []
+
 # Keep subdir order as-is, do not sort them.
 # In order to guanrantee build order and reproducibility,
 # Meson **DOES NOT** allow forward build target references by design.

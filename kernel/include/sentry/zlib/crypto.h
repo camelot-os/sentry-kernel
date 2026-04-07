@@ -45,5 +45,26 @@ uint32_t pcg32(void);
 
 /** @}*/
 
+#if CONFIG_SECU_METADATA_SHA256_CHECK
+#define SHA256_STATE_SIZE 8
+#define SHA256_BLOCK_SIZE 64
+#define SHA256_DIGEST_SIZE 32
+
+typedef struct {
+  uint64_t sha256_total;
+  uint32_t sha256_state[SHA256_STATE_SIZE];
+  uint8_t sha256_buffer[SHA256_BLOCK_SIZE];
+  uint64_t magic;
+} sha256_context;
+
+int sha256_init(sha256_context *ctx);
+int sha256_update(sha256_context *ctx, const uint8_t *input, uint32_t ilen);
+int sha256_final(sha256_context *ctx, uint8_t output[SHA256_DIGEST_SIZE]);
+int sha256_scattered(const uint8_t **inputs, const uint32_t *ilens,
+          uint8_t output[SHA256_DIGEST_SIZE]);
+int sha256(const uint8_t *input, uint32_t ilen,
+       uint8_t output[SHA256_DIGEST_SIZE]);
+#endif
+
 
 #endif/*!ZLIB_CRYPTO_H*/
