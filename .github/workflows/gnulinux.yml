@@ -149,7 +149,7 @@ jobs:
           fi
       - name: Upload firmware artifact
         if: success() && matrix.toolchain == 'gcc|13.2.Rel1' && matrix.operating_system == 'mesonbuild/ubuntu-rolling'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: firmware-${{ matrix.config.name }}
           path: firmware-${{ matrix.config.name }}.bin
@@ -182,7 +182,7 @@ jobs:
           python3 /opt/slab-rehosting/slab/examples/cortex-m/stm32/u5a5/demos/sentry-autotest/test_sentry_kernel.py --firmware-path "$firmware_path" | tee /tmp/test_output.log
 
       - name: Upload E2E test logs
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: e2e-test-logs
           path: /tmp/test_output.log
