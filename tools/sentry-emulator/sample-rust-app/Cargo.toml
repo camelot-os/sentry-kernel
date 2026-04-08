@@ -1,0 +1,22 @@
+# SPDX-FileCopyrightText: 2026 H2Lab Development Team
+# SPDX-License-Identifier: Apache-2.0
+
+
+[package]
+name = "sentry-emulator-sample-rust-tasks"
+version = "0.1.0"
+edition = "2024"
+license = "Apache-2.0"
+publish = false
+autobins = false
+
+[dependencies]
+sentry-uapi = { path = "../../../uapi", features = ["std"] }
+
+[[bin]]
+name = "sample-app-one"
+path = "src/bin/sample-app-one.rs"
+
+[[bin]]
+name = "sample-app-two"
+path = "src/bin/sample-app-two.rs"

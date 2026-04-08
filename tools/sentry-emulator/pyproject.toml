@@ -1,0 +1,66 @@
+# SPDX-FileCopyrightText: 2026 H2Lab Development Team
+# SPDX-License-Identifier: Apache-2.0
+
+[build-system]
+requires = [
+  "setuptools>=69",
+  "setuptools-scm[toml]>=8",
+  "wheel",
+]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "camelot.sentry-emulator"
+description = "gRPC daemon that emulates Sentry kernel syscalls in POSIX mode"
+readme = "README.md"
+requires-python = ">=3.11"
+license = "Apache-2.0"
+authors = [
+  { name = "H2Lab Development Team" },
+]
+keywords = ["sentry", "emulator", "grpc", "kernel", "camelot"]
+dependencies = [
+  "grpcio>=1.80",
+  "protobuf>=6.31",
+]
+classifiers = [
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3 :: Only",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Topic :: Software Development :: Embedded Systems",
+]
+dynamic = ["version"]
+
+[project.urls]
+Homepage = "https://github.com/camelot-os/sentry-kernel"
+Repository = "https://github.com/camelot-os/sentry-kernel"
+
+[project.scripts]
+sentry-emulator = "camelot.sentry_emulator.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools_scm]
+root = "../.."
+fallback_version = "0.0.0+unknown"
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+addopts = "-q"
+testpaths = ["tests"]
+markers = [
+  "emulator: end-to-end tests that launch the emulator with real startup apps",
+]
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+warn_unused_configs = true
+exclude = "(^build/|^dist/|src/camelot/sentry_emulator/grpc/)"
+packages = ["camelot.sentry_emulator"]
+
+[[tool.mypy.overrides]]
+module = ["camelot.sentry_emulator.grpc.*"]
+ignore_errors = true
