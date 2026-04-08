@@ -1,0 +1,5 @@
+[wrap-git]
+url = https://github.com/evdenis/mini-gmp.git
+revision = 93106e7d7a59cc355b01bd11fbb92e6385d7edf3
+depth = 1
+diff_files = mini-gmp/meson_support.patch
