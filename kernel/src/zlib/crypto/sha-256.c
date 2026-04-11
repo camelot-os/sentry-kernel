@@ -102,6 +102,19 @@ static const u32 K_SHA256[] = {
 };
 
 /* SHA-2 core processing */
+/*@
+    requires ctx != \null;
+    requires data != \null;
+    requires \valid(ctx);
+    requires \valid_read(data + (0 .. SHA256_BLOCK_SIZE - 1));
+    requires ctx->magic == SHA256_HASH_MAGIC;
+    assigns ctx->sha256_state[0 .. SHA256_STATE_SIZE - 1];
+    ensures \result == 0;
+    ensures ctx->magic == \old(ctx->magic);
+    ensures ctx->sha256_total == \old(ctx->sha256_total);
+    ensures \forall integer i; 0 <= i < SHA256_BLOCK_SIZE ==>
+                        ctx->sha256_buffer[i] == \old(ctx->sha256_buffer[i]);
+*/
 static int sha256_process(sha256_context *ctx, const u8 data[SHA256_BLOCK_SIZE])
 {
     u32 a, b, c, d, e, f, g, h;
@@ -122,11 +135,21 @@ static int sha256_process(sha256_context *ctx, const u8 data[SHA256_BLOCK_SIZE])
     g = ctx->sha256_state[6];
     h = ctx->sha256_state[7];
 
+    /*@
+        loop invariant 0 <= i <= 16;
+        loop assigns i, a, b, c, d, e, f, g, h, W[0 .. 15];
+        loop variant 16 - i;
+    */
     for (i = 0; i < 16; i++) {
         GET_UINT32_BE(W[i], data, 4 * i);
         SHA2CORE_SHA256(a, b, c, d, e, f, g, h, W[i], K_SHA256[i]);
     }
 
+        /*@
+            loop invariant 16 <= i <= 64;
+            loop assigns i, a, b, c, d, e, f, g, h, W[16 .. 63];
+            loop variant 64 - i;
+        */
     for (i = 16; i < 64; i++) {
         SHA2CORE_SHA256(a, b, c, d, e, f, g, h, UPDATEW_SHA256(W, i),
                         K_SHA256[i]);
@@ -208,6 +231,12 @@ int sha256_update(sha256_context *ctx, const u8 *input, u32 ilen)
         left = 0;
     }
 
+        /*@
+            loop invariant remain_ilen <= ilen;
+            loop invariant data_ptr == input + (ilen - remain_ilen);
+            loop assigns remain_ilen, data_ptr, ret, ctx->sha256_state[0 .. SHA256_STATE_SIZE - 1];
+            loop variant remain_ilen;
+        */
     while (remain_ilen >= SHA256_BLOCK_SIZE) {
         ret = sha256_process(ctx, data_ptr); EG(ret, err);
         data_ptr += SHA256_BLOCK_SIZE;
@@ -293,6 +322,14 @@ int sha256_scattered(const u8 **inputs, const u32 *ilens,
 
     ret = sha256_init(&ctx); EG(ret, err);
 
+    /*@
+      loop invariant pos >= 0;
+      loop invariant ctx.magic == SHA256_HASH_MAGIC;
+      loop invariant \valid_read(inputs + (0 .. pos));
+      loop invariant \valid_read(ilens + (0 .. pos));
+      loop assigns pos, ret, ctx.sha256_total, ctx.sha256_state[0 .. SHA256_STATE_SIZE - 1],
+                   ctx.sha256_buffer[0 .. SHA256_BLOCK_SIZE - 1], ctx.magic;
+    */
     while (inputs[pos] != NULL) {
         ret = sha256_update(&ctx, inputs[pos], ilens[pos]); EG(ret, err);
         pos += 1;

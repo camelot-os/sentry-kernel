@@ -57,11 +57,77 @@ typedef struct {
   uint64_t magic;
 } sha256_context;
 
+/*@
+  requires ctx != \null;
+  requires \valid(ctx);
+  assigns ctx->sha256_total;
+  assigns ctx->sha256_state[0 .. SHA256_STATE_SIZE - 1];
+  assigns ctx->magic;
+  ensures \result == 0;
+  ensures ctx->sha256_total == 0;
+  ensures ctx->sha256_state[0] == 0x6A09E667;
+  ensures ctx->sha256_state[1] == 0xBB67AE85;
+  ensures ctx->sha256_state[2] == 0x3C6EF372;
+  ensures ctx->sha256_state[3] == 0xA54FF53A;
+  ensures ctx->sha256_state[4] == 0x510E527F;
+  ensures ctx->sha256_state[5] == 0x9B05688C;
+  ensures ctx->sha256_state[6] == 0x1F83D9AB;
+  ensures ctx->sha256_state[7] == 0x5BE0CD19;
+*/
 int sha256_init(sha256_context *ctx);
+
+/*@
+  requires ctx != \null;
+  requires \valid(ctx);
+  requires (ilen > 0) ==> (input != \null);
+  requires (ilen > 0) ==> \valid_read(input + (0 .. ilen - 1));
+  assigns ctx->sha256_total;
+  assigns ctx->sha256_state[0 .. SHA256_STATE_SIZE - 1];
+  assigns ctx->sha256_buffer[0 .. SHA256_BLOCK_SIZE - 1];
+  ensures \result == 0;
+  ensures ctx->sha256_total == \old(ctx->sha256_total) + ilen;
+*/
 int sha256_update(sha256_context *ctx, const uint8_t *input, uint32_t ilen);
+
+/*@
+  requires ctx != \null;
+  requires output != \null;
+  requires \valid(ctx);
+  requires \valid(output + (0 .. SHA256_DIGEST_SIZE - 1));
+  assigns ctx->sha256_state[0 .. SHA256_STATE_SIZE - 1];
+  assigns ctx->magic;
+  assigns output[0 .. SHA256_DIGEST_SIZE - 1];
+  ensures \result == 0;
+*/
 int sha256_final(sha256_context *ctx, uint8_t output[SHA256_DIGEST_SIZE]);
+
+/*@
+  requires inputs != \null;
+  requires ilens != \null;
+  requires output != \null;
+  requires \valid(output + (0 .. SHA256_DIGEST_SIZE - 1));
+  requires \exists integer n;
+            n >= 0 &&
+            \valid_read(inputs + (0 .. n)) &&
+            \valid_read(ilens + (0 .. n)) &&
+            inputs[n] == \null &&
+            (\forall integer i; 0 <= i < n ==> inputs[i] != \null) &&
+            (\forall integer i; 0 <= i < n ==>
+              (ilens[i] > 0 ==> \valid_read(inputs[i] + (0 .. ilens[i] - 1))));
+  assigns output[0 .. SHA256_DIGEST_SIZE - 1];
+  ensures \result == 0;
+*/
 int sha256_scattered(const uint8_t **inputs, const uint32_t *ilens,
           uint8_t output[SHA256_DIGEST_SIZE]);
+
+/*@
+  requires output != \null;
+  requires \valid(output + (0 .. SHA256_DIGEST_SIZE - 1));
+  requires (ilen > 0) ==> (input != \null);
+  requires (ilen > 0) ==> \valid_read(input + (0 .. ilen - 1));
+  assigns output[0 .. SHA256_DIGEST_SIZE - 1];
+  ensures \result == 0;
+*/
 int sha256(const uint8_t *input, uint32_t ilen,
        uint8_t output[SHA256_DIGEST_SIZE]);
 #endif
