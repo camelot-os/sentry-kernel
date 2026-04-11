@@ -39,8 +39,13 @@ stack_frame_t *gate_int_acknowledge(stack_frame_t *frame, uint16_t IRQn)
         /* user interrupt with no owning task. Should not happen as the kernel do not hold any IRQ */
         panic(PANIC_KERNEL_INVALID_MANAGER_RESPONSE);
     }
+    if (unlikely(owner != current)) {
+        /* device associated IRQ is not owned by the current task */
+        mgr_task_set_sysreturn(current, STATUS_DENIED);
+        goto end;
+    }
     /* push the inth event into the task input events queue */
-    if (unlikely(mgr_interrupt_acknowledge_irq(IRQn) == K_STATUS_OKAY)) {
+    if (unlikely(mgr_interrupt_acknowledge_irq(IRQn) != K_STATUS_OKAY)) {
         /* should not rise while IRQ ownership has been checked! see dts file */
         panic(PANIC_KERNEL_INVALID_MANAGER_RESPONSE);
     }
