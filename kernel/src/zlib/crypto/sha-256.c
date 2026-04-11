@@ -106,6 +106,7 @@ static const u32 K_SHA256[] = {
     requires ctx != \null;
     requires data != \null;
     requires \valid(ctx);
+    requires \initialized(data + (0 .. SHA256_BLOCK_SIZE - 1));
     requires \valid_read(data + (0 .. SHA256_BLOCK_SIZE - 1));
     requires ctx->magic == SHA256_HASH_MAGIC;
     assigns ctx->sha256_state[0 .. SHA256_STATE_SIZE - 1];
