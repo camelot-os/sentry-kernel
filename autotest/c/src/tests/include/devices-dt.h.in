@@ -26,9 +26,12 @@
 {% endmacro -%}
 
 enum devid {
+    {% set ns = namespace() -%}
+    {% set ns.total_devices=0 -%}
     {% for device in dts.get_active_nodes() -%}
     {% if "0xbabe" in device_get_owner(device) -%}
-    DEV_ID_{{ device.label.upper() }} = {{ "0x%x"|format(device["sentry,label"]) }} ,
+    DEV_ID_{{ device.label.upper() }} = {{ ns.total_devices }},
+    {% set ns.total_devices = ns.total_devices + 1 -%}
     {% endif -%}
     {% endfor -%}
     DEV_ID_MAX,
