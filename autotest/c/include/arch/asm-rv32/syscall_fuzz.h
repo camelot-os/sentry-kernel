@@ -5,7 +5,7 @@
  * \file Raw syscall fuzzing helpers for RV32.
  */
 #include <inttypes.h>
-#include <types.h>
+#include <uapi/types.h>
 
 #ifndef AUTOTEST_ASM_RV32_SYSCALL_FUZZ_H
 #define AUTOTEST_ASM_RV32_SYSCALL_FUZZ_H
