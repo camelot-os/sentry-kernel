@@ -198,9 +198,8 @@ with_sbom_opt = get_option('with_sbom')
 
 if with_idle_opt or with_autotest
     with_uapi_opt = true
+    uapi_inc = []
 endif
-
-uapi_inc = []
 
 # Keep subdir order as-is, do not sort them.
 # In order to guanrantee build order and reproducibility,
