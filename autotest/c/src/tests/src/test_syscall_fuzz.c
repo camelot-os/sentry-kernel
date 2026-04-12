@@ -5,6 +5,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#include <syscall_fuzz.h>
 #include <test_log.h>
 #include <uapi/platform.h>
 #include <uapi/types.h>
@@ -12,11 +13,6 @@
 
 #include "test_syscall_fuzz.h"
 
-/*
- * Inline asm syscall helpers are intentionally limited to targeted cases needed
- * by the fuzz campaign. The C UAPI wrappers sanitize some arguments (e.g. u8 len)
- * and would hide kernel-side behaviors we want to exercise.
- */
 #define FUZZ_SYSCALL_SEND_IPC_ID 11U
 #define FUZZ_SYSCALL_INVALID_ID  255U
 
@@ -42,33 +38,6 @@ static inline uint32_t fuzz_prng_next(uint32_t *state)
     x ^= x << 5;
     *state = x;
     return x;
-}
-
-static inline Status raw_sys_send_ipc_u32(taskh_t target, uint32_t len)
-{
-    register uint32_t r0 __asm("r0") = (uint32_t)target;
-    register uint32_t r1 __asm("r1") = len;
-
-    __asm volatile(
-        "svc #11\n\t"
-        : "+r"(r0)
-        : "r"(r1)
-        : "memory");
-
-    return (Status)r0;
-}
-
-static inline Status raw_sys_invalid_255(void)
-{
-    register uint32_t r0 __asm("r0") = 0U;
-
-    __asm volatile(
-        "svc #255\n\t"
-        : "+r"(r0)
-        :
-        : "memory");
-
-    return (Status)r0;
 }
 
 static void fuzz_invalid_syscall_path(void)
