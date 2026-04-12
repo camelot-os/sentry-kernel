@@ -1,0 +1,283 @@
+/*
+ * Copyright (c) 2023,Ledger SAS
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+/dts-v1/;
+
+#include <st/u5/stm32u595.dtsi>
+#include <dt-bindings/pinctrl/stm32-pinctrl.h>
+#include <sentry.dtsi>
+
+/{
+	chosen {
+		sentry,debug_stdout = <&usart1>;
+		sentry,autotestram_section = <&autotest_ram>;
+		sentry,autotestcode_section = <&autotest_code>;
+	};
+
+	aliases {
+        pll = &pll1;
+    };
+
+	led0: led_0 {
+		compatible = "gpio-leds";
+		pinctrl-0 = <&led_pc7 &led_pc7>;
+		status = "disabled";
+	};
+};
+
+&led0 {
+	status = "okay";
+	sentry,owner = <0xbabe>;
+	sentry,label = <0x1f00>;
+};
+
+/{
+	reserved-memory {
+		autotest_code: autotest_code@800d000 {
+			reg = <0x800d000 0xf000>;
+			compatible = "sentry,memory-pool";
+		};
+
+		autotest_ram: autotest_memory@20008000 {
+			reg = <0x20008000 0x2000>;
+			compatible = "sentry,memory-pool";
+		};
+
+		shm_autotest_1: memory@2000a000 {
+			// mappable, dma allowed
+			reg = <0x2000a000 0x256>;
+			sentry,shm;
+			dma-pool;
+			sentry,label = <0xf00>;
+			sentry,owner = <0xbabe>;
+		};
+
+		shm_autotest_2: memory@2000b000 {
+			// mappable, dma allowed
+			reg = <0x2000b000 0x100>;
+			sentry,shm;
+			dma-pool;
+			sentry,label = <0xf01>;
+			sentry,owner = <0xbabe>;
+		};
+
+		shm_autotest_3: memory@2000b100 {
+			// mappable, dma refused
+			reg = <0x2000b100 0x100>;
+			sentry,shm;
+			sentry,label = <0xf02>;
+			sentry,owner = <0xbabe>;
+		};
+
+		shm_autotest_4: memory@2000b200 {
+			// not mappable, dma allowed
+			reg = <0x2000b200 0x100>;
+			sentry,shm;
+			dma-pool;
+			sentry,no-map;
+			sentry,label = <0xf03>;
+			sentry,owner = <0xbabe>;
+		};
+	};
+	dma-streams {
+		// device-to-memory DMA stream
+		stream1 {
+			compatible = "dma-stream";
+			channel = <&gpdma1_1>;
+			streamid = <112>; // channel stream (af) identifier
+			prio = <STM32_DMA_PRIORITY_MEDIUM>;
+			source = <&usart1>;
+			dest = <&shm_autotest_1>;
+			length = <42>;
+			circular = <1 0>; // circular source, linear dest
+			sentry,label = <0x1>; // task-level unique DMA identifier
+		};
+		// memory-to-memory DMA stream
+		stream2 {
+			compatible = "dma-stream";
+			channel = <&gpdma1_1>;
+			prio = <STM32_DMA_PRIORITY_HIGH>;
+			source = <&shm_autotest_1>;
+			dest = <&shm_autotest_2>;
+			length = <0x100>;
+			// no circular, linear for both source and dest
+			sentry,label = <0x2>; // task-level unique DMA identifier
+		};
+	};
+};
+
+&gpdma1 {
+	status = "okay";
+	// About channels that are used
+	gpdma1_1: dma-channel@1 {
+		status = "okay";
+		sentry,owner = <0xbabe>;
+	};
+};
+
+&timers6 {
+	status = "okay";
+	sentry,owner = <0xbabe>;
+	sentry,label = <0x1f01>;
+	sentry,counter = <0xffff>;
+	sentry,prescaler = <0x262>;
+};
+
+&led0 {
+	status = "okay";
+	sentry,owner = <0xbabe>;
+	sentry,label = <0x1f00>;
+};
+
+&flash0 {
+	reg = <0x08000000 DT_SIZE_M(4)>;
+};
+
+&sram0 {
+	reg = <0x20000000 DT_SIZE_K(2514)>;
+};
+
+&gpdma1 {
+	status = "okay";
+};
+
+&clk_lsi {
+	status = "okay";
+};
+
+&clk_hsi {
+	status = "okay";
+};
+
+&clk_hsi48 {
+       status = "okay";
+};
+
+&clk_hse {
+	status = "okay";
+};
+
+&clk_msis {
+	status = "okay";
+};
+
+&pll1 {
+	status = "okay";
+};
+
+&pll3 {
+	status = "okay";
+};
+
+&flash {
+	wait-state = <4>; /* According to voltage supply and sysclock */
+	status = "okay";
+};
+
+&i2c1 {
+	status = "okay";
+	sentry,owner = <0xbabe>;
+	sentry,label = <0x1ff02>;
+	dma-rx = <&gpdma1 13>;
+	dma-tx = <&gpdma1 12>;
+};
+
+&rcc {
+	clocks = <&pll1>;
+	clock-frequency = <DT_FREQ_M(160)>;
+	bus-prescalers = <0>, <0>, <0>, <0>;
+	bus-names = "ahb", "apb1", "apb2", "apb3";
+	status = "okay";
+};
+
+&exti {
+	events = <26>;
+	status = "okay";
+};
+
+&gpioa {
+	status = "okay";
+};
+
+&gpiob {
+	status = "okay";
+};
+
+&gpioc {
+	status = "okay";
+};
+
+&gpiod {
+	status = "okay";
+};
+
+&gpioe {
+	status = "okay";
+};
+
+&gpiof {
+	status = "okay";
+};
+
+&gpiog {
+	status = "okay";
+};
+
+&usart1{
+	status = "okay";
+	pinctrl-0 = <&usart1_tx_pa9>, <&usart1_rx_pa10>;
+	sentry,label = <0x1f02>;
+};
+
+&lpuart1{
+	status = "disabled";
+	pinctrl-0 = <&lpuart1_tx>, <&lpuart1_rx>;
+};
+
+&pinctrl {
+	usart1_tx_pa9: usart1_tx_pa9  {
+		pinmux = <&gpioa 9 STM32_DT_PIN_MODE_ALTFUNC(7)>;
+		pincfg = <STM32_OTYPER_PUSH_PULL \
+				  STM32_OSPEEDR_VERY_HIGH_SPEED \
+				  STM32_PUPDR_NO_PULL>;
+	};
+
+	usart1_rx_pa10: usart1_rx_pa10  {
+		pinmux = <&gpioa 10 STM32_DT_PIN_MODE_ALTFUNC(7)>;
+		pincfg = <STM32_OTYPER_PUSH_PULL \
+				  STM32_OSPEEDR_VERY_HIGH_SPEED \
+				  STM32_PUPDR_NO_PULL>;
+	};
+
+	lpuart1_tx: lpuart1_tx  {
+		pinmux = <&gpioc 1 STM32_DT_PIN_MODE_ALTFUNC(8)>;
+		pincfg = <STM32_OTYPER_PUSH_PULL \
+				  STM32_OSPEEDR_VERY_HIGH_SPEED \
+				  STM32_PUPDR_NO_PULL>;
+	};
+
+	lpuart1_rx: lpuart1_rx  {
+		pinmux = <&gpioc 0 STM32_DT_PIN_MODE_ALTFUNC(8)>;
+		pincfg = <STM32_OTYPER_PUSH_PULL \
+				  STM32_OSPEEDR_VERY_HIGH_SPEED \
+				  STM32_PUPDR_NO_PULL>;
+	};
+
+	led_pc7: led_pc7 {
+		pinmux = <&gpioc 7 STM32_DT_PIN_MODE_OUTPUT>;
+		pincfg = <STM32_OTYPER_PUSH_PULL \
+				  STM32_OSPEEDR_VERY_HIGH_SPEED \
+				  STM32_PUPDR_NO_PULL>;
+	};
+};
+
+&rng {
+	status = "okay";
+};
+
+&syscfg {
+	status = "okay";
+};

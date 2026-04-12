@@ -21,6 +21,7 @@
 #include <test_dma.h>
 #include <test_irq.h>
 #include <test_capability.h>
+#include <test_syscall_fuzz.h>
 
 uint32_t __stack_chk_guard = 0;
 
@@ -46,6 +47,9 @@ void __attribute__((no_stack_protector, used, noreturn)) autotest(uint32_t label
     printf(welcommsg);
     printf(testmsg);
     printf("AUTOTEST START");
+#ifdef CONFIG_TEST_SYSCALL_FUZZ
+    test_syscall_fuzz();
+#else
 #ifdef CONFIG_TEST_YIELD
     test_yield();
 #endif
@@ -84,6 +88,7 @@ void __attribute__((no_stack_protector, used, noreturn)) autotest(uint32_t label
 #endif
 #ifdef CONFIG_TEST_CAPA
     test_capability();
+#endif
 #endif
     printf("AUTOTEST END");
 
