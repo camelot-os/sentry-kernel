@@ -33,6 +33,7 @@ jobs:
             config = [
               { 'name': 'nucleo_u5a5_autotest', 'cpu': 'cm33', 'triple': 'thumbv8m.main-none-eabi' },
               { 'name': 'nucleo_u5a5_autotest_harden', 'cpu': 'cm33', 'triple': 'thumbv8m.main-none-eabi' },
+              { 'name': 'nucleo_u5a5_autotest_fuzzer', 'cpu': 'cm33', 'triple': 'thumbv8m.main-none-eabi', 'dts': 'nucleo_u5a5_autotest' },
               { 'name': 'nucleo_u5a5_nooutput', 'cpu': 'cm33', 'triple': 'thumbv8m.main-none-eabi' },
               { 'name': 'nucleo_wb55_autotest', 'cpu': 'cm4', 'triple': 'thumbv7em-none-eabi' },
               { 'name': 'stm32f429i_disc1_debug', 'cpu': 'cm4', 'triple': 'thumbv7em-none-eabi' },
@@ -45,6 +46,7 @@ jobs:
             config = [
               { 'name': 'nucleo_u5a5_autotest', 'cpu': 'cm33', 'triple': 'thumbv8m.main-none-eabi' },
               { 'name': 'nucleo_u5a5_autotest_harden', 'cpu': 'cm33', 'triple': 'thumbv8m.main-none-eabi' },
+              { 'name': 'nucleo_u5a5_autotest_fuzzer', 'cpu': 'cm33', 'triple': 'thumbv8m.main-none-eabi', 'dts': 'nucleo_u5a5_autotest' },
               { 'name': 'nucleo_wb55_autotest', 'cpu': 'cm4', 'triple': 'thumbv7em-none-eabi' },
               { 'name': 'nucleo_u5a5_nooutput', 'cpu': 'cm33', 'triple': 'thumbv8m.main-none-eabi' },
               { 'name': 'stm32f429i_disc1_debug', 'cpu': 'cm4', 'triple': 'thumbv7em-none-eabi' },
