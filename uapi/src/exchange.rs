@@ -188,6 +188,11 @@ impl ExchangeHeader {
     }
 
     #[cfg(test)]
+    /// # Safety
+    /// - `EXCHANGE_AREA` must be correctly aligned for `ExchangeHeader`.
+    /// - `EXCHANGE_AREA` must be large enough to contain a full `ExchangeHeader`.
+    /// - The caller must ensure exclusive mutable access to `EXCHANGE_AREA`
+    ///   for the entire lifetime of the returned reference.
     pub unsafe fn from_exchange_mut(self) -> &'static mut Self {
         unsafe { self.from_addr_mut() }
     }
@@ -363,6 +368,24 @@ pub const fn length() -> usize {
     EXCHANGE_AREA_LEN
 }
 
+#[cfg(all(target_arch = "x86_64", target_os = "linux"))]
+#[allow(static_mut_refs)]
+fn sync_exchange_to_daemon() -> Result<Status, Status> {
+    match crate::syscall::exchange_to_daemon(unsafe { &EXCHANGE_AREA }) {
+        Status::Ok => Ok(Status::Ok),
+        status => Err(status),
+    }
+}
+
+#[cfg(all(target_arch = "x86_64", target_os = "linux"))]
+#[allow(static_mut_refs)]
+fn sync_exchange_from_daemon() -> Result<Status, Status> {
+    match crate::syscall::exchange_from_daemon(unsafe { &mut EXCHANGE_AREA }) {
+        Status::Ok => Ok(Status::Ok),
+        status => Err(status),
+    }
+}
+
 /// copy to kernel generic implementation
 ///
 /// This API is a generic implementation in order to allow userspace to kernelspace
@@ -381,13 +404,25 @@ pub fn copy_to_kernel<T>(from: &T) -> Result<Status, Status>
 where
     T: SentryExchangeable + ?Sized,
 {
-    from.to_kernel()
+    let status = from.to_kernel()?;
+
+    #[cfg(all(target_arch = "x86_64", target_os = "linux"))]
+    {
+        sync_exchange_to_daemon()?;
+    }
+
+    Ok(status)
 }
 
 pub fn copy_from_kernel<T>(to: &mut T) -> Result<Status, Status>
 where
     T: SentryExchangeable + ?Sized,
 {
+    #[cfg(all(target_arch = "x86_64", target_os = "linux"))]
+    {
+        sync_exchange_from_daemon()?;
+    }
+
     to.from_kernel()
 }
 

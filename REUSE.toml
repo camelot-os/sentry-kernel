@@ -32,3 +32,36 @@ path = ["uapi/Cargo.lock", "uapi/rust_target.in", "uapi/rustargs.in"]
 SPDX-FileCopyrightText = "2023-2024 Ledger SAS"
 SPDX-License-Identifier = "Apache-2.0"
 
+# local build and analysis artifacts
+[[annotations]]
+path = [
+	".config",
+	".config.*",
+	".ivette",
+	".vscode/settings.json",
+	".sonar/**",
+	"bw_output/**",
+]
+SPDX-FileCopyrightText = "2026 H2Lab Development Team"
+SPDX-License-Identifier = "Apache-2.0"
+
+[[annotations]]
+path = [
+	"config",
+	"coverage.xml",
+	"cscope.out",
+	"cscope.out.in",
+	"cscope.out.po",
+	"subprojects.toml",
+	"results/log.html",
+	"results/output.xml",
+	"results/report.html",
+	"kernel/proof/proof_composition/proof_zlib/.meson.build.swp",
+	"kernel/src/managers/memory/.memory_mpu.c.swp",
+	"kernel/proof/tools/gencoverage.py.2",
+	"kernel/proof/tools/gencoverage.py.metrics",
+	"kernel/proof/tools/sonarqube.tests.schema",
+]
+SPDX-FileCopyrightText = "2026 H2Lab Development Team"
+SPDX-License-Identifier = "Apache-2.0"
+

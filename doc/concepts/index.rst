@@ -15,6 +15,7 @@ Welcome to Sentry documentation!
    sw_architecture/index.rst
    tests/index.rst
    proof/index.rst
+   emulator.rst
 
 .. toctree::
    :hidden:

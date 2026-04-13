@@ -16,6 +16,11 @@ exclude = [
 
 [dependencies]
 
+[target.'cfg(all(target_arch = "x86_64", target_os = "linux"))'.dependencies]
+prost = { version = "0.13", default-features = false, features = ["derive"] }
+tokio = { version = "1.44", features = ["rt", "time", "net"] }
+tonic = { version = "0.12", default-features = false, features = ["codegen", "prost", "transport"] }
+
 [dev-dependencies]
 sentry-uapi = { path = '.', features = ['std'] }
 
@@ -24,7 +29,7 @@ default = []
 std = []
 
 [lints.rust]
-unexpected_cfgs = { level = "warn", check-cfg = ['cfg(CONFIG_BUILD_TARGET_AUTOTEST)'] }
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(CONFIG_BUILD_TARGET_AUTOTEST)', 'cfg(kani)'] }
 
 [profile.release]
 opt-level = "z"

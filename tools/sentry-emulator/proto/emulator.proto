@@ -1,0 +1,23 @@
+// SPDX-FileCopyrightText: 2026 H2Lab Development Team
+// SPDX-License-Identifier: Apache-2.0
+
+syntax = "proto3";
+
+package camelot.sentry.emulator;
+
+service Emulator {
+  rpc Dispatch(DispatchRequest) returns (DispatchResponse);
+}
+
+message DispatchRequest {
+  string syscall = 1;
+  repeated sint64 args = 2;
+  uint32 label = 3;
+  bytes payload = 4;
+}
+
+message DispatchResponse {
+  sint32 status = 1;
+  string detail = 2;
+  bytes payload = 3;
+}
