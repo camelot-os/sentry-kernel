@@ -113,8 +113,7 @@ kstatus_t mgr_device_init(void)
          * metadata.
          * To do this, we:
          * - get back the taskh_t using the dts 'sentry,owner' label
-         * - we check that this owner (using the handle) do matches the metadata,
-         *   by asking the task manager to confirm.
+         * - set this handle in the device list directly
          *
          * As all this work is done once for all at init time, it do not
          * impact runtime performances.
@@ -123,24 +122,7 @@ kstatus_t mgr_device_init(void)
         if (mgr_task_get_handle(devices[i].owner, &owner) != K_STATUS_OKAY) {
             /* owner is not a task */
             owner = 0;
-        } else {
-#ifndef CONFIG_BUILD_TARGET_AUTOTEST
-            /* in autotest mode, all non-kernel devices are autotest-owned */
-            if (unlikely(mgr_task_get_device_owner(devices_state[i].device->devinfo.id, &owner_from_metadata) != K_STATUS_OKAY)) {
-                panic(PANIC_KERNEL_INVALID_MANAGER_RESPONSE);
-            }
-            if (unlikely(owner_from_metadata != owner)) {
-                /* dts owner do not match the metadata owner !
-                 * This is a configuration mismatch !
-                 */
-                panic(PANIC_CONFIGURATION_MISMATCH);
-            }
-            #else
-            /* autotest only: owner is always autotest */
-            mgr_task_get_handle(0xbabe, &owner);
-#endif
         }
-
         /* adding taskh value (0 or effective taskh userspace handle) */
         devices_state[i].owner = owner;
     }
