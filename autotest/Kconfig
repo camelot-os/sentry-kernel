@@ -17,77 +17,6 @@ choice
 
 endchoice
 
-config AUTOTEST_TIMER_DRIVER
-    bool
-    default n
-
-config TEST_YIELD
-    bool "yield test suite"
-    depends on !TEST_SYSCALL_FUZZ
-    default y
-
-config TEST_HANDLES
-    bool "handles access test suite"
-    depends on !TEST_SYSCALL_FUZZ
-    default y
-
-config TEST_SIGNALS
-    bool "Signal snd/receive test suite"
-    depends on !TEST_SYSCALL_FUZZ
-    default y
-
-config TEST_IPC
-    bool "IPC snd/receive test suite"
-    depends on !TEST_SYSCALL_FUZZ
-    default y
-
-config TEST_RANDOM
-    bool "KRNG test suite"
-    depends on !TEST_SYSCALL_FUZZ
-    default y
-
-config TEST_CYCLES
-    bool "Cycle measurement test suite"
-    depends on !TEST_SYSCALL_FUZZ
-    default y
-
-config TEST_SLEEP
-    bool "Various slepping mode test suite"
-    depends on !TEST_SYSCALL_FUZZ
-    default y
-
-config TEST_GPIO
-    bool "GPIO kernel API test suite"
-    depends on !TEST_SYSCALL_FUZZ
-    default n
-
-config TEST_DEVICES
-    bool "devices (un)mapping and access API test suite"
-    depends on !TEST_SYSCALL_FUZZ
-    default n
-
-config TEST_SHM
-    bool "Shared memory manipulation test suite"
-    depends on !TEST_SYSCALL_FUZZ
-    default y
-
-config TEST_DMA
-    bool "Direct Memory Access test suite"
-    depends on !TEST_SYSCALL_FUZZ
-    select TEST_SHM
-    default n
-
-config TEST_IRQ
-    bool "User interrupts test suite, need timer support at autotest level"
-    depends on !TEST_SYSCALL_FUZZ
-    select AUTOTEST_TIMER_DRIVER
-    default n
-
-config TEST_CAPA
-    bool "Test that userspace capabilities are properly triggered by the kernel"
-    depends on !TEST_SYSCALL_FUZZ
-    default n
-
 config TEST_SYSCALL_FUZZ
         bool "Syscall fuzzing campaign (runtime)"
         default n
@@ -103,6 +32,68 @@ config TEST_SYSCALL_FUZZ_ITERS
         depends on TEST_SYSCALL_FUZZ
         help
             Number of iterations for the main syscall fuzzing campaign.
+
+if !TEST_SYSCALL_FUZZ
+
+config AUTOTEST_TIMER_DRIVER
+    bool
+    default n
+
+config TEST_YIELD
+    bool "yield test suite"
+    default y
+
+config TEST_HANDLES
+    bool "handles access test suite"
+    default y
+
+config TEST_SIGNALS
+    bool "Signal snd/receive test suite"
+    default y
+
+config TEST_IPC
+    bool "IPC snd/receive test suite"
+    default y
+
+config TEST_RANDOM
+    bool "KRNG test suite"
+    default y
+
+config TEST_CYCLES
+    bool "Cycle measurement test suite"
+    default y
+
+config TEST_SLEEP
+    bool "Various slepping mode test suite"
+    default y
+
+config TEST_GPIO
+    bool "GPIO kernel API test suite"
+    default n
+
+config TEST_DEVICES
+    bool "devices (un)mapping and access API test suite"
+    default n
+
+config TEST_SHM
+    bool "Shared memory manipulation test suite"
+    default y
+
+config TEST_DMA
+    bool "Direct Memory Access test suite"
+    select TEST_SHM
+    default n
+
+config TEST_IRQ
+    bool "User interrupts test suite, need timer support at autotest level"
+    select AUTOTEST_TIMER_DRIVER
+    default n
+
+config TEST_CAPA
+    bool "Test that userspace capabilities are properly triggered by the kernel"
+    default n
+
+endif
 
 endmenu
 
