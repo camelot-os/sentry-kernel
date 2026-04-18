@@ -31,6 +31,7 @@ testlib_sourceset.add(when: 'CONFIG_TEST_RANDOM', if_true: files('test_random.c'
 testlib_sourceset.add(when: 'CONFIG_TEST_SHM', if_true: files('test_shm.c'))
 testlib_sourceset.add(when: 'CONFIG_TEST_SIGNALS', if_true: files('test_signal.c'))
 testlib_sourceset.add(when: 'CONFIG_TEST_SLEEP', if_true: files('test_sleep.c'))
+testlib_sourceset.add(when: 'CONFIG_TEST_SYSCALL_FUZZ', if_true: files('test_syscall_fuzz.c'))
 testlib_sourceset.add(when: 'CONFIG_TEST_YIELD', if_true: files('test_yield.c'))
 
 testlib_sourceset_config = testlib_sourceset.apply(kconfig_data, strict: false)

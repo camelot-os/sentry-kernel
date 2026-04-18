@@ -17,6 +17,24 @@ choice
 
 endchoice
 
+config TEST_SYSCALL_FUZZ
+        bool "Syscall fuzzing campaign (runtime)"
+        default n
+        help
+            Enable a syscall-oriented fuzzing campaign executed from autotest.
+            This campaign primarily targets the SVC interface and IPC length
+            transitions to surface risky runtime behaviors.
+
+config TEST_SYSCALL_FUZZ_ITERS
+        int "Number of syscall fuzzing iterations"
+        range 16 4096
+        default 512
+        depends on TEST_SYSCALL_FUZZ
+        help
+            Number of iterations for the main syscall fuzzing campaign.
+
+if !TEST_SYSCALL_FUZZ
+
 config AUTOTEST_TIMER_DRIVER
     bool
     default n
@@ -74,6 +92,8 @@ config TEST_IRQ
 config TEST_CAPA
     bool "Test that userspace capabilities are properly triggered by the kernel"
     default n
+
+endif
 
 endmenu
 

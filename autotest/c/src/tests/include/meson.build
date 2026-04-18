@@ -17,6 +17,7 @@ testlib_headerset.add(
         'test_map.h',
         'test_random.h',
         'test_shm.h',
+        'test_syscall_fuzz.h',
         'test_signal.h',
         'test_sleep.h',
         'test_yield.h',

@@ -254,18 +254,33 @@ meson test -C <builddir> --suite ut-utils
 
 ### Pre-integration tests with autotest
 
-Sentry support a special applications named autotest (see concepts) that is built in autotest mode in order to execute and validate the
-overall Sentry UAPI for efficient performance and anti-regression testing.
+Sentry provides a dedicated application named autotest (see concepts), built in autotest mode to execute and validate the
+overall Sentry UAPI for performance checks and anti-regression testing.
 
-When build in autotest mode, the build system generate a dedicated `firmware.hex` file, in which Sentry kernel automatically load and
-start the autotest application.
+When built in autotest mode, the build system generates a dedicated `firmware.hex` file, where the Sentry kernel automatically loads and
+starts the autotest application.
 Autotest results can be manually read from serial output, or can be
-parsed, generating a full report using **robotframework**. The robot files are written in the `tools/robot` subdir and can be directly called by robotframework, generating a complete report.
+parsed to generate a full report using **Robot Framework**. Robot suites are stored in the `tools/robot` directory and can be directly executed
+with Robot Framework to produce complete reports.
 
-When installed, the kernel build system install target deploy the robot files in the `$datadir/robotframework` directory
+Two suites are provided for autotest reporting:
 
-In order to support example robot files, robotframework-pyocd>=0.2.0 and robotframework-pyserial>=1.2.0 python packages are required.
-A typical usage of robot files of the kernel would be, considering the following `pyocd list` content:
+* `tools/robot/sentry-autotest.robot`: standard UAPI autotest report
+* `tools/robot/sentry-autotest-fuzz.robot`: syscall fuzzing-focused report
+
+The fuzzing suite uses the same serial acquisition workflow as standard autotest (`Load Autotest` pattern): reset target, flash firmware,
+open probe virtual COM port, and read logs until `AUTOTEST END`.
+
+To run the fuzzing suite, build firmware with syscall fuzzing enabled (for example `CONFIG_TEST_SYSCALL_FUZZ=y`) and execute:
+
+```console
+robot --variable FIRMWARE_FILE:builddir/firmware.hex --variable PROBE_UID:004300483232510239353236 -d results ./tools/robot/sentry-autotest-fuzz.robot
+```
+
+When installed, the kernel build system install target deploys the robot files in the `$datadir/robotframework` directory.
+
+To support the example robot suites, `robotframework-pyocd>=0.2.0` and `robotframework-pyserial>=1.2.0` Python packages are required.
+A typical usage example, considering the following `pyocd list` content:
 
 ```console
 pyocd list
@@ -318,4 +333,3 @@ Building the sdist directory can be made using such standard meson command:
 ```
 meson install --destdir ./sdist -C <builddir>
 ```
-
