@@ -217,7 +217,7 @@ err:
     return status;
 }
 
-kstatus_t mgr_interrupt_acknowledge_irq(stack_frame_t *frame, int IRQn)
+kstatus_t mgr_interrupt_acknowledge_irq(int IRQn)
 {
     kstatus_t status = K_ERROR_INVPARAM;
     if (unlikely(interrupt_clear_pendingirq(IRQn)!= K_STATUS_OKAY)) {
