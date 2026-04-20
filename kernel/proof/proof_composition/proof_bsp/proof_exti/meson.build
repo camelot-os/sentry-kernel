@@ -42,6 +42,7 @@ test(
     '-eva-report-red-statuses', join_paths(meson.current_build_dir(), test_name + '-red-statuses.log'),
     '-metrics',
     '-metrics-eva-cover',meson.project_source_root()+'/kernel/src/drivers/exti/stm32-exti.c',
+    '-metrics-by-function',
     '-then', framac_wp_opts,
     '-wp-fct', 'exti_probe,exti_mask_interrupt,exti_unmask_interrupt,exti_mask_event,exti_unmask_event,exti_generate_swinterrupt,exti_clear_pending',
     '-wp-log', 'a:'+join_paths(meson.current_build_dir(), test_name + '-wp.log'),

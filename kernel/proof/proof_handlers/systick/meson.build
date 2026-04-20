@@ -36,6 +36,7 @@ test(
     '-eva-report-red-statuses',join_paths(meson.current_build_dir(), 'frama-c-eva-handler-systick.red'),
     '-metrics',
     '-metrics-eva-cover',
+    '-metrics-by-function',
     '-metrics-output',join_paths(meson.current_build_dir(), 'frama-c-eva-handler-systick-coverage.json'),
     '-save',join_paths(meson.current_build_dir(), 'frama-c-eva-handler-systick.session'),
     '-then',
