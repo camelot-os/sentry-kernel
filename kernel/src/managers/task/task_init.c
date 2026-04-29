@@ -1,4 +1,5 @@
 // SPDX-FileCopyrightText: 2023 Ledger SAS
+// SPDX-FileCopyrightText: 2026 H2Lab Development Team
 // SPDX-License-Identifier: Apache-2.0
 
 /**
@@ -15,6 +16,7 @@
 #include <sentry/arch/asm-generic/membarriers.h>
 #include <sentry/arch/asm-generic/platform.h>
 #include <sentry/arch/asm-generic/panic.h>
+#include <sentry/zlib/crypto.h>
 #include <sentry/zlib/sort.h>
 
 #include "task_core.h"
@@ -123,6 +125,11 @@ end:
     return status;
 }
 
+#if CONFIG_SECU_METADATA_SHA256_CHECK
+/* TODO: dev, shm and dma list should be removed from metadata, replaced by dts only info, fixing metadata size definitively */
+static_assert(sizeof(task_meta_t) > 200, "beware that the task_meta_t structure may be too big to be copied on stack!");
+#endif
+
 /**
  * @brief check_meta_integrity state handling
  *
@@ -139,8 +146,30 @@ static inline kstatus_t task_init_check_meta_integrity(task_meta_t const * const
         ctx.state = TASK_MANAGER_STATE_ERROR_SECURITY;
         goto end;
     }
-    /* FIXME: call the sha256 service in order to validate metadata integrity,
-       and return the result */
+#if CONFIG_SECU_METADATA_SHA256_CHECK
+    task_meta_t meta_copy;
+    uint8_t digest[SHA256_DIGEST_SIZE];
+
+    if (memcpy(&meta_copy, meta, sizeof(meta_copy)) != &meta_copy) {
+        pr_err("[task %08x] unable to copy metadata for sha256 verification", meta->label);
+        ctx.state = TASK_MANAGER_STATE_ERROR_SECURITY;
+        goto end;
+    }
+
+    (void)memset(meta_copy.metadata_sha256, 0x0, sizeof(meta_copy.metadata_sha256));
+
+    if (sha256((const uint8_t *)&meta_copy, sizeof(meta_copy), digest) != 0) {
+        pr_err("[task %08x] metadata sha256 computation failed", meta->label);
+        ctx.state = TASK_MANAGER_STATE_ERROR_SECURITY;
+        goto end;
+    }
+
+    if (memcmp(meta->metadata_sha256, digest, sizeof(digest)) != 0) {
+        pr_err("[task %08x] metadata sha256 mismatch", meta->label);
+        ctx.state = TASK_MANAGER_STATE_ERROR_SECURITY;
+        goto end;
+    }
+#endif
     pr_info("[task %08x] metadata integrity ok", meta->label);
     ctx.state = TASK_MANAGER_STATE_CHECK_TSK_INTEGRITY;
     status = K_STATUS_OKAY;
