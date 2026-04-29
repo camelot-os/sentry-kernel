@@ -32,3 +32,12 @@ path = ["uapi/Cargo.lock", "uapi/rust_target.in", "uapi/rustargs.in"]
 SPDX-FileCopyrightText = "2023-2024 Ledger SAS"
 SPDX-License-Identifier = "Apache-2.0"
 
+# NIST CAVP SHA-256 test vectors
+[[annotations]]
+path = [
+	"kernel/tests/test_utils/test_zlib/crypto/vectors/SHA256LongMsg.rsp",
+	"kernel/tests/test_utils/test_zlib/crypto/vectors/SHA256ShortMsg.rsp",
+]
+SPDX-FileCopyrightText = "National Institute of Standards and Technology"
+SPDX-License-Identifier = "NIST-PD"
+

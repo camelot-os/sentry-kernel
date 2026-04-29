@@ -3,3 +3,4 @@
 
 subdir('test_io')
 subdir('test_bits')
+subdir('test_zlib')
