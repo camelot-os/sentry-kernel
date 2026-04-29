@@ -34,14 +34,14 @@ typedef enum task_mgr_state {
     TASK_MANAGER_STATE_BOOT = 0x0UL,                /**< at boot time */
     /* for each cell of task_meta_table */
     TASK_MANAGER_STATE_DISCOVER_SANITATION, /**<  magic & version check */
-    TASK_MANAGER_STATE_CHECK_META_INTEGRITY,/**< metadata HMAC check */
-    TASK_MANAGER_STATE_CHECK_TSK_INTEGRITY, /**< task HMAC check */
+    TASK_MANAGER_STATE_CHECK_META_INTEGRITY,/**< metadata SHA-256 check */
+    TASK_MANAGER_STATE_CHECK_TSK_INTEGRITY, /**< task SHA-256 check */
     TASK_MANAGER_STATE_INIT_LOCALINFO,      /**< init dynamic task info into local struct */
     TASK_MANAGER_STATE_TSK_MAP,             /**< task data copy, bss zeroify, stack init */
     TASK_MANAGER_STATE_TSK_SCHEDULE,        /**< schedule task (if start at bootup) */
     TASK_MANAGER_STATE_FINALIZE,            /**< all tasks added, finalize (sort task list) */
     TASK_MANAGER_STATE_READY,               /**< ready state, everything is clean */
-    TASK_MANAGER_STATE_ERROR_SECURITY,      /**< hmac or magic error */
+    TASK_MANAGER_STATE_ERROR_SECURITY,      /**< sha256 or magic error */
     TASK_MANAGER_STATE_ERROR_RUNTIME,       /**< others (sched...) */
 } task_mgr_state_t;
 
@@ -71,7 +71,7 @@ static struct task_mgr_ctx ctx;
  *      the task mapping order is based on the label list (from the smaller to the higher)
  *      so that binary search can be done on the task set below
  *   3. upgrade each task ELF based on the calculated memory mapping
- *   4. forge the task metadata from the new ELF, including HMACs, save it to a dediacted file
+ *   4. forge the task metadata from the new ELF, including SHA-256 digests, save it to a dediacted file
  *   5. store the metadata in the first free cell of the .task_list section bellow
  *
  * In a different (v2?) mode, it is  possible to consider that tasks metadata can be stored
@@ -139,7 +139,7 @@ static inline kstatus_t task_init_check_meta_integrity(task_meta_t const * const
         ctx.state = TASK_MANAGER_STATE_ERROR_SECURITY;
         goto end;
     }
-    /* FIXME: call the hmac service in order to validate metadata integrity,
+    /* FIXME: call the sha256 service in order to validate metadata integrity,
        and return the result */
     pr_info("[task %08x] metadata integrity ok", meta->label);
     ctx.state = TASK_MANAGER_STATE_CHECK_TSK_INTEGRITY;
@@ -164,7 +164,7 @@ static inline kstatus_t task_init_check_tsk_integrity(task_meta_t const * const 
         ctx.state = TASK_MANAGER_STATE_ERROR_SECURITY;
         goto end;
     }
-    /* FIXME: call the hmac service in order to validate metadata integrity,
+    /* FIXME: call the sha256 service in order to validate metadata integrity,
        and return the result */
     pr_info("[task %08x] task code+data integrity ok", meta->label);
     ctx.state = TASK_MANAGER_STATE_INIT_LOCALINFO;
