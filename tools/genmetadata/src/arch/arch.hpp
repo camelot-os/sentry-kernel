@@ -30,3 +30,11 @@ template<typename T, typename ... U>
 concept IsAnyOf = (std::same_as<T, U> || ...);
 
 } // namespace arch
+
+#include "armv8m.hpp"
+
+namespace arch {
+
+using memory_spec = armv8m::memory_spec;
+
+} // namespace arch

@@ -23,13 +23,16 @@
 #include <string>
 #include <iostream>
 #include <sstream>
+#include <array>
+#include <stdexcept>
 
 #include <nlohmann/json.hpp>
 #include <argparse/argparse.hpp>
+#include <openssl/sha.h>
 
 #include "task_meta.hpp"
 #include "reflect.hpp"
-#include "arch/armv8m.hpp"
+#include "arch/arch.hpp"
 
 using json = nlohmann::json;
 
@@ -46,7 +49,22 @@ int main(int argc, char *argv[])
         std::string out{program.get<std::string>("output")};
         auto data = json::parse(in);
         auto meta = taskMetadata::from_json(data["task_meta"]);
-        reflect_to_bin<arch::armv8m::memory_spec>(meta, out);
+
+        std::array<uint8_t, SHA256_DIGEST_LENGTH> metadata_sha256{};
+        if (!meta.set_u8_array_field("metadata_sha256", metadata_sha256)) {
+            throw std::runtime_error("metadata_sha256 field not found or has unexpected type");
+        }
+
+        auto blob = reflect_to_bytes<arch::memory_spec>(meta);
+        if (SHA256(blob.data(), blob.size(), metadata_sha256.data()) == nullptr) {
+            throw std::runtime_error("failed to compute metadata_sha256");
+        }
+
+        if (!meta.set_u8_array_field("metadata_sha256", metadata_sha256)) {
+            throw std::runtime_error("failed to write metadata_sha256 field");
+        }
+
+        reflect_to_bin<arch::memory_spec>(meta, out);
     }
     catch (const std::exception& err) {
         std::cerr << err.what() << std::endl;
