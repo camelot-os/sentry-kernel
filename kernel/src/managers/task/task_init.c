@@ -127,7 +127,7 @@ end:
 
 #if CONFIG_SECU_METADATA_SHA256_CHECK
 /* TODO: dev, shm and dma list should be removed from metadata, replaced by dts only info, fixing metadata size definitively */
-static_assert(sizeof(task_meta_t) > 200, "beware that the task_meta_t structure may be too big to be copied on stack!");
+static_assert(sizeof(task_meta_t) <= 200, "beware that the task_meta_t structure may be too big to be copied on stack!");
 #endif
 
 /**
