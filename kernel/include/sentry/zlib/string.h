@@ -93,6 +93,18 @@ void   *sentry_memset(void *s, int c, unsigned int n);
   */
 void   *sentry_memcpy(void * restrict dest, const void* restrict src, size_t n);
 
+/*@
+ * requires valid_read(s1+(0..n-1));
+ * requires valid_read(s2+(0..n-1));
+ * requires \initialized(s1+(0..n-1));
+ * requires \initialized(s2+(0..n-1));
+ * assigns \result \from indirect:s1, indirect:s2, indirect:n;
+ * ensures \result == 0 <==> \forall integer k; 0 <= k < n ==> ((uint8_t*)s1)[k] == ((uint8_t*)s2)[k];
+ * ensures \result < 0 <==> \exists integer k; 0 <= k < n && ((uint8_t*)s1)[k] < ((uint8_t*)s2)[k] && \forall integer j; 0 <= j < k ==> ((uint8_t*)s1)[j] == ((uint8_t*)s2)[j];
+ * ensures \result > 0 <==> \exists integer k; 0 <= k < n && ((uint8_t*)s1)[k] > ((uint8_t*)s2)[k] && \forall integer j; 0 <= j < k ==> ((uint8_t*)s1)[j] == ((uint8_t*)s2)[j];
+ */
+int    sentry_memcmp(const void *s1, const void *s2, size_t n);
+
 /**
  * Note: because frama-c as no link notion and uses cpp+internal analysis, we cannot
  * use the __attribute__((alias("fct"))) trick to alias the sentry_ prefixed

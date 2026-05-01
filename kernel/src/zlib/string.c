@@ -252,6 +252,49 @@ err:
     return dest;
 }
 
+/**
+ * @brief Compare n first bytes of s1 and s2, returning an integer less than, equal to, or greater than zero if s1 is found, respectively, to be less than, to match, or be greater than s2.
+ *
+ * INFO: The C standard says that null argument(s) to string functions produce undefined behavior. Here such a case is trapped.
+ *
+ * @conforming to:
+ * POSIX.1-2001, POSIX.1-2008, C89, C99, SVr4, 4.3BSD.
+ *
+ * @param s1 first memory area to compare
+ * @param s2 second memory area to compare
+ * @param n number of bytes to compare
+ *
+ * @return an integer less than, equal to, or greater than zero if s1 is found, respectively, to be less than, to match, or be greater than s2.
+ */
+int sentry_memcmp(const void *s1, const void *s2, size_t n)
+{
+    int res = 0;
+    if (unlikely(s1 == NULL || s2 == NULL)) {
+        goto err;
+    }
+    /*@ assert \valid_read((uint8_t*)s1 + (0 .. (n-1))); */
+    /*@ assert \valid_read((uint8_t*)s2 + (0 .. (n-1))); */
+    /*@ assert \initialized((uint8_t*)s1+(0..n-1)); */
+    /*@ assert \initialized((uint8_t*)s2+(0..n-1)); */
+    /*@ assert \separated((uint8_t*)s1 + (0 .. n-1), (uint8_t*)s2 + (0 .. n-1)); */
+
+    /*@
+     * loop invariant 0 <= i <= n;
+     * loop invariant res == 0;
+     * loop invariant \forall integer k; 0 <= k < i ==> ((uint8_t*)s1)[k] == ((uint8_t*)s2)[k];
+     * loop assigns i, res;
+     * loop variant n - i;
+     */
+    for (size_t i = 0; i < n; i++) {
+        if (((uint8_t*)s1)[i] != ((uint8_t*)s2)[i]) {
+            res = ((uint8_t*)s1)[i] - ((uint8_t*)s2)[i];
+            goto err;
+        }
+    }
+err:
+    return res;
+}
+
 #ifndef TEST_MODE
 #ifndef __FRAMAC__
 /** NOTE: FramaC requires that we use its own compiler builtins (see -eva-builtins-list for more info) */
@@ -259,5 +302,6 @@ err:
 size_t strnlen(const char *s, size_t maxlen) __attribute__((alias("sentry_strnlen")));
 void* memset(void *s, int c, unsigned int n) __attribute__((alias("sentry_memset")));
 void* memcpy(void * restrict d, const void * restrict s, size_t) __attribute__((alias("sentry_memcpy")));
+int   memcmp(const void *s1, const void *s2, size_t n) __attribute__((alias("sentry_memcmp")));
 #endif
 #endif/*!TEST_MODE*/
