@@ -279,11 +279,11 @@ int sentry_memcmp(const void *s1, const void *s2, size_t n)
     /*@ assert \separated((uint8_t*)s1 + (0 .. n-1), (uint8_t*)s2 + (0 .. n-1)); */
 
     /*@
-     * loop invariant 0 <= i <= n;
-     * loop invariant res == 0;
-     * loop invariant \forall integer k; 0 <= k < i ==> ((uint8_t*)s1)[k] == ((uint8_t*)s2)[k];
-     * loop assigns i, res;
-     * loop variant n - i;
+       loop invariant 0 <= i <= n;
+       loop invariant res == 0;
+       loop invariant \forall integer k; 0 <= k < i ==> ((uint8_t*)s1)[k] == ((uint8_t*)s2)[k];
+       loop assigns i, res;
+       loop variant n - i;
      */
     for (size_t i = 0; i < n; i++) {
         if (((uint8_t*)s1)[i] != ((uint8_t*)s2)[i]) {
