@@ -1,4 +1,5 @@
 // SPDX-FileCopyrightText: 2023 Ledger SAS
+// SPDX-FileCopyrightText: 2026 H2Lab Development Team
 // SPDX-License-Identifier: Apache-2.0
 
 /**
@@ -15,6 +16,7 @@
 #include <sentry/arch/asm-generic/membarriers.h>
 #include <sentry/arch/asm-generic/platform.h>
 #include <sentry/arch/asm-generic/panic.h>
+#include <sentry/zlib/crypto.h>
 #include <sentry/zlib/sort.h>
 
 #include "task_core.h"
@@ -34,14 +36,14 @@ typedef enum task_mgr_state {
     TASK_MANAGER_STATE_BOOT = 0x0UL,                /**< at boot time */
     /* for each cell of task_meta_table */
     TASK_MANAGER_STATE_DISCOVER_SANITATION, /**<  magic & version check */
-    TASK_MANAGER_STATE_CHECK_META_INTEGRITY,/**< metadata HMAC check */
-    TASK_MANAGER_STATE_CHECK_TSK_INTEGRITY, /**< task HMAC check */
+    TASK_MANAGER_STATE_CHECK_META_INTEGRITY,/**< metadata SHA-256 check */
+    TASK_MANAGER_STATE_CHECK_TSK_INTEGRITY, /**< task SHA-256 check */
     TASK_MANAGER_STATE_INIT_LOCALINFO,      /**< init dynamic task info into local struct */
     TASK_MANAGER_STATE_TSK_MAP,             /**< task data copy, bss zeroify, stack init */
     TASK_MANAGER_STATE_TSK_SCHEDULE,        /**< schedule task (if start at bootup) */
     TASK_MANAGER_STATE_FINALIZE,            /**< all tasks added, finalize (sort task list) */
     TASK_MANAGER_STATE_READY,               /**< ready state, everything is clean */
-    TASK_MANAGER_STATE_ERROR_SECURITY,      /**< hmac or magic error */
+    TASK_MANAGER_STATE_ERROR_SECURITY,      /**< sha256 or magic error */
     TASK_MANAGER_STATE_ERROR_RUNTIME,       /**< others (sched...) */
 } task_mgr_state_t;
 
@@ -71,7 +73,7 @@ static struct task_mgr_ctx ctx;
  *      the task mapping order is based on the label list (from the smaller to the higher)
  *      so that binary search can be done on the task set below
  *   3. upgrade each task ELF based on the calculated memory mapping
- *   4. forge the task metadata from the new ELF, including HMACs, save it to a dediacted file
+ *   4. forge the task metadata from the new ELF, including SHA-256 digests, save it to a dediacted file
  *   5. store the metadata in the first free cell of the .task_list section bellow
  *
  * In a different (v2?) mode, it is  possible to consider that tasks metadata can be stored
@@ -123,6 +125,11 @@ end:
     return status;
 }
 
+#if CONFIG_SECU_METADATA_SHA256_CHECK
+/* TODO: dev, shm and dma list should be removed from metadata, replaced by dts only info, fixing metadata size definitively */
+static_assert(sizeof(task_meta_t) <= 200, "beware that the task_meta_t structure may be too big to be copied on stack!");
+#endif
+
 /**
  * @brief check_meta_integrity state handling
  *
@@ -139,8 +146,30 @@ static inline kstatus_t task_init_check_meta_integrity(task_meta_t const * const
         ctx.state = TASK_MANAGER_STATE_ERROR_SECURITY;
         goto end;
     }
-    /* FIXME: call the hmac service in order to validate metadata integrity,
-       and return the result */
+#if CONFIG_SECU_METADATA_SHA256_CHECK
+    task_meta_t meta_copy;
+    uint8_t digest[SHA256_DIGEST_SIZE];
+
+    if (memcpy(&meta_copy, meta, sizeof(meta_copy)) != &meta_copy) {
+        pr_err("[task %08x] unable to copy metadata for sha256 verification", meta->label);
+        ctx.state = TASK_MANAGER_STATE_ERROR_SECURITY;
+        goto end;
+    }
+
+    (void)memset(meta_copy.metadata_sha256, 0x0, sizeof(meta_copy.metadata_sha256));
+
+    if (sha256((const uint8_t *)&meta_copy, sizeof(meta_copy), digest) != 0) {
+        pr_err("[task %08x] metadata sha256 computation failed", meta->label);
+        ctx.state = TASK_MANAGER_STATE_ERROR_SECURITY;
+        goto end;
+    }
+
+    if (memcmp(meta->metadata_sha256, digest, sizeof(digest)) != 0) {
+        pr_err("[task %08x] metadata sha256 mismatch", meta->label);
+        ctx.state = TASK_MANAGER_STATE_ERROR_SECURITY;
+        goto end;
+    }
+#endif
     pr_info("[task %08x] metadata integrity ok", meta->label);
     ctx.state = TASK_MANAGER_STATE_CHECK_TSK_INTEGRITY;
     status = K_STATUS_OKAY;
@@ -164,7 +193,7 @@ static inline kstatus_t task_init_check_tsk_integrity(task_meta_t const * const 
         ctx.state = TASK_MANAGER_STATE_ERROR_SECURITY;
         goto end;
     }
-    /* FIXME: call the hmac service in order to validate metadata integrity,
+    /* FIXME: call the sha256 service in order to validate metadata integrity,
        and return the result */
     pr_info("[task %08x] task code+data integrity ok", meta->label);
     ctx.state = TASK_MANAGER_STATE_INIT_LOCALINFO;

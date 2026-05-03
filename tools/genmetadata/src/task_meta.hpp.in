@@ -1,4 +1,5 @@
 // SPDX-FileCopyrightText: 2024 Ledger SAS
+// SPDX-FileCopyrightText: 2026 H2Lab
 // SPDX-License-Identifier: Apache-2.0
 
 /*
@@ -163,8 +164,36 @@ public:
     const std::string_view field_name(size_t id) const { return _field_names[id]; }
     size_t size() const { return std::tuple_size_v<decltype(_fields)>; }
 
+    template<std::size_t N>
+    bool set_u8_array_field(const std::string_view name, const std::array<uint8_t, N>& value) {
+        bool updated = false;
+        set_u8_array_field_impl(name, value, updated, std::make_index_sequence<_size>{});
+        return updated;
+    }
+
     const auto& reflect() const { return _fields; }
 
 private:
+    template<std::size_t Idx, std::size_t N>
+    void try_set_u8_array_field(const std::string_view name, const std::array<uint8_t, N>& value, bool& updated) {
+        if (updated || _field_names[Idx] != name) {
+            return;
+        }
+
+        using field_t = std::remove_cvref_t<decltype(this->field<Idx>())>;
+        if constexpr (std::is_same_v<field_t, std::array<uint8_t, N>>) {
+            this->field<Idx>() = value;
+            updated = true;
+        }
+    }
+
+    template<std::size_t N, std::size_t... Is>
+    void set_u8_array_field_impl(const std::string_view name,
+                                 const std::array<uint8_t, N>& value,
+                                 bool& updated,
+                                 std::index_sequence<Is...>) {
+        (try_set_u8_array_field<Is>(name, value, updated), ...);
+    }
+
     layout_t _fields{};
 };
