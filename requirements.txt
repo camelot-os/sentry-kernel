@@ -1,7 +1,7 @@
 # SPDX-FileCopyrightText: 2023-2024 Ledger SAS
 # SPDX-License-Identifier: Apache-2.0
 
-meson>=1.7.0
+meson>=1.11.1
 ninja
 kconfiglib~=14.1.0
 sphinx_rtd_theme
