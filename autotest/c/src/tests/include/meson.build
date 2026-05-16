@@ -21,6 +21,7 @@ testlib_headerset.add(
         'test_signal.h',
         'test_sleep.h',
         'test_yield.h',
+        'test_respawn.h',
     )
 )
 

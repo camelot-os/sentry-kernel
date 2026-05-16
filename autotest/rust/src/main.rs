@@ -56,6 +56,11 @@ pub extern "C" fn autotest(_thread_id: u32, seed: u32) -> ! {
     #[cfg(CONFIG_TEST_DMA)]
     tests::test_dma::run();
 
-    syscall::exit(0);
+    // yielding to kernel, has autotest task is set to auto-start,
+    // This is required as rust iplementation of the respawn check is
+    // not implemented yet. Check for C-implemented check for more details.
+    do {
+        syscall::sched_yield();
+    } while true;
     panic!();
 }

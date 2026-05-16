@@ -93,6 +93,10 @@ config TEST_CAPA
     bool "Test that userspace capabilities are properly triggered by the kernel"
     default n
 
+config TEST_RESPAWN
+    bool "Test that userspace tasks can be respawned by the kernel"
+    default n
+
 endif
 
 endmenu
