@@ -12,7 +12,6 @@ stack_frame_t *gate_exit(const stack_frame_t *frame, uint32_t result)
     taskh_t current = sched_get_current();
     taskh_t next;
     stack_frame_t *next_frame = NULL;
-    next = sched_elect();
 
     if (unlikely(mgr_task_set_jobreturn(current, result) != K_STATUS_OKAY)) {
         /* should never fail! */
@@ -23,6 +22,8 @@ stack_frame_t *gate_exit(const stack_frame_t *frame, uint32_t result)
         if (unlikely(mgr_task_set_state(current, JOB_STATE_ABORTING) != K_STATUS_OKAY)) {
             panic(PANIC_KERNEL_INVALID_MANAGER_RESPONSE);
         }
+        /* now electing a new job, sched_elect() never fails */
+        next = sched_elect();
     } else {
         const task_meta_t * meta = NULL;
         if (unlikely(mgr_task_set_state(current, JOB_STATE_FINISHED) != K_STATUS_OKAY)) {
@@ -36,7 +37,11 @@ stack_frame_t *gate_exit(const stack_frame_t *frame, uint32_t result)
             /* if this job is flagged to panic on exit, panic as requested */
             panic(PANIC_HARDWARE_UNEXPECTED_MODIFICATION);
         }
-        /* now electing a new job, sched_elect() never fails */
+        /*
+         * now electing a new job, sched_elect() never fails. Note that this also deactivate
+         * the current job as its state has been set to JOB_STATE_FINISHED.
+         */
+        next = sched_elect();
         /*
          * As sched_elect() is called, current job has been removed from the scheduler list.
          * From now, if the job requires restarting, it can be rescheduled again.
@@ -51,6 +56,7 @@ stack_frame_t *gate_exit(const stack_frame_t *frame, uint32_t result)
              *
              * note that respawning a job reschedule it with a new handler, but do not elect it immediately
              */
+
             if (unlikely(task_respawn_job(current) != K_STATUS_OKAY)) {
                 panic(PANIC_KERNEL_INVALID_MANAGER_RESPONSE);
             }

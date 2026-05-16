@@ -18,8 +18,10 @@
 
 kstatus_t task_respawn_job(taskh_t task_handle)
 {
+    taskh_t old_handle = task_handle;
+    const ktaskh_t *old_kth = taskh_to_ktaskh(&old_handle);
     kstatus_t status = K_ERROR_UNKNOWN;
-    task_t *task_ctx = task_get_from_handle(task_handle);
+    task_t *task_ctx = task_get_from_handle(old_handle);
     if (unlikely(task_ctx == NULL)) {
         /* should never happen*/
         pr_err("invalid task context");
@@ -44,6 +46,7 @@ kstatus_t task_respawn_job(taskh_t task_handle)
      * We reuse the already populated cell from the task table, as the task is already considered as started,
      * and thus has already a cell reserved in the task table.
      */
+    pr_debug("[task %08x] respawning task", *(ktaskh_to_taskh(&task_ctx->handle)));
     status = task_do_initiate_localinfo(task_ctx->metadata, task_ctx);
     if (unlikely(status != K_STATUS_OKAY)) {
         /*
@@ -55,11 +58,13 @@ kstatus_t task_respawn_job(taskh_t task_handle)
          */
         goto end;
     }
+
     /* from now on, the task has a new handle associated to the newly created job */
     status = task_do_map(task_ctx);
     if (unlikely(status != K_STATUS_OKAY)) {
         goto end;
     }
+    pr_debug("[task %08x] respawned task with new handle", *(ktaskh_to_taskh(&task_ctx->handle)));
     /* at respawn time, the task is considered as previously started. The task is then automatically rescheduled */
     status = sched_schedule(*ktaskh_to_taskh(&task_ctx->handle));
     if (unlikely(status != K_STATUS_OKAY)) {

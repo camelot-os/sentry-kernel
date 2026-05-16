@@ -225,7 +225,8 @@ end:
  */
 kstatus_t task_do_initiate_localinfo(task_meta_t const * const meta, task_t *task_ctx)
 {
-    uint16_t cell = ctx.numtask;
+    /* cell id matches the task context index in the task table */
+    uint16_t cell = ARRAY_CELL_INDEX(task_get_table(), task_ctx);
     kstatus_t status = K_SECURITY_INTEGRITY;
     layout_resource_t ressource;
     uint32_t rerun_entropy;
@@ -239,7 +240,7 @@ kstatus_t task_do_initiate_localinfo(task_meta_t const * const meta, task_t *tas
         goto end;
     }
     task_ctx->handle.rerun = rerun_entropy;
-    task_ctx->handle.id = ctx.numtask;
+    task_ctx->handle.id = cell;
     task_ctx->handle.family = HANDLE_TASKID;
     handle = ktaskh_to_taskh(&task_ctx->handle);
     /* stack top is calculated from layout forge. We align each section to SECTION_ALIGNMENT_LEN to
@@ -260,8 +261,7 @@ kstatus_t task_do_initiate_localinfo(task_meta_t const * const meta, task_t *tas
     mgr_mm_forge_empty_table(task_ctx->layout);
     pr_info("[task %08x] task local dynamic content set", meta->label);
     /* TODO: ipc & signals ? nothing to init as memset to 0 */
-    ctx.state = TASK_MANAGER_STATE_TSK_MAP;
-    ctx.numtask++;
+
     /* forge current task layout to task context */
     mgr_mm_forge_ressource(MM_REGION_TASK_TXT, *handle, &ressource);
     mgr_task_add_resource(*handle, mgr_mm_region_to_layout_id(MM_REGION_TASK_TXT), ressource);
@@ -293,6 +293,8 @@ static inline kstatus_t task_init_initiate_localinfo(task_meta_t const * const m
     }
     status = task_do_initiate_localinfo(meta, task_ctx);
     task_ctx->has_respawned = SECURE_FALSE;
+    ctx.state = TASK_MANAGER_STATE_TSK_MAP;
+    ctx.numtask++;
 end:
     return status;
 }
