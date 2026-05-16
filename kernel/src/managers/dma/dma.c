@@ -228,19 +228,25 @@ end:
 
 kstatus_t mgr_dma_get_status(dmah_t d, gpdma_chan_state_t *dma_status)
 {
-    kstatus_t status = K_ERROR_INVPARAM;
+    kstatus_t status;
     /*@ assert \valid(dma_status); */
 #if STREAM_LIST_SIZE == 0
+    status = K_ERROR_NOENT;
     goto end;
 #else
+    status = K_ERROR_INVPARAM;
     kdmah_t const *kdmah = dmah_to_kdmah(&d);
+
+    if (unlikely(dma_status == NULL)) {
+        goto end;
+    }
     if (kdmah->streamid >= STREAM_LIST_SIZE) {
         goto end;
     }
     if (stream_config[kdmah->streamid].handle != d) {
         goto end;
     }
-    memcpy(dma_status, &stream_config[kdmah->streamid].state, sizeof(gpdma_chan_state_t));
+    *dma_status = stream_config[kdmah->streamid].status.state;
     status = K_STATUS_OKAY;
 #endif
 end:
