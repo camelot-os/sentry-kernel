@@ -125,10 +125,12 @@ static const dma_meta_t streams[] = {
 
 kstatus_t dma_stream_get_owner(size_t streamid, taskh_t * owner)
 {
-    kstatus_t status = K_ERROR_INVPARAM;
+    kstatus_t status;
 #if STREAM_LIST_SIZE == 0
+    status = K_ERROR_NOENT;
     goto end;
 #else
+    status = K_ERROR_INVPARAM;
     if (unlikely(streamid >= STREAM_LIST_SIZE)) {
         goto end;
     }
@@ -145,10 +147,12 @@ end:
 
 kstatus_t dma_stream_get_config(size_t streamid, gpdma_stream_cfg_t const ** cfg)
 {
-    kstatus_t status = K_ERROR_INVPARAM;
+    kstatus_t status;
 #if STREAM_LIST_SIZE == 0
+    status = K_ERROR_NOENT;
     goto end;
 #else
+    status = K_ERROR_INVPARAM;
     if (unlikely(streamid >= STREAM_LIST_SIZE)) {
         goto end;
     }
@@ -165,10 +169,12 @@ end:
 
 kstatus_t dma_stream_get_label(size_t streamid, size_t * label)
 {
-    kstatus_t status = K_ERROR_INVPARAM;
+    kstatus_t status;
 #if STREAM_LIST_SIZE == 0
+    status = K_ERROR_NOENT;
     goto end;
 #else
+    status = K_ERROR_INVPARAM;
     if (unlikely(streamid >= STREAM_LIST_SIZE)) {
         goto end;
     }
@@ -185,10 +191,12 @@ end:
 
 kstatus_t dma_stream_get_meta(size_t streamid, dma_meta_t const ** cfg)
 {
-    kstatus_t status = K_ERROR_INVPARAM;
+    kstatus_t status;
 #if STREAM_LIST_SIZE == 0
+    status = K_ERROR_NOENT;
     goto end;
 #else
+    status = K_ERROR_INVPARAM;
     if (unlikely(streamid >= STREAM_LIST_SIZE)) {
         goto end;
     }
