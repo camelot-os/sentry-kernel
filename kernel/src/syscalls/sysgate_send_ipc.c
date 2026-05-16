@@ -92,8 +92,6 @@ stack_frame_t *gate_send_ipc(stack_frame_t *frame, taskh_t target, uint32_t len)
         mgr_task_set_sysreturn(current, STATUS_INVALID);
         goto err;
     }
-    /* TODO: deadlock detecion */
-
     /* push IPC event to target */
     if (unlikely(mgr_task_push_ipc_event(len, current, target) != K_STATUS_OKAY)) {
         mgr_task_set_sysreturn(current, STATUS_BUSY);
