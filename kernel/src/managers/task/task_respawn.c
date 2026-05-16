@@ -65,6 +65,8 @@ kstatus_t task_respawn_job(taskh_t task_handle)
     if (unlikely(status != K_STATUS_OKAY)) {
         goto end;
     }
+    /* set the respawned flag to true. */
+    task_ctx->has_respawned = SECURE_TRUE;
     status = K_STATUS_OKAY;
 end:
     return status;

@@ -35,6 +35,7 @@ syscalls = files(
     'sysgate_dma_start.c',
     'sysgate_dma_suspend.c',
     'sysgate_dma_resume.c',
+    'sysgate_has_respawned.c',
 )
 
 syscall_source_set.add(syscalls)

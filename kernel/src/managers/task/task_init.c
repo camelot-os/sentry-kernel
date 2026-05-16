@@ -292,6 +292,7 @@ static inline kstatus_t task_init_initiate_localinfo(task_meta_t const * const m
         goto end;
     }
     status = task_do_initiate_localinfo(meta, task_ctx);
+    task_ctx->has_respawned = SECURE_FALSE;
 end:
     return status;
 }
@@ -657,12 +658,23 @@ kstatus_t mgr_task_watchdog(void)
     return K_STATUS_OKAY;
 }
 
+/* set that all userspace boot time task has been started */
 void mgr_task_set_userspace_spawned(void)
 {
     ctx.userspace_spawned = SECURE_TRUE;
 }
 
+/* check that all userspace boot time tasks have been started */
 secure_bool_t mgr_task_is_userspace_spawned(void)
 {
     return ctx.userspace_spawned;
+}
+
+secure_bool_t mgr_task_has_respawned(taskh_t tskh)
+{
+    task_t *tsk = task_get_from_handle(tskh);
+    if (unlikely(tsk == NULL)) {
+        return SECURE_FALSE;
+    }
+    return tsk->has_respawned;
 }
