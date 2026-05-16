@@ -275,7 +275,7 @@ kstatus_t mgr_dma_autotest(void)
  */
 kstatus_t mgr_dma_get_dmah_from_interrupt(const uint16_t IRQn, dmah_t *dmah)
 {
-    kstatus_t status = K_ERROR_INVPARAM;
+    kstatus_t status = K_ERROR_NOENT;
     uint16_t stream_irqn = 0;
     uint16_t stream;
     gpdma_stream_cfg_t const *cfg = NULL;
@@ -284,6 +284,7 @@ kstatus_t mgr_dma_get_dmah_from_interrupt(const uint16_t IRQn, dmah_t *dmah)
         goto end;
     }
 #if STREAM_LIST_SIZE
+    status = K_ERROR_INVPARAM;
     /* 1. get back dma {chan,ctrl} couple from IRQn */
     for (stream = 0; stream < STREAM_LIST_SIZE; ++stream) {
         cfg = &stream_config[stream].meta->config;
