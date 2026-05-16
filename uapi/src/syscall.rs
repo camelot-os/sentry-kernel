@@ -856,6 +856,11 @@ pub fn autotest_clear_capa(capability: u32) -> Status {
     syscall!(Syscall::AutotestClearCapa, capability).into()
 }
 
+#[inline(always)]
+pub fn has_respawned() -> Status {
+    syscall!(Syscall::HasRespawned).into()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

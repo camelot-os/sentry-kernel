@@ -291,6 +291,8 @@ Status __sys_autotest_set_capa(uint32_t capa);
 Status __sys_autotest_clear_capa(uint32_t capa);
 #endif
 
+Status __sys_has_respawned(void);
+
 #ifdef __cplusplus
 } // extern "C"
 #endif // __cplusplus
