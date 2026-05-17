@@ -260,7 +260,10 @@ kstatus_t task_do_initiate_localinfo(task_meta_t const * const meta, task_t *tas
     task_ctx->returncode = 0UL;
     mgr_mm_forge_empty_table(task_ctx->layout);
     pr_info("[task %08x] task local dynamic content set", meta->label);
-    /* TODO: ipc & signals ? nothing to init as memset to 0 */
+    /*
+     * input events are not initialized here. At boot time, they are set to 0, at respawn time,
+     * they are preserved from the previous job.
+     */
 
     /* forge current task layout to task context */
     mgr_mm_forge_ressource(MM_REGION_TASK_TXT, *handle, &ressource);
