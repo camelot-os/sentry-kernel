@@ -83,6 +83,7 @@ end:
 static dma_stream_config_t *mgr_dma_get_config(const dmah_t dmah)
 {
     dma_stream_config_t * cfg = NULL;
+#if STREAM_LIST_SIZE
     for (size_t streamid = 0; streamid < STREAM_LIST_SIZE; ++streamid) {
         if (stream_config[streamid].handle == dmah) {
             cfg = &stream_config[streamid];
@@ -90,6 +91,7 @@ static dma_stream_config_t *mgr_dma_get_config(const dmah_t dmah)
         }
     }
 end:
+#endif
     return cfg;
 }
 
@@ -111,6 +113,7 @@ kstatus_t mgr_dma_get_info(const dmah_t dmah, gpdma_stream_cfg_t const ** infos)
     if (unlikely(infos == NULL)) {
         goto end;
     }
+#if STREAM_LIST_SIZE
     for (size_t streamid = 0; streamid < STREAM_LIST_SIZE; ++streamid) {
         if (stream_config[streamid].handle == dmah) {
             *infos = &stream_config[streamid].meta->config;
@@ -118,6 +121,7 @@ kstatus_t mgr_dma_get_info(const dmah_t dmah, gpdma_stream_cfg_t const ** infos)
             goto end;
         }
     }
+#endif
 end:
     return status;
 }
@@ -173,6 +177,9 @@ end:
 kstatus_t mgr_dma_get_owner(dmah_t d, taskh_t *owner)
 {
     kstatus_t status = K_ERROR_INVPARAM;
+#if STREAM_LIST_SIZE == 0
+    goto end;
+#else
     uint32_t owner_label;
     if (unlikely(owner == NULL)) {
         goto end;
@@ -186,6 +193,7 @@ kstatus_t mgr_dma_get_owner(dmah_t d, taskh_t *owner)
     }
     *owner = stream_config[kdmah->streamid].owner;
     status = K_STATUS_OKAY;
+#endif
 end:
     return status;
 }
@@ -220,18 +228,27 @@ end:
 
 kstatus_t mgr_dma_get_status(dmah_t d, gpdma_chan_state_t *dma_status)
 {
-    kstatus_t status = K_ERROR_INVPARAM;
+    kstatus_t status;
     /*@ assert \valid(dma_status); */
-
+#if STREAM_LIST_SIZE == 0
+    status = K_ERROR_NOENT;
+    goto end;
+#else
+    status = K_ERROR_INVPARAM;
     kdmah_t const *kdmah = dmah_to_kdmah(&d);
+
+    if (unlikely(dma_status == NULL)) {
+        goto end;
+    }
     if (kdmah->streamid >= STREAM_LIST_SIZE) {
         goto end;
     }
     if (stream_config[kdmah->streamid].handle != d) {
         goto end;
     }
-    memcpy(dma_status, &stream_config[kdmah->streamid].state, sizeof(gpdma_chan_state_t));
+    *dma_status = stream_config[kdmah->streamid].status.state;
     status = K_STATUS_OKAY;
+#endif
 end:
     return status;
 }
@@ -258,7 +275,7 @@ kstatus_t mgr_dma_autotest(void)
  */
 kstatus_t mgr_dma_get_dmah_from_interrupt(const uint16_t IRQn, dmah_t *dmah)
 {
-    kstatus_t status = K_ERROR_INVPARAM;
+    kstatus_t status = K_ERROR_NOENT;
     uint16_t stream_irqn = 0;
     uint16_t stream;
     gpdma_stream_cfg_t const *cfg = NULL;
@@ -266,6 +283,8 @@ kstatus_t mgr_dma_get_dmah_from_interrupt(const uint16_t IRQn, dmah_t *dmah)
     if (unlikely(dmah == NULL)) {
         goto end;
     }
+#if STREAM_LIST_SIZE
+    status = K_ERROR_INVPARAM;
     /* 1. get back dma {chan,ctrl} couple from IRQn */
     for (stream = 0; stream < STREAM_LIST_SIZE; ++stream) {
         cfg = &stream_config[stream].meta->config;
@@ -284,6 +303,7 @@ kstatus_t mgr_dma_get_dmah_from_interrupt(const uint16_t IRQn, dmah_t *dmah)
     /* not found, leaving with error */
     status = K_ERROR_NOENT;
     goto end;
+#endif
 end:
     return status;
 }
