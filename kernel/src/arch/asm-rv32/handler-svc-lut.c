@@ -242,6 +242,10 @@ static stack_frame_t *lut_autotest_clear_self_capa(stack_frame_t *frame) {
 }
 #endif
 
+static stack_frame_t *lut_has_respawned(stack_frame_t *frame) {
+    return gate_has_respawned(frame);
+}
+
 /* for not yet supported syscalls */
 stack_frame_t *lut_unsuported(stack_frame_t *frame) {
 #ifdef CONFIG_BUILD_TARGET_AUTOTEST
@@ -302,6 +306,7 @@ static const lut_svc_handler svc_lut[] = {
     lut_unsuported, /* SYSCALL_AUTOTEST_SET_CAPA */
     lut_unsuported, /* SYSCALL_AUTOTEST_CLEAR_CAPA */
 #endif
+    lut_has_respawned,
 };
 
 

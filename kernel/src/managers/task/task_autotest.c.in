@@ -40,7 +40,7 @@ void task_autotest_init(void)
     autotest_meta.capabilities = autotest_capa;
     autotest_meta.magic = CONFIG_TASK_MAGIC;
     autotest_meta.flags.start_mode = JOB_FLAG_START_AUTO;
-    autotest_meta.flags.exit_mode = JOB_FLAG_EXIT_RESET;
+    autotest_meta.flags.exit_mode = JOB_FLAG_EXIT_RESTART;
 #ifndef __FRAMAC__
     autotest_meta.s_text = (size_t)&_sautotest;
     autotest_meta.text_size = {{ "%#08xUL"|format(text["size"]) }};

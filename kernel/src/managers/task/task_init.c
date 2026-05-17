@@ -1,4 +1,5 @@
 // SPDX-FileCopyrightText: 2023 Ledger SAS
+// SPDX-FileCopyrightText: 2026 H2Lab Development Team
 // SPDX-License-Identifier: Apache-2.0
 
 /**
@@ -29,6 +30,48 @@ extern size_t _idle;
 #else
 extern void (ut_idle)(void);
 #endif
+
+/*
+ * Task initialization sequence state automaton.
+ * This FSM is used to analyze the task metadata table, check the integrity of each task
+ * and forge the task context for each valid task found. The FSM is also used to schedule
+ * the tasks that are set to start at bootup.
+ * The FSM is designed to be as simple as possible, with a clear separation of concerns between
+ * each state, and a clear error handling strategy. The FSM is also designed to be as
+ * deterministic as possible, with a clear transition between states and a clear end state.
+ *
+ * Note that this FSM is specific to the task initialization process, and is not intended
+ * to be used for task respawning support neither for task sys_start() related handling.
+ *
+ *  +------+     +---------------------+     +---------------------+
+ *  | BOOT | --> | DISCOVER_SANITATION | --> | CHECK_META_INTEGRITY|
+ *  +------+     +---------------------+     +---------------------+
+ *                    |                             |
+ *               K_ERROR_NOENT                      v
+ *                    v                      +---------------------+
+ *               +----------+                | CHECK_TSK_INTEGRITY |
+ *               | FINALIZE |                +---------------------+
+ *               +----------+                          |
+ *                    |                                v
+ *                    v                       +---------------------+
+ *             +-------------+                |   INIT_LOCALINFO    |
+ *             |    READY    |                +---------------------+
+ *             +-------------+                          |
+ *                                                      v
+ *                                           +---------------------+
+ *                                           |       TSK_MAP       |
+ *                                           +---------------------+
+ *                                                    |
+ *                                                    v
+ *                                           +---------------------+
+ *                                           |    TSK_SCHEDULE     |
+ *                                           +---------------------+
+ *                                                        |
+ *                                                        +----> next cell
+ *
+ *  Any integrity failure  ------------------------------> ERROR_SECURITY
+ *  Any runtime/sched failure ---------------------------> ERROR_RUNTIME
+ */
 
 typedef enum task_mgr_state {
     TASK_MANAGER_STATE_BOOT = 0x0UL,                /**< at boot time */
@@ -176,31 +219,19 @@ end:
 /**
  * @brief local info writting state handling
  *
- * must be executed in TASK_MANAGER_STATE_INIT_LOCALINFO state.
- * Move to TASK_MANAGER_STATE_TSK_MAP only on success, or move to
- * TASK_MANAGER_STATE_ERROR_SECURITY otherwise.
+ * This function is the effective implementation of the INIT_LOCALINFO state,
+ * but without INIT FSM state check, as this implementation is also used for task respawn handling,
+ * where the FSM state is not relevant.
  */
-static inline kstatus_t task_init_initiate_localinfo(task_meta_t const * const meta, task_t **tsk)
+kstatus_t task_do_initiate_localinfo(task_meta_t const * const meta, task_t *task_ctx)
 {
+    /* cell id matches the task context index in the task table */
+    uint16_t cell = ARRAY_CELL_INDEX(task_get_table(), task_ctx);
     kstatus_t status = K_SECURITY_INTEGRITY;
-    task_t * task_table = task_get_table();
-    task_t * task_ctx;
-    uint16_t cell = ctx.numtask;
     layout_resource_t ressource;
     uint32_t rerun_entropy;
     const taskh_t *handle;
 
-    /* entering state check */
-    if (unlikely(ctx.state != TASK_MANAGER_STATE_INIT_LOCALINFO)) {
-        pr_err("invalid state!");
-        ctx.state = TASK_MANAGER_STATE_ERROR_SECURITY;
-        goto end;
-    }
-    if (unlikely(cell == CONFIG_MAX_TASKS+1)) {
-        ctx.state = TASK_MANAGER_STATE_ERROR_SECURITY;
-        goto end;
-    }
-    task_ctx = &task_table[cell];
     /* forge local info, push back current and next afterward */
     task_ctx->metadata = meta;
     ctx.status = mgr_security_entropy_generate(&rerun_entropy);
@@ -209,7 +240,7 @@ static inline kstatus_t task_init_initiate_localinfo(task_meta_t const * const m
         goto end;
     }
     task_ctx->handle.rerun = rerun_entropy;
-    task_ctx->handle.id = ctx.numtask;
+    task_ctx->handle.id = cell;
     task_ctx->handle.family = HANDLE_TASKID;
     handle = ktaskh_to_taskh(&task_ctx->handle);
     /* stack top is calculated from layout forge. We align each section to SECTION_ALIGNMENT_LEN to
@@ -227,12 +258,13 @@ static inline kstatus_t task_init_initiate_localinfo(task_meta_t const * const m
     task_ctx->state = JOB_STATE_READY;
     task_ctx->sysretassigned = SECURE_FALSE;
     task_ctx->returncode = 0UL;
-    mgr_mm_forge_empty_table(task_table[cell].layout);
+    mgr_mm_forge_empty_table(task_ctx->layout);
     pr_info("[task %08x] task local dynamic content set", meta->label);
-    /* TODO: ipc & signals ? nothing to init as memset to 0 */
-    ctx.state = TASK_MANAGER_STATE_TSK_MAP;
-    *tsk = task_ctx;
-    ctx.numtask++;
+    /*
+     * input events are not initialized here. At boot time, they are set to 0, at respawn time,
+     * they are preserved from the previous job.
+     */
+
     /* forge current task layout to task context */
     mgr_mm_forge_ressource(MM_REGION_TASK_TXT, *handle, &ressource);
     mgr_task_add_resource(*handle, mgr_mm_region_to_layout_id(MM_REGION_TASK_TXT), ressource);
@@ -240,6 +272,49 @@ static inline kstatus_t task_init_initiate_localinfo(task_meta_t const * const m
     mgr_task_add_resource(*handle, mgr_mm_region_to_layout_id(MM_REGION_TASK_DATA), ressource);
     status = K_STATUS_OKAY;
 end:
+    return status;
+}
+
+static inline kstatus_t task_init_initiate_localinfo(task_meta_t const * const meta, task_t **tsk)
+{
+    uint16_t cell = ctx.numtask;
+    kstatus_t status = K_SECURITY_INTEGRITY;
+    task_t * task_ctx;
+    task_t * task_table = task_get_table();
+    task_ctx = &task_table[cell];
+
+
+    /* entering state check */
+    if (unlikely(ctx.state != TASK_MANAGER_STATE_INIT_LOCALINFO)) {
+        pr_err("invalid state!");
+        ctx.state = TASK_MANAGER_STATE_ERROR_SECURITY;
+        goto end;
+    }
+    if (unlikely(cell == CONFIG_MAX_TASKS+1)) {
+        ctx.state = TASK_MANAGER_STATE_ERROR_SECURITY;
+        goto end;
+    }
+    status = task_do_initiate_localinfo(meta, task_ctx);
+    task_ctx->has_respawned = SECURE_FALSE;
+    ctx.state = TASK_MANAGER_STATE_TSK_MAP;
+    ctx.numtask++;
+end:
+    return status;
+}
+
+kstatus_t task_do_map(task_t * tsk)
+{
+    /* entering state check */
+    kstatus_t status;
+    /* configure task data layout content */
+    status = task_set_job_layout(tsk);
+    if (unlikely(status != K_STATUS_OKAY)) {
+        goto err;
+    }
+    pr_info("[task %08x] task memory map forged", tsk->metadata->label);
+    ctx.state = TASK_MANAGER_STATE_TSK_SCHEDULE;
+    status = K_STATUS_OKAY;
+err:
     return status;
 }
 
@@ -260,14 +335,7 @@ static inline kstatus_t task_init_map(task_t * tsk)
         status = K_SECURITY_CORRUPTION;
         goto err;
     }
-    /* configure task data layout content */
-    status = task_set_job_layout(tsk);
-    if (unlikely(status != K_STATUS_OKAY)) {
-        goto err;
-    }
-    pr_info("[task %08x] task memory map forged", tsk->metadata->label);
-    ctx.state = TASK_MANAGER_STATE_TSK_SCHEDULE;
-    status = K_STATUS_OKAY;
+    status = task_do_map(tsk);
 err:
     return status;
 }
@@ -595,12 +663,23 @@ kstatus_t mgr_task_watchdog(void)
     return K_STATUS_OKAY;
 }
 
+/* set that all userspace boot time task has been started */
 void mgr_task_set_userspace_spawned(void)
 {
     ctx.userspace_spawned = SECURE_TRUE;
 }
 
+/* check that all userspace boot time tasks have been started */
 secure_bool_t mgr_task_is_userspace_spawned(void)
 {
     return ctx.userspace_spawned;
+}
+
+secure_bool_t mgr_task_has_respawned(taskh_t tskh)
+{
+    task_t *tsk = task_get_from_handle(tskh);
+    if (unlikely(tsk == NULL)) {
+        return SECURE_FALSE;
+    }
+    return tsk->has_respawned;
 }

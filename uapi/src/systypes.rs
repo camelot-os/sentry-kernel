@@ -97,6 +97,7 @@ pub enum Syscall {
     DmaResumeStream,
     AutotestSetCapa,
     AutotestClearCapa,
+    HasRespawned,
 }
 }
 

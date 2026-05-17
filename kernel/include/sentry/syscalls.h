@@ -83,6 +83,8 @@ stack_frame_t *gate_dma_suspend(stack_frame_t *frame, dmah_t dmah);
 
 stack_frame_t *gate_dma_resume(stack_frame_t *frame, dmah_t dmah);
 
+stack_frame_t *gate_has_respawned(stack_frame_t *frame);
+
 #if CONFIG_BUILD_TARGET_AUTOTEST
 /**
  * @brief set a given capability to autotest

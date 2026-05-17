@@ -87,6 +87,13 @@ static_assert(ATOMIC_BOOL_LOCK_FREE, "Atomic boolean needs to be lock free");
 #define ARRAY_SIZE(x) (sizeof(x) / sizeof(x[0]))
 
 /**
+ * from a given array base address and cell pointer, return the cell index in the array
+ * @warning the cell pointer must be part of the array, otherwise the behavior is undefined
+ * @warning the array must be statically sized, otherwise the behavior is undefined
+ * @warning the array size must be preserved on different architecture and sizeof(ptr) is architecture dependent
+ */
+#define ARRAY_CELL_INDEX(base, cell) (((uintptr_t)(cell) - (uintptr_t)(base)) / sizeof((base)[0]))
+/**
  * @note volatile usage is deprecated and must limited as much as possible
  * Plus, the assumption of 4 bytes register is false (some IPs got 8 bits registers)
  * consider adding ioreadX/iowriteX functions.

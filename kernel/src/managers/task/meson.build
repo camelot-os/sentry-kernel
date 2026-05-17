@@ -6,6 +6,7 @@ managers_source_set.add(files(
   'task_init.c',
   'task_core.c',
   'task_idle.c',
+  'task_respawn.c',
 ))
 
 if kconfig_data.get('CONFIG_BUILD_TARGET_AUTOTEST', 0) == 1

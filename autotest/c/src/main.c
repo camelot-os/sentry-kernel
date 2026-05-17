@@ -21,6 +21,7 @@
 #include <test_dma.h>
 #include <test_irq.h>
 #include <test_capability.h>
+#include <test_respawn.h>
 #include <test_syscall_fuzz.h>
 
 uint32_t __stack_chk_guard = 0;
@@ -43,6 +44,10 @@ void __attribute__((no_stack_protector, used, noreturn)) autotest(uint32_t label
     __stack_chk_guard = seed;
     const char *welcommsg="hello this is autotest!\n";
     const char *testmsg="starting test suite...\n";
+
+#ifdef CONFIG_TEST_RESPAWN
+    test_respawn_bootcheck();
+#endif
 
     printf(welcommsg);
     printf(testmsg);
@@ -89,11 +94,13 @@ void __attribute__((no_stack_protector, used, noreturn)) autotest(uint32_t label
 #ifdef CONFIG_TEST_CAPA
     test_capability();
 #endif
+#ifdef CONFIG_TEST_RESPAWN
+    test_respawn();
+#else
+    printf("AUTOTEST END\n");
 #endif
-    printf("AUTOTEST END");
-
-
-    /* all tests finished, leaving */
+#endif
+    /* reached only if CONFIG_TEST_RESPAWN is not set */
     __sys_exit(0);
     __builtin_unreachable();
 }

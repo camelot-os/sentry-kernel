@@ -251,6 +251,12 @@ pub extern "C" fn __sys_autotest_clear_capa(capa: u32) -> Status {
     crate::syscall::autotest_clear_capa(capa)
 }
 
+/// C interface to [`crate::syscall::has_respawned`] syscall Rust implementation
+#[unsafe(no_mangle)]
+pub extern "C" fn __sys_has_respawned() -> Status {
+    crate::syscall::has_respawned()
+}
+
 /// # Safety
 /// Conditions for code::slice::from_raw_parts are not violated
 /// C interface to [`crate::copy_to_kernel`] Rust implementation

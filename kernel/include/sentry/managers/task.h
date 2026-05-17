@@ -1,4 +1,5 @@
 // SPDX-FileCopyrightText: 2023 Ledger SAS
+// SPDX-FileCopyrightText: 2026 H2Lab Development Team
 // SPDX-License-Identifier: Apache-2.0
 
 #ifndef TASK_MANAGER_H
@@ -24,10 +25,6 @@
  */
 #include <sentry/arch/asm-generic/thread.h>
 #include <sentry/arch/asm-generic/memory.h>
-
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 /**
  * @def idle task label definition
@@ -128,6 +125,14 @@ secure_bool_t mgr_task_is_userspace_spawned(void);
 taskh_t mgr_task_get_idle(void);
 
 /**
+ * @brief respawn a given task job
+ *
+ * Note that once respawned, the handle is no more valid
+ * and thus accessing this task job requires a new call to sys_get_task_handle()
+ */
+kstatus_t task_respawn_job(taskh_t task_handle);
+
+/**
  * @brief Add (map) a mappable resource to the task current layout
  *
  * @param t task handle
@@ -204,8 +209,10 @@ kstatus_t mgr_task_load_int_event(taskh_t context, uint32_t *IRQn);
  */
 kstatus_t mgr_task_local_ipc_iterate(taskh_t owner, taskh_t *peer, uint8_t *idx);
 
-#ifdef __cplusplus
-}
-#endif
+/**
+ * @brief check if a task has been respawned at least once since its creation
+ */
+secure_bool_t mgr_task_has_respawned(taskh_t t);
+
 
 #endif/*!SECURITY_MANAGER_H*/

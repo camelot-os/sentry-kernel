@@ -11,6 +11,7 @@ syscalls_src = files(
   'get_shm_handle.rst',
   'gpio_reset.rst',
   'gpio_toggle.rst',
+  'has_respawned.rst',
   'log.rst',
   'pm_clock_set.rst',
   'send_signal.rst',

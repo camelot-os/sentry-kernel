@@ -286,8 +286,24 @@ spawn mode and the respawn mode.
         The system must panic on this event
       * **none**: the task has just terminated, nothing special to do
 
-.. todo::
-    Only **none** respawn mode is supported, others still need to be implemented.
+Note that giving the **panic** mode to a job means that its termination generates a system panic, which can lead
+to a deny of service impact. Only trusted tasks (such as security tasks) should be allowed to such a behavior.
+
+Only task that properly finishes can be respawned when the respawn mode is set to **restart**. Abnormal termination
+do not permit automatic respawn.
+
+termination action flags are set in the task metadata table, at configuration time, by setting the Kconfig-based
+termination mode with one of the following configuration:
+
+   * TASK_EXIT_MODE_NORESTART: the task is not restarted on termination, whatever the termination case is
+     (normal or abnormal)
+     This is the default mode for all tasks, as it is the safest one. It is then up to the user to explicitly set
+     another mode if needed.
+   * TASK_EXIT_MODE_RESTART: the task is restarted on termination, only if it finishes normally (setting 0 as sys_exit() argument).
+   * TASK_EXIT_MODE_PANIC: the task termination generates a system panic, only trusted tasks should use this mode. This
+     behavior is interesting for security-related tasks, that should never terminate, and whose termination is a strong signal
+     of a potential attack.
+
 
 Action on termination
 """""""""""""""""""""
@@ -299,31 +315,66 @@ A task has different termination cases:
    * normal termination, using `sys_exit()` syscall
    * abnormal termination, due to any fault
 
+If the task is configured in order to be restarted on termination, using the TASK_EXIT_MODE_RESTART, the
+kernel reinitialize the task context and respawn it. The task associated job get a new task handle. As
+a consequence, any previously shared resource (shared memory, devices, etc.) that were associated to the
+previous job are not anymore associated to the new job, and need to be requested again by the new job.
 
-The kernel check the task flags as defined in the previous chapter and
-execute the `exitpoint` function with the exit return value.
-This symbol is a runtime implementation (typically libc).
+.. note::
+   By now, a task is respawned only on normal termination, meaning that the task voluntarily call `sys_exit(0)`.
+   Any other termination case (abnormal termination, or voluntary termination with non-zero code)
+   do not trigger respawn
 
-This symbol must respect the following API:
+Other jobs that previously exchanged data with this task need to get back the new task handle. Further
+requests that use the previously used handle return `STATUS_NOENT` until the new handle is used.
+
+Input event queue of the respawned job (interrupts, IPC, signals) are preserved across respawns,
+meaning that any pending event at the time of the previous job termination is still pending for the
+new job. This allows to avoid any potential race condition or deadlock that could occur if the task
+is waiting for an event at the time of its termination, and that the event is triggered just after
+the new job is spawned.
+Nonetheless, this requires the respawning job to properly handle the potential pending events at startup,
+in order to avoid any potential issue of event handling on a fresh context. on-startup pending event is
+left to the job responsibility, depending on the way the job is designed (voluntary information handling
+toward other tasks, etc.).
+
+As the job memory mapping is reset to its startup mode, all shared resources (shared memory, devices, etc.)
+can be reinitialized in a normal way. For e.g. devices need to be re-initialized, and shared memory need to
+be re-shared with the new job handle.
+
+.. note::
+   Note that device-related exchanges with the outer world is under the responsibility of the job, and
+   that the kernel is not responsible for any device state management or protocol-level reinitialization
+   across respawns
+
+As a new job is respawned with a fresh context, the task is not able, by itself to detect a respawn event.
+In order to allow such a detection and be able to react to such an event, a dedicated syscall is implemented,
+denoted `sys_has_respawned()` (`syscall::has_respawned()` in Rust). If a respawn event has occured,
+the syscall returns `STATUS_OK`, or `STATUS_AGAIN` if no respawn event has occured. This syscall is made
+to be used at the very beginning of the job execution, in order to handle potential pending events and
+react accordingly.
 
 .. code-block:: c
+   :linenos:
+   :caption: sample job respawn handling example
 
-   void _exit(uint32_t exitcode, bool has_panic);
+   int main(void)
+   {
+         // startup respawn check
+         if (sys_has_respawned() == STATUS_OK) {
+               /* handle potential pending events, inform other jobs if needed */
+         }
+         /* initialize devices, shared memory, etc. in the same way as at first startup */
+         do {
+            /* execute main event loop */
 
-In case of userspace fault, `has_panic` is true and the exitcode hold the fault
-value. In case of voluntary exit, `has_panic` is false and the exitcode is the
-one set by the job at `sys_exit()` call time.
+         } while (1);
+         __builtin__unreachable();
+   }
 
-If another fault rise while executing the `exitpoint` , the system panic for
-security.
-
-.. todo::
-    This still need to be implemented.
-
-.. warning::
-   this function is NOT the atexit() POSIX quivalent, which is only for normal
-   termination. Depending on the libc, atexit() and exit functions for normal
-   termination can be added to this function implementation if needed
+.. seealso::
+   :ref:`sys_has_respawned() syscall <sys_has_respawned>` for more details about the API definition
+   and usage of this syscall.
 
 .. index::
    single: job entrypoint; model
@@ -386,10 +437,10 @@ stack model would be:
       __libc_init();
       task_ret = main();
       sys_exit(task_ret);
-      __builtin__unreachable()
+      __builtin__unreachable();
    }
 
-In Sentry, the `_start` symbol is, in C, under the libshield responsibility. It can
+In Sentry, the `_start` symbol is, in C, under the Shield library responsibility. It can
 though be implemented in Rust or any language while the ABI is respected.
 
 No kernel-level or global job mapping requirement is needed when the job is being
