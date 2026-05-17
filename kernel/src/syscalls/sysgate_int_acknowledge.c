@@ -44,6 +44,7 @@ stack_frame_t *gate_int_acknowledge(stack_frame_t *frame, uint16_t IRQn)
         mgr_task_set_sysreturn(current, STATUS_DENIED);
         goto end;
     }
+
     /* push the inth event into the task input events queue */
     if (unlikely(mgr_interrupt_acknowledge_irq(IRQn) != K_STATUS_OKAY)) {
         /* should not rise while IRQ ownership has been checked! see dts file */
