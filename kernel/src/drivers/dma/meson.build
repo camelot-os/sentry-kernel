@@ -33,12 +33,16 @@ stm32_dma_dts_template_h = files(['stm32-dma-dt.h.in'])
 stm32_dma_dtsgen_c = dtsgen.process(stm32_dma_dts_template_c)
 stm32_dma_dtsgen_h = dtsgen.process(stm32_dma_dts_template_h)
 
-
+# it seems that only the STM32u5 has the enhanced GPDMA
 bsp_private_gen_source_set.add(when: 'CONFIG_SOC_SUBFAMILY_STM32U5', if_true: [ stm32_gpdma_dtsgen_c, stm32_gpdma_dtsgen_h ])
 bsp_private_gen_source_set.add(when: 'CONFIG_SOC_SUBFAMILY_STM32U5', if_true: files('stm32u5-gpdma.c'))
 
-bsp_private_gen_source_set.add(when: 'CONFIG_SOC_SUBFAMILY_STM32F4', if_true: [ stm32_dma_dtsgen_c, stm32_dma_dtsgen_h ])
-bsp_private_gen_source_set.add(when: 'CONFIG_SOC_SUBFAMILY_STM32F4', if_true: files('stm32-dmav1.c'))
+# Other STM32 families have older GPDMA implementations, being st-dma-v1 or st-dma-v2 depending on the family
+# the selection is made at soc subfamily level but the config name is unified for a more generic inclusion here
+bsp_private_gen_source_set.add(when: 'CONFIG_HAS_GPDMA_ST_DMAV1', if_true: [ stm32_dma_dtsgen_c, stm32_dma_dtsgen_h ])
+bsp_private_gen_source_set.add(when: 'CONFIG_HAS_GPDMA_ST_DMAV1', if_true: files('stm32-dmav1.c'))
 
+#bsp_private_gen_source_set.add(when: 'CONFIG_HAS_GPDMA_ST_DMAV2', if_true: [ stm32_dma_dtsgen_c, stm32_dma_dtsgen_h ])
+#bsp_private_gen_source_set.add(when: 'CONFIG_HAS_GPDMA_ST_DMAV2', if_true: files('stm32-dmav2.c'))
 
 # driver source selection

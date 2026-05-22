@@ -98,6 +98,7 @@ config SOC_SUBFAMILY_STM32F4
 	select HAS_ICACHE
 	select HAS_MPU_PMSA_V7
 	select HAS_GPDMA
+	select HAS_GPDMA_ST_DMAV1
 	help
 	  STM32F4 family is based on Cortex-M4 with FPU and PMSAv7 MPU.
 
