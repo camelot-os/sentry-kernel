@@ -63,6 +63,29 @@
 			sentry,label = <0xf03>;
 			sentry,owner = <0xbabe>;
 		};
+		dma-streams {
+			// device-to-memory DMA stream
+			stream1 {
+				compatible = "dma-stream";
+				channel = <&dma1_1>;
+				streamid = <1>; // channel stream (af) identifier
+				prio = <STM32_DMA_PRIORITY_MEDIUM>;
+				source = <&shm_autotest_1>;
+				dest = <&shm_autotest_2>;
+				length = <42>;
+				circular = <1 0>; // circular source, linear dest
+				sentry,label = <0x1>; // task-level unique DMA identifier
+			};
+		};
+	};
+};
+
+&dma1 {
+	status = "okay";
+	// About channels that are used
+	dma1_1: dma-channel@1 {
+		status = "okay";
+		sentry,owner = <0xbabe>;
 	};
 };
 
