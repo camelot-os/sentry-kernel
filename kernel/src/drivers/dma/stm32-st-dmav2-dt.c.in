@@ -78,7 +78,7 @@ static const stm32_gpdma_desc_t stm32_gpdmas[] = {
 const stm32_gpdma_desc_t * stm32_gpdma_get_desc(uint8_t ctrl)
 {
     const stm32_gpdma_desc_t *desc = NULL;
-#if GPDMA_NUMER > 0
+#if GPDMA_NUMBER > 0
     if (unlikely(ctrl >= GPDMA_NUMBER)) {
         goto end;
     }
@@ -94,7 +94,7 @@ end:
 uint16_t const * stm32_gpdma_get_interrupts(uint8_t ctrl)
 {
     uint16_t const * its = NULL;
-#if GPDMA_NUMER > 0
+#if GPDMA_NUMBER > 0
     if (unlikely(ctrl >= GPDMA_NUMBER)) {
         goto end;
     }
