@@ -4,7 +4,7 @@
 #include <sentry/ktypes.h>
 #include <stdbool.h>
 
-#include "stm32-dma-dt.h"
+#include "stm32-st-dmav1-dt.h"
 
 {% set gpdma_ports = dts.get_compatible("stm32-dma-v1") -%}
 

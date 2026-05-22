@@ -11,7 +11,7 @@
 #include <sentry/io.h>
 #include <bsp/drivers/dma/gpdma.h>
 #include <bsp/drivers/clk/rcc.h>
-#include "stm32-dma-dt.h"
+#include "stm32-st-dmav1-dt.h"
 
 #define STM32_DMA_LISR_REG        0x00UL
 #define STM32_DMA_HISR_REG        0x04UL
