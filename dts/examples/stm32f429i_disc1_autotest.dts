@@ -82,6 +82,8 @@
 
 &dma1 {
 	status = "okay";
+	// STM32F4 DMA has 8 channels
+	dma-channels = <8>;
 	// About channels that are used
 	dma1_1: dma-channel@1 {
 		status = "okay";
