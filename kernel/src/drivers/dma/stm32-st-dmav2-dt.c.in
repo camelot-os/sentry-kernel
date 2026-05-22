@@ -1,0 +1,108 @@
+// SPDX-FileCopyrightText: 2023 Ledger SAS
+// SPDX-License-Identifier: Apache-2.0
+
+#include <sentry/ktypes.h>
+#include <stdbool.h>
+
+#include "stm32-st-dmav2-dt.h"
+
+{% set gpdma_ports = dts.get_compatible("stm32-dma-v2") -%}
+
+{% for port in gpdma_ports -%}
+{% if port is owned or port is not enabled -%}
+{% continue -%}
+{% endif -%}
+
+/* channel ordered interrupts for each controller, controller-ordered */
+static const uint16_t stm32_{{ port.label }}_interrupts[] = {
+    /* {{ port['dma-channels']|int }} DMA channels */
+    {% for chanirq in range((2*port['dma-channels'])) -%}
+    {% if port['interrupts'][chanirq]|int != 0 -%}
+    {{ port['interrupts'][chanirq] }}, /* channel {{ (chanirq / 2)|int }} interrupt identifier */
+    {% endif -%}
+    {% endfor -%}
+    0, /* sentinel */
+};
+
+#define IRQ_IS_{{ port.label|upper }}_OWNED(x) ( \
+{% for chanirq in range((2*port['dma-channels'])) -%}
+{% if port['interrupts'][chanirq]|int != 0 -%}
+    {{ port['interrupts'][chanirq] }} == x || \
+{% endif -%}
+{% endfor -%}
+  0 \
+)
+{% endfor -%}
+
+bool stm32_gpdma_irq_is_dma_owned(int IRQn)
+{
+    return ( \
+        {% for port in gpdma_ports -%}
+        {% if port is owned or port is not enabled -%}
+        {% continue -%}
+        {% endif -%}
+            IRQ_IS_{{ port.label|upper }}_OWNED(IRQn) || \
+        {% endfor -%}
+            0);
+}
+
+/**
+ * \brief .rodata field: list of current platform GPDMA ports
+ */
+static const stm32_gpdma_desc_t stm32_gpdmas[] = {
+    {% for port in gpdma_ports -%}
+    {% if port is owned or port is not enabled -%}
+    {% continue -%}
+    {% endif -%}
+    {% set _, bus_id, clk_msk = port.clocks -%}
+    {%- set num_chan = port['dma-channels'] -%}
+    {%- set num_req = port['dma-requests'] -%}
+    /* {{ port.label }} port configuration */
+    {
+        .base_addr = {{ "%#08xUL"|format(port.reg[0]) }},
+        .size = {{ "%#08xUL"|format(port.reg[1]) }},
+        .bus_id = {{ bus_id }},
+        .clk_msk = {{ "%#08xUL"|format(clk_msk) }},
+        .num_chan = {{ num_chan|int }},
+        .num_req = {{ num_req|int }},
+        .interrupts = &stm32_{{ port.label}}_interrupts[0],
+    },
+    {% endfor -%}
+    {} /* sentinel */
+};
+
+
+/**
+ * @warning this is a private function, port id must be valid and checked by caller
+ */
+const stm32_gpdma_desc_t * stm32_gpdma_get_desc(uint8_t ctrl)
+{
+    const stm32_gpdma_desc_t *desc = NULL;
+#if GPDMA_NUMER > 0
+    if (unlikely(ctrl >= GPDMA_NUMBER)) {
+        goto end;
+    }
+    desc = &stm32_gpdmas[ctrl];
+end:
+#endif
+    return desc;
+}
+
+/**
+ * @warning this is a private function, controller id must be valid and checked by caller
+ */
+uint16_t const * stm32_gpdma_get_interrupts(uint8_t ctrl)
+{
+    uint16_t const * its = NULL;
+#if GPDMA_NUMER > 0
+    if (unlikely(ctrl >= GPDMA_NUMBER)) {
+        goto end;
+    }
+    /*@ assert \valid_read(stm32_gpdmas[ctrl].interrupts); */
+    its = stm32_gpdmas[ctrl].interrupts;
+end:
+#endif
+    return its;
+}
+
+bool gpdma_irq_is_dma_owned(int IRQn) __attribute__((alias("stm32_gpdma_irq_is_dma_owned")));

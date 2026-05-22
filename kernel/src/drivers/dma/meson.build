@@ -27,11 +27,20 @@ stm32_gpdma_dts_template_h = files(['stm32-gpdma-dt.h.in'])
 stm32_gpdma_dtsgen_c = dtsgen.process(stm32_gpdma_dts_template_c)
 stm32_gpdma_dtsgen_h = dtsgen.process(stm32_gpdma_dts_template_h)
 
+# st-dma-v1 DTS-based controller definitions generation
 stm32_dma_v1_dts_template_c = files(['stm32-st-dmav1-dt.c.in'])
 stm32_dma_v1_dts_template_h = files(['stm32-st-dmav1-dt.h.in'])
 
 stm32_dma_v1_dtsgen_c = dtsgen.process(stm32_dma_v1_dts_template_c)
 stm32_dma_v1_dtsgen_h = dtsgen.process(stm32_dma_v1_dts_template_h)
+
+# st-dma-v2 DTS-based controller definitions generation
+stm32_dma_v2_dts_template_c = files(['stm32-st-dmav2-dt.c.in'])
+stm32_dma_v2_dts_template_h = files(['stm32-st-dmav2-dt.h.in'])
+
+stm32_dma_v2_dtsgen_c = dtsgen.process(stm32_dma_v2_dts_template_c)
+stm32_dma_v2_dtsgen_h = dtsgen.process(stm32_dma_v2_dts_template_h)
+
 
 # it seems that only the STM32u5 has the enhanced GPDMA
 bsp_private_gen_source_set.add(when: 'CONFIG_SOC_SUBFAMILY_STM32U5', if_true: [ stm32_gpdma_dtsgen_c, stm32_gpdma_dtsgen_h ])
@@ -42,7 +51,7 @@ bsp_private_gen_source_set.add(when: 'CONFIG_SOC_SUBFAMILY_STM32U5', if_true: fi
 bsp_private_gen_source_set.add(when: 'CONFIG_HAS_GPDMA_ST_DMAV1', if_true: [ stm32_dma_v1_dtsgen_c, stm32_dma_v1_dtsgen_h ])
 bsp_private_gen_source_set.add(when: 'CONFIG_HAS_GPDMA_ST_DMAV1', if_true: files('stm32-dmav1.c'))
 
-#bsp_private_gen_source_set.add(when: 'CONFIG_HAS_GPDMA_ST_DMAV2', if_true: [ stm32_dma_dtsgen_c, stm32_dma_dtsgen_h ])
-#bsp_private_gen_source_set.add(when: 'CONFIG_HAS_GPDMA_ST_DMAV2', if_true: files('stm32-dmav2.c'))
+bsp_private_gen_source_set.add(when: 'CONFIG_HAS_GPDMA_ST_DMAV2', if_true: [ stm32_dma_v2_dtsgen_c, stm32_dma_v2_dtsgen_h ])
+bsp_private_gen_source_set.add(when: 'CONFIG_HAS_GPDMA_ST_DMAV2', if_true: files('stm32-dmav2.c'))
 
 # driver source selection
