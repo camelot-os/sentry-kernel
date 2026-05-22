@@ -13,18 +13,26 @@
 #include <bsp/drivers/clk/rcc.h>
 #include "stm32-st-dmav1-dt.h"
 
+/** @name STM32 DMA v1 global register offsets */
+/** @{ */
 #define STM32_DMA_LISR_REG        0x00UL
 #define STM32_DMA_HISR_REG        0x04UL
 #define STM32_DMA_LIFCR_REG       0x08UL
 #define STM32_DMA_HIFCR_REG       0x0CUL
+/** @} */
 
+/** @name STM32 DMA v1 stream register offsets */
+/** @{ */
 #define STM32_DMA_SxCR(s)         (0x10UL + (0x18UL * (s)))
 #define STM32_DMA_SxNDTR(s)       (0x14UL + (0x18UL * (s)))
 #define STM32_DMA_SxPAR(s)        (0x18UL + (0x18UL * (s)))
 #define STM32_DMA_SxM0AR(s)       (0x1CUL + (0x18UL * (s)))
 #define STM32_DMA_SxM1AR(s)       (0x20UL + (0x18UL * (s)))
 #define STM32_DMA_SxFCR(s)        (0x24UL + (0x18UL * (s)))
+/** @} */
 
+/** @name STM32 DMA v1 stream control bits */
+/** @{ */
 #define STM32_DMA_SxCR_EN         (1UL << 0)
 #define STM32_DMA_SxCR_DMEIE      (1UL << 1)
 #define STM32_DMA_SxCR_TEIE       (1UL << 2)
@@ -43,23 +51,42 @@
 #define STM32_DMA_SxCR_PL_MASK    (0x3UL << STM32_DMA_SxCR_PL_SHIFT)
 #define STM32_DMA_SxCR_CHSEL_SHIFT 25UL
 #define STM32_DMA_SxCR_CHSEL_MASK (0x7UL << STM32_DMA_SxCR_CHSEL_SHIFT)
+/** @} */
 
 #define STM32_DMA_SxFCR_FEIE      (1UL << 7)
 
+/** @name DMA transfer direction encoding for SxCR.DIR */
+/** @{ */
 #define STM32_DMA_DIR_PERIPH_TO_MEM 0UL
 #define STM32_DMA_DIR_MEM_TO_PERIPH 1UL
 #define STM32_DMA_DIR_MEM_TO_MEM    2UL
+/** @} */
 
+/** @name Per-stream status bits extracted from LISR/HISR */
+/** @{ */
 #define STM32_DMA_STATUS_FLAG_FEIF  (1UL << 0)
 #define STM32_DMA_STATUS_FLAG_DMEIF (1UL << 1)
 #define STM32_DMA_STATUS_FLAG_TEIF  (1UL << 2)
 #define STM32_DMA_STATUS_FLAG_HTIF  (1UL << 3)
 #define STM32_DMA_STATUS_FLAG_TCIF  (1UL << 4)
+/** @} */
 
+/**
+ * @brief Mapping table from stream index to flag bit-shift in LISR/HISR.
+ */
 static const uint32_t stm32_dma_stream_flag_shift[8] = {
     0UL, 6UL, 16UL, 22UL, 0UL, 6UL, 16UL, 22UL,
 };
 
+/**
+ * @brief Validate a DMA descriptor and resolve its controller descriptor.
+ *
+ * @param[in] desc DMA stream configuration descriptor.
+ * @param[out] ctrl Resolved controller descriptor on success.
+ *
+ * @retval true Descriptor is valid and @p ctrl is initialized.
+ * @retval false Invalid argument, unknown controller, or channel out of range.
+ */
 static inline bool stm32_dmav1_is_valid_desc(gpdma_stream_cfg_t const * const desc,
                                               stm32_gpdma_desc_t const ** const ctrl)
 {
@@ -76,18 +103,40 @@ static inline bool stm32_dmav1_is_valid_desc(gpdma_stream_cfg_t const * const de
     return true;
 }
 
+/**
+ * @brief Extract the 5 status bits associated with one stream from ISR.
+ *
+ * @param[in] stream Stream index (0..7).
+ * @param[in] isr Raw ISR register value (LISR or HISR).
+ *
+ * @return Right-aligned stream status flags.
+ */
 static inline uint32_t stm32_dmav1_get_stream_raw_flags(uint8_t stream, uint32_t isr)
 {
     uint32_t const shift = stm32_dma_stream_flag_shift[stream];
     return (isr >> shift) & 0x1FUL;
 }
 
+/**
+ * @brief Build IFCR clear mask for one stream.
+ *
+ * @param[in] stream Stream index (0..7).
+ *
+ * @return Bitmask to write in LIFCR/HIFCR for this stream.
+ */
 static inline uint32_t stm32_dmav1_get_stream_clr_flags(uint8_t stream)
 {
     uint32_t const shift = stm32_dma_stream_flag_shift[stream];
     return (0x1FUL << shift);
 }
 
+/**
+ * @brief Convert generic beat length to STM32 DMA v1 register encoding.
+ *
+ * @param[in] beat Generic beat length value.
+ *
+ * @return Encoded beat value (0..2), or 0xFFFFFFFFUL if unsupported.
+ */
 static inline uint32_t stm32_dmav1_get_beat_cfg(uint8_t beat)
 {
     uint32_t cfg = 0;
@@ -109,6 +158,13 @@ static inline uint32_t stm32_dmav1_get_beat_cfg(uint8_t beat)
     return cfg;
 }
 
+/**
+ * @brief Convert generic beat length to byte size.
+ *
+ * @param[in] beat Generic beat length value.
+ *
+ * @return Beat size in bytes, or 0 if unsupported.
+ */
 static inline uint32_t stm32_dmav1_get_beat_size(uint8_t beat)
 {
     uint32_t sz = 0;
@@ -130,6 +186,12 @@ static inline uint32_t stm32_dmav1_get_beat_size(uint8_t beat)
     return sz;
 }
 
+/**
+ * @brief Clear all status flags associated with one stream.
+ *
+ * @param[in] ctrl DMA controller descriptor.
+ * @param[in] stream Stream index.
+ */
 static inline void stm32_dmav1_clear_stream_flags(stm32_gpdma_desc_t const * const ctrl,
                                                    uint8_t stream)
 {
@@ -144,7 +206,16 @@ static inline void stm32_dmav1_clear_stream_flags(stm32_gpdma_desc_t const * con
 
 
 /**
- * @brief probe given GPDMA controller identifier
+ * @brief Probe and initialize one STM32 DMA v1 controller.
+ *
+ * Enables the RCC clock, maps the controller, clears pending flags,
+ * and resets all stream registers to a known state.
+ *
+ * @param[in] controller DMA controller identifier.
+ *
+ * @retval K_STATUS_OKAY Controller initialized.
+ * @retval K_ERROR_INVPARAM Invalid controller or mapping failure.
+ * @retval Any error returned by RCC API on clock enable failure.
  */
 kstatus_t stm32_dmav1_probe(uint8_t controller)
 {
@@ -185,7 +256,12 @@ end:
 }
 
 /**
- * @brief clear given channel status flags
+ * @brief Clear status flags for one configured stream.
+ *
+ * @param[in] desc DMA stream descriptor.
+ *
+ * @retval K_STATUS_OKAY Flags cleared.
+ * @retval K_ERROR_INVPARAM Invalid descriptor or map failure.
  */
 kstatus_t stm32_dmav1_channel_clear_status(gpdma_stream_cfg_t const*const desc)
 {
@@ -207,7 +283,13 @@ end:
 }
 
 /**
- * @brief get back current status of given DMA descriptor's stream
+ * @brief Read runtime status for one DMA stream.
+ *
+ * @param[in] desc DMA stream descriptor.
+ * @param[out] status Output status snapshot.
+ *
+ * @retval K_STATUS_OKAY Status returned in @p status.
+ * @retval K_ERROR_INVPARAM Invalid argument or map failure.
  */
 kstatus_t stm32_dmav1_channel_get_status(gpdma_stream_cfg_t const*const desc, gpdma_chan_status_t * status)
 {
@@ -258,9 +340,16 @@ end:
 }
 
 /**
- * @brief configure a DMA channel with given DMA descriptor
+ * @brief Configure one DMA stream from a generic descriptor.
  *
- * @note this function do not enable the DMA channel, but only configure it
+ * The stream remains disabled after this call. Use
+ * stm32_dmav1_channel_enable() to start the transfer.
+ *
+ * @param[in] desc DMA stream descriptor.
+ *
+ * @retval K_STATUS_OKAY Stream configured.
+ * @retval K_ERROR_BADSTATE Stream currently enabled.
+ * @retval K_ERROR_INVPARAM Invalid parameters or unsupported mode.
  */
 kstatus_t stm32_dmav1_channel_configure(gpdma_stream_cfg_t const*const desc)
 {
@@ -401,7 +490,12 @@ end:
 }
 
 /**
- * @brief enable a previously configured DMA channel
+ * @brief Enable a previously configured DMA stream.
+ *
+ * @param[in] desc DMA stream descriptor.
+ *
+ * @retval K_STATUS_OKAY Stream enabled.
+ * @retval K_ERROR_INVPARAM Invalid descriptor or map failure.
  */
 kstatus_t stm32_dmav1_channel_enable(gpdma_stream_cfg_t const*const desc)
 {
@@ -427,7 +521,13 @@ end:
 }
 
 /**
- * @brief given a stream, get back the associated IRQn
+ * @brief Get IRQ number associated with a DMA stream.
+ *
+ * @param[in] desc DMA stream descriptor.
+ * @param[out] IRQn Interrupt number associated with this stream.
+ *
+ * @retval K_STATUS_OKAY IRQ number returned.
+ * @retval K_ERROR_INVPARAM Invalid argument.
  */
 kstatus_t stm32_dmav1_get_interrupt(gpdma_stream_cfg_t const * const desc, uint16_t * const IRQn)
 {
@@ -447,7 +547,11 @@ end:
 }
 
 /**
- * @brief clear interrupt of corresponding stream at GPDMA level
+ * @brief Clear DMA interrupt source for one stream.
+ *
+ * @param[in] desc DMA stream descriptor.
+ *
+ * @return Same status as stm32_dmav1_channel_clear_status().
 */
 kstatus_t stm32_dmav1_interrupt_clear(gpdma_stream_cfg_t const * const desc)
 {
@@ -455,7 +559,13 @@ kstatus_t stm32_dmav1_interrupt_clear(gpdma_stream_cfg_t const * const desc)
 }
 
 /**
- * @brief suspend currently started stream
+ * @brief Suspend a running stream by clearing its EN bit.
+ *
+ * @param[in] desc DMA stream descriptor.
+ *
+ * @retval K_STATUS_OKAY Stream suspended.
+ * @retval K_ERROR_BADSTATE Stream not running or hardware did not stop.
+ * @retval K_ERROR_INVPARAM Invalid descriptor or map failure.
  */
 kstatus_t stm32_dmav1_channel_suspend(gpdma_stream_cfg_t const*const desc)
 {
@@ -497,7 +607,13 @@ end:
 }
 
 /**
- * @brief resume previously suspended stream
+ * @brief Resume a previously suspended stream.
+ *
+ * @param[in] desc DMA stream descriptor.
+ *
+ * @retval K_STATUS_OKAY Stream resumed.
+ * @retval K_ERROR_BADSTATE Stream already enabled.
+ * @retval K_ERROR_INVPARAM Invalid descriptor or map failure.
  */
 kstatus_t stm32_dmav1_channel_resume(gpdma_stream_cfg_t const*const desc)
 {
@@ -529,7 +645,15 @@ end:
 }
 
 /**
- * @brief reset currently suspended stream
+ * @brief Reset stream registers and clear its status flags.
+ *
+ * The stream must be disabled before reset.
+ *
+ * @param[in] desc DMA stream descriptor.
+ *
+ * @retval K_STATUS_OKAY Stream reset.
+ * @retval K_ERROR_BADSTATE Stream still enabled.
+ * @retval K_ERROR_INVPARAM Invalid descriptor or map failure.
  */
 kstatus_t stm32_dmav1_channel_reset(gpdma_stream_cfg_t const*const desc)
 {
