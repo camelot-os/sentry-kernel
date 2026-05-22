@@ -18,7 +18,7 @@
 	};
 
 	reserved-memory {
-		autotest_code: autotest_code@800e000 {
+		autotest_code: autotest_code@8010000 {
 			reg = <0x8010000 0x10000>;
 			compatible = "sentry,memory-pool";
 		};
@@ -68,13 +68,25 @@
 			stream1 {
 				compatible = "dma-stream";
 				channel = <&dma1_1>;
+				streamid = <3>; // channel stream (af) identifier
+				prio = <STM32_DMA_PRIORITY_MEDIUM>;
+				source = <&usart1>;
+				dest = <&shm_autotest_1>;
+				length = <42>;
+				circular = <1 0>; // circular source, linear dest
+				sentry,label = <0x1>; // task-level unique DMA identifier
+			};
+			// memory-to-memory DMA stream
+			stream2 {
+				compatible = "dma-stream";
+				channel = <&dma1_1>;
 				streamid = <1>; // channel stream (af) identifier
 				prio = <STM32_DMA_PRIORITY_MEDIUM>;
 				source = <&shm_autotest_1>;
 				dest = <&shm_autotest_2>;
 				length = <42>;
 				circular = <1 0>; // circular source, linear dest
-				sentry,label = <0x1>; // task-level unique DMA identifier
+				sentry,label = <0x2>; // task-level unique DMA identifier
 			};
 		};
 	};
