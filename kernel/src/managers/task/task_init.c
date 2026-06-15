@@ -294,11 +294,20 @@ static inline kstatus_t task_init_initiate_localinfo(task_meta_t const * const m
         ctx.state = TASK_MANAGER_STATE_ERROR_SECURITY;
         goto end;
     }
+    /* during localinfo init, the currently being analyzed cell need to be resolved by taskh based
+     * access. This reuqires that current task cell is resolvable during the local info init.
+     * note that in case of initiate_localinfo failure, the numtask is decremented to previous value.
+     * the status is kept as invalid and returned to caller.
+     */
+    ctx.numtask++;
     status = task_do_initiate_localinfo(meta, task_ctx);
+    if (unlikely(status != K_STATUS_OKAY)) {
+        ctx.numtask--;
+    }
     *tsk = task_ctx;
     task_ctx->has_respawned = SECURE_FALSE;
     ctx.state = TASK_MANAGER_STATE_TSK_MAP;
-    ctx.numtask++;
+
 end:
     return status;
 }
