@@ -295,6 +295,7 @@ static inline kstatus_t task_init_initiate_localinfo(task_meta_t const * const m
         goto end;
     }
     status = task_do_initiate_localinfo(meta, task_ctx);
+    *tsk = task_ctx;
     task_ctx->has_respawned = SECURE_FALSE;
     ctx.state = TASK_MANAGER_STATE_TSK_MAP;
     ctx.numtask++;
