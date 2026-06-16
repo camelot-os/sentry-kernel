@@ -17,7 +17,7 @@ bsp_private_header_set = ssmod.source_set()
 subdir('clk')
 subdir('flash')
 
-if kconfig_data.get('CONFIG_ARCH_ARM_CORTEX_M', 0) == 1
+if kconfig_data.get('CONFIG_SOC_FAMILY_STM32', 0) == 1
 subdir('exti')
 endif
 
@@ -29,7 +29,7 @@ if kconfig_data.get('CONFIG_HAS_RNG', 0) == 1
 subdir('rng')
 endif
 
-if kconfig_data.get('CONFIG_ARCH_ARM_CORTEX_M', 0) == 1
+if kconfig_data.get('CONFIG_SOC_FAMILY_STM32', 0) == 1
 subdir('syscfg')
 endif
 
@@ -44,6 +44,8 @@ endif
 if kconfig_data.get('CONFIG_WITH_SMP_SUPPORT', 0) == 1
 subdir('smp')
 endif
+
+subdir('sysinfo')
 
 bsp_source_set_config = bsp_source_set.apply(kconfig_data, strict: false)
 bsp_private_gen_source_set_config = bsp_private_gen_source_set.apply(kconfig_data, strict: false)

@@ -21,13 +21,24 @@ arch_header_set.add(when: 'CONFIG_HAS_MPU_PMSA_V7', if_true: files('mpu_pmsa_v7.
 arch_header_set.add(when: 'CONFIG_HAS_MPU_PMSA_V8', if_true: files('mpu_pmsa_v8.h'))
 
 irq_defs_in = files('irq_defs.h.in')
-# generated headers
-irq_def_h = custom_target('gen_irq_defs',
-   input: irq_defs_in,
-    output: '@BASENAME@',
-    depends: [ svd_json ],
-    command: [ jinja_cli, '-d', svd_json, '-o', '@OUTPUT@', '@INPUT@' ],
-)
+if kconfig_data.get('CONFIG_SOC_SUBFAMILY_RP2350', 0) == 1
+    # RP2350 uses a dedicated static IRQ definition list, not SVD-derived generation.
+    irq_def_h = custom_target('gen_irq_defs_rp2350',
+        input: files('rp2350/irq_defs.h.in'),
+        output: 'irq_defs.h',
+        command: [ 'cp', '@INPUT@', '@OUTPUT@' ],
+    )
+    irq_def_h_list = irq_def_h.to_list()
+else
+    # generated headers
+    irq_def_h = custom_target('gen_irq_defs',
+       input: irq_defs_in,
+        output: '@BASENAME@',
+        depends: [ svd_json ],
+        command: [ jinja_cli, '-d', svd_json, '-o', '@OUTPUT@', '@INPUT@' ],
+    )
+    irq_def_h_list = irq_def_h.to_list()
+endif
 
 layout_h = custom_target('gen_layout',
     input: layout_in,
@@ -46,7 +57,7 @@ core_h = custom_target('gen_core',
 )
 
 arch_header_set.add(
-    irq_def_h.to_list(),
+    irq_def_h_list,
     layout_h.to_list(),
     core_h.to_list(),
 )
@@ -61,6 +72,7 @@ buses_h_in_set.add(when: 'CONFIG_SOC_SUBFAMILY_STM32L4', if_true: files('stm32l4
 # rework this as this is weak
 buses_h_in_set.add(when: 'CONFIG_SOC_SUBFAMILY_STM32U5', if_true: files('stm32l4-buses.h.in'))
 buses_h_in_set.add(when: 'CONFIG_SOC_SUBFAMILY_STM32WB', if_true: files('stm32l4-buses.h.in'))
+buses_h_in_set.add(when: 'CONFIG_SOC_SUBFAMILY_RP2350', if_true: files('rp2350-buses.h.in'))
 
 # here, we can add other templates for other ARM SoC famillies if needed
 buses_h_in_set_config = buses_h_in_set.apply(kconfig_data, strict: false)

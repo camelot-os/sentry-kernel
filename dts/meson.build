@@ -38,6 +38,7 @@ examples_dts_files = files(
   'examples/stm32f429i_disc1.dts',
   'examples/stm32f429i_disc1_release.dts',
   'examples/opentitan_earlgrey.dts',
+  'examples/rpi_pico2w.dts',
 )
 
 install_data(

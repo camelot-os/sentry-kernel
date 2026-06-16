@@ -4,8 +4,13 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+/dts-v1/;
+
+#include <rpi/pico/rp2350.dtsi>
+
 /{
 	chosen {
+        sentry,debug_stdout = <&uart0>;
 		sentry,kernelram_section = <&kernel_ram>;
 		sentry,idleram_section = <&idle_ram>;
 		sentry,kernelcode_section = <&kernel_code>;
@@ -73,6 +78,10 @@
 
 &flash0 {
         reg = <0x10000000 DT_SIZE_M(4)>;
+};
+
+&uart0 {
+	status = "okay";
 };
 
 &gpio0 {

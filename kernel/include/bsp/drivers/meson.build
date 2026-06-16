@@ -23,3 +23,4 @@ endif
 # as generated files may consume driver header
 bsp_header_set.add(when: 'CONFIG_SOC_SUBFAMILY_STM32F4', if_true: files('clk/stm32x4-pll.h'))
 bsp_header_set.add(when: 'CONFIG_SOC_SUBFAMILY_STM32L4', if_true: files('clk/stm32x4-pll.h'))
+bsp_header_set.add(when: 'CONFIG_SOC_SUBFAMILY_RP2350', if_true: files('sysinfo/sysinfo.h'))

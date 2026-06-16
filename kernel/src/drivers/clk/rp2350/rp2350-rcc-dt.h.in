@@ -1,0 +1,21 @@
+// SPDX-FileCopyrightText: 2026 ANSSI
+// SPDX-License-Identifier: Apache-2.0
+
+#ifndef __RP2350_RCC_DT_GENERATED_H
+#define __RP2350_RCC_DT_GENERATED_H
+
+#include <sentry/ktypes.h>
+
+typedef struct rp2350_rcc_desc {
+    uint32_t clocks_base_addr; /**< CLOCKS base address */
+    size_t   clocks_size;      /**< CLOCKS register span */
+    uint32_t resets_base_addr; /**< RESETS base address */
+    size_t   resets_size;      /**< RESETS register span */
+} rp2350_rcc_desc_t;
+
+const rp2350_rcc_desc_t *rp2350_rcc_get_desc(void);
+
+{% set core_clk = dts.clocks.clk_sys['clock-frequency']|int %}
+#define RP2350_DT_CORE_CLK_HZ {{ "%uUL"|format(core_clk) }}
+
+#endif /* __RP2350_RCC_DT_GENERATED_H */

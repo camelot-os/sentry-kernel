@@ -25,3 +25,7 @@ stm32_exti_dtsgen_c = dtsgen.process(stm32_exti_dts_template_c)
 bsp_private_gen_source_set.add(when: 'CONFIG_SOC_FAMILY_STM32', if_true: [ stm32_exti_dtsgen_h, stm32_exti_dtsgen_c ])
 bsp_source_set.add(when: 'CONFIG_SOC_FAMILY_STM32', if_true: files('stm32-exti.c'))
 bsp_private_gen_header_set.add([ exti_h ])
+
+if kconfig_data.get('CONFIG_SOC_SUBFAMILY_RP2350', 0) == 1
+subdir('rp2350')
+endif

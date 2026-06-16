@@ -1,0 +1,21 @@
+// SPDX-License-Identifier: Apache-2.0
+
+/*
+ * Minimal bus mapping for RP2350 clock API compatibility.
+ */
+
+#ifndef BUSES_H
+#define BUSES_H
+
+typedef enum bus_identifier {
+    BUS_GENERIC = 0,
+} bus_id_t;
+
+#define BUS_IS_VALID(bus) (true)
+
+/*@
+  logic boolean bus_is_valid(uint32_t bus) =
+    (void)bus, \true;
+*/
+
+#endif/*!BUSES_H*/
