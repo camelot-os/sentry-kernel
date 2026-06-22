@@ -160,12 +160,12 @@ description = "number of task dma stream(s)"
 
 dmas = [ ]
 
-[[task_hmac]]
+[[task_sha256]]
 c_type = "uint8_t"
 rust_type = "u8"
 value = 12
 
-[[metadata_hmac]]
+[[metadata_sha256]]
 c_type = "uint8_t"
 rust_type = "u8"
 value = 12

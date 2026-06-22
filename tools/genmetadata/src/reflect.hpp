@@ -1,4 +1,5 @@
 // SPDX-FileCopyrightText: 2024 Ledger SAS
+// SPDX-FileCopyrightText: 2026 H2Lab
 // SPDX-License-Identifier: Apache-2.0
 
 /*
@@ -24,6 +25,29 @@
 
 #include <concepts>
 #include <fstream>
+#include <type_traits>
+#include <vector>
+#include <span>
+
+namespace reflect {
+
+using bytearray_t = std::vector<std::byte>;
+
+template<typename T, bool IsEnum = std::is_enum_v<T>>
+struct scalar_storage {
+    using type = std::conditional_t<sizeof(T) == 1, uint8_t,
+                 std::conditional_t<sizeof(T) == 2, uint16_t,
+                 std::conditional_t<sizeof(T) == 4, uint32_t,
+                 std::conditional_t<sizeof(T) == 8, uint64_t, void>>>>;
+};
+
+template<typename T>
+struct scalar_storage<T, true> {
+    using type = std::underlying_type_t<T>;
+};
+
+template<typename T>
+using scalar_storage_t = typename scalar_storage<T>::type;
 
 template<typename>
 struct is_tuple: std::false_type{};
@@ -43,53 +67,56 @@ concept Reflectable = requires(T t) {
     { t.reflect() } -> return_tuple;
 };
 
+template<typename MemorySpec, typename T, std::size_t S>
+static inline void __to_bytes(std::span<const std::byte, S> bytes, bytearray_t& out ) {
+    using storage_t = scalar_storage_t<T>;
+    static_assert(!std::is_void_v<storage_t>, "unsupported scalar size");
+    constexpr auto size = MemorySpec::template size_of<storage_t>();
+    constexpr auto alignment = MemorySpec::template size_of<storage_t>();
+    auto padding = (size - (out.size() % alignment)) % size;
+
+    out.insert(out.end(), padding, std::byte{0});
+    out.insert(out.end(), bytes.begin(), bytes.end());
+}
+
 template<typename MemorySpec, typename T, typename std::enable_if<std::is_scalar_v<T>, bool>::type = true>
-static inline void __to_bin(T val, std::ofstream& out)
+static inline void __to_bytes(T val, bytearray_t& out)
 {
-    constexpr auto size = MemorySpec::template size_of<T>();
-    constexpr auto alignment = MemorySpec::template size_of<T>();
-    constexpr std::array<char, size> zero{};
-    auto current = out.tellp();
-    auto padding = size - (current % alignment);
-
-    /* Insert padding if not aligned */
-    if (padding < size) {
-        out.write(zero.data(), padding);
-    }
-
-    out.write(reinterpret_cast<char*>(&val), size);
+    std::array<T, 1> tmp{val};
+    __to_bytes<MemorySpec, T>(std::as_bytes(std::span{tmp}), out);
 }
 
 template<typename MemorySpec>
-static inline void __to_bin(job_flags_t val, std::ofstream& out)
+static inline void __to_bytes(job_flags_t val, bytearray_t& out)
 {
     uint32_t tmp;
     std::memcpy(&tmp, &val, sizeof(val));
-    __to_bin<MemorySpec>(tmp, out);
+    __to_bytes<MemorySpec>(tmp, out);
 }
 
 template<typename MemorySpec, typename T, std::size_t N>
-static inline void __to_bin(std::array<T, N> val, std::ofstream& out)
+static inline void __to_bytes(std::array<T, N> val, bytearray_t& out)
 {
-    for (T cell: val) {
-        __to_bin<MemorySpec>(cell, out);
-    }
+    __to_bytes<MemorySpec, T>(std::as_bytes(std::span{val}), out);
 }
 
 template<typename MemorySpec, typename Tuple, std::size_t... Is>
-static inline void _to_bin(const Tuple& reflection, std::ofstream& out, std::index_sequence<Is...>)
+static inline void _to_bytes(const Tuple& reflection, bytearray_t& out, std::index_sequence<Is...>)
 {
-    ((__to_bin<MemorySpec>(std::get<Is>(reflection), out)), ...);
+    ((__to_bytes<MemorySpec>(std::get<Is>(reflection), out)), ...);
 }
 
 template<typename MemorySpec, typename ...Args>
-static inline void _to_bin(const std::tuple<Args...>& reflection, std::ofstream& out)
+static inline void _to_bytes(const std::tuple<Args...>& reflection, bytearray_t& out)
 {
-    _to_bin<MemorySpec>(reflection, out, std::index_sequence_for<Args...>{});
+    _to_bytes<MemorySpec>(reflection, out, std::index_sequence_for<Args...>{});
 }
 
 template<typename MemorySpec, Reflectable T>
-static inline void reflect_to_bin(const T& obj, const std::string& filename) {
-    std::ofstream out(filename, std::ios::binary);
-    _to_bin<MemorySpec>(obj.reflect(), out);
+static inline auto to_bytes(const T& obj) {
+    bytearray_t out;
+    _to_bytes<MemorySpec>(obj.reflect(), out);
+    return out;
 }
+
+} // namespace reflect

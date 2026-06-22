@@ -152,22 +152,22 @@
                 "description": "dma stream handler identifier"
             }
         },
-        "task_hmac": {
+        "task_sha256": {
             "array": true,
             "array_size": 32,
             "element": {
                 "c_type": "uint8_t",
                 "rust_type": "u8",
-                "description": "task .text+.rodata+.data build time hmac calculation (TBD)"
+                "description": "task .text+.rodata+.data build time SHA-256 digest"
             }
         },
-        "metadata_hmac": {
+        "metadata_sha256": {
             "array": true,
             "array_size": 32,
             "element": {
                 "c_type": "uint8_t",
                 "rust_type": "u8",
-                "description": "current struct build time hmac calculation"
+                "description": "current struct build time SHA-256 digest"
             }
         }
     }
