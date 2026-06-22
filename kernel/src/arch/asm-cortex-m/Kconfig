@@ -97,6 +97,8 @@ config SOC_SUBFAMILY_STM32F4
 	select HAS_DCACHE
 	select HAS_ICACHE
 	select HAS_MPU_PMSA_V7
+	select HAS_GPDMA
+	select HAS_GPDMA_ST_DMAV1
 	help
 	  STM32F4 family is based on Cortex-M4 with FPU and PMSAv7 MPU.
 
@@ -111,6 +113,8 @@ config SOC_SUBFAMILY_STM32L4
 	select HAS_DCACHE
 	select HAS_ICACHE
 	select HAS_RNG
+	select HAS_GPDMA
+	select HAS_GPDMA_ST_DMAV2
 	help
 	  STM32L4 family is based on Cortex-M4 with FPU and PMSAv7 MPU with low power features
 
@@ -136,6 +140,8 @@ config SOC_SUBFAMILY_STM32WB
 	select HAS_MPU
 	select HAS_RNG
 	select HAS_MPU_PMSA_V7
+	select HAS_GPDMA
+	select HAS_GPDMA_ST_DMAV2
 	# Cache support ?
 	help
 	  STM32WB family is based on Cortex-M4 (main core and a Cortex-M0+ for wireless core)
