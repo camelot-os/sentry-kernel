@@ -17,6 +17,32 @@ if meson.is_subproject()
 warning('!!! Are you sure you want to build the Sentry kernel as a subproject ?')
 endif
 
+# potential overriden link-time arguments, for e.g. if adding e-ACSL and symbols substitution in
+# various kernel libraries. Defaulting to empty list.
+target_link_args = []
+
+
+# if EACSL is enabled, we need to use the mini-gmp library at kernel level:
+# headers resolution and library linking support
+# automatic aliasing of the gmp functions to e-acsl required ones is done
+# using the gmp_acsl_h header variable, included in the same way config.h is included
+if kconfig_data.get('CONFIG_SECU_ENABLE_EACSL', 0) == 1
+
+    global_target_c_args_str = ','.join(target_arch_args)
+
+    message('Building Sentry kernel with e-ACSL support')
+    gmp_proj = subproject('mini-gmp',
+        default_options: [
+            'c_std=c11',
+            'extra_c_args=@0@'.format(global_target_c_args_str),
+        ],
+        required: true,
+    )
+    gmp_dep = gmp_proj.get_variable('gmp_dep')
+    gmp_eacsl_h = gmp_proj.get_variable('gmp_eacsl_h')
+    external_deps += gmp_dep
+endif
+
 # sources, generated and effective
 sentry_header_set = ssmod.source_set()
 sentry_header_set.add(kconfig_h)
@@ -26,6 +52,9 @@ sentry_linker_script_path = files()
 
 # populated in src
 sentry_ldscript_template = files()
+
+sentry_dts_file = fs.name(dts_in)
+sentry_dts_args = '-DDTS_FILE="@0@"'.format(sentry_dts_file)
 
 # sentry header set is populated in the include dir
 # BSP is driver related headers. Drivers exported header are only used by
@@ -61,9 +90,6 @@ sentry_linker_args = [
 
 sentry_map_file = '@0@.map'.format(meson.project_name())
 
-sentry_dts_file = fs.name(dts_in)
-sentry_dts_args = '-DDTS_FILE="@0@"'.format(sentry_dts_file)
-
 sentry_elf = executable(
     meson.project_name(),
     name_suffix: 'elf',
@@ -79,10 +105,17 @@ sentry_elf = executable(
         sentry_sched_dep,
         sentry_managers_dep,
         sentry_syscall_dep,
+        sentry_eacsl_dep,
         external_deps
     ],
     c_args: [ target_arch_args, global_build_args, sentry_dts_args ],
-    link_args: [ '-lgcc', target_arch_args, sentry_linker_args, '-Wl,-Map=@0@'.format(sentry_map_file)],
+    link_args: [
+        target_link_args,
+        '-lgcc',
+        target_arch_args,
+        sentry_linker_args,
+        '-Wl,-Map=@0@'.format(sentry_map_file),
+    ],
     link_language: 'c',
     link_depends: [ sentry_ldscript ],
     install: true,
