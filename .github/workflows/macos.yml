@@ -61,12 +61,6 @@ jobs:
           rustup toolchain install 1.86.0 --target thumbv8m.main-none-eabi --profile minimal
           rustup default 1.86.0
           rustup component add rust-src
-          echo "PATH=$PATH"
-          which -a rustc || true
-          ls -la "$HOME/.cargo/bin" || true
-          echo "CARGO_HOME=$CARGO_HOME"
-          rustup show active-toolchain || true
-          rustup which rustc || true
         shell: bash
       - name: Setup C toolchain
         uses: camelot-os/action-setup-compiler@v1
