@@ -128,13 +128,21 @@ typedef struct  task {
     secure_bool_t   sysretassigned; /**< a syscall has assigned a sysreturn */
     Status          sysreturn;  /**< current job syscall return */
     secure_bool_t   has_respawned;    /**< SECURE_TRUE if the task has been respawned */
+    size_t          stack_limit;   /**< stack limit address, based on metadata info */
 } task_t;
 
 
 kstatus_t task_set_job_layout(task_t * const tsk);
 
+/*@
+    assigns \nothing;
+    ensures \valid(\result);
+ */
 task_t *task_get_table(void);
 
+/*@
+    assigns \nothing;
+ */
 task_t *task_get_from_handle(taskh_t h);
 
 void task_dump_table(void);

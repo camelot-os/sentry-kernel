@@ -214,5 +214,18 @@ kstatus_t mgr_task_local_ipc_iterate(taskh_t owner, taskh_t *peer, uint8_t *idx)
  */
 secure_bool_t mgr_task_has_respawned(taskh_t t);
 
+/**
+ * @brief return the limit address of the bottom of the stack
+ *
+ * This address is useful for hardwares that support stack overflow detection,
+ * as it can be used as a stack guard limit registers.
+ *
+ * @param t task handle
+ * @param stack_limit output parameter to store the stack limit address
+ * @return K_STATUS_OKAY if the stack limit has been successfully retrieved,
+ *         K_ERROR_INVPARAM if the task handle is invalid or stack limit cannot be retrieved
+ */
+kstatus_t mgr_task_get_stack_size(const taskh_t h, size_t* stack_limit);
+
 
 #endif/*!SECURITY_MANAGER_H*/
