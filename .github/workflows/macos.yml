@@ -43,7 +43,7 @@ jobs:
           find /opt/homebrew/Cellar/python* -name EXTERNALLY-MANAGED -print0 | xargs -0 rm -vf
     # use python3 from homebrew because it is a valid framework, unlike the actions one:
     # https://github.com/actions/setup-python/issues/58
-      - run: brew install dtc libssh2 curl srecord rustup
+      - run: brew install dtc libssh2 curl srecord
       - name: Clone cross-files
         uses: actions/checkout@v6
         with:
@@ -57,11 +57,17 @@ jobs:
           echo "MESON_CROSS_FILES=$HOME/.local/share/meson/cross" >> $GITHUB_ENV
         shell: bash
       - name: Setup Rust toolchain
-        uses: dtolnay/rust-toolchain@v1
-        with:
-          toolchain: 1.86.0
-          targets: thumbv8m.main-none-eabi
-          components: clippy,rustfmt
+        run: |
+          rustup toolchain install 1.86.0 --target thumbv8m.main-none-eabi --profile minimal
+          rustup default 1.86.0
+          rustup component add rust-src
+          echo "PATH=$PATH"
+          which -a rustc || true
+          ls -la "$HOME/.cargo/bin" || true
+          echo "CARGO_HOME=$CARGO_HOME"
+          rustup show active-toolchain || true
+          rustup which rustc || true
+        shell: bash
       - name: Setup C toolchain
         uses: camelot-os/action-setup-compiler@v1
         with:
