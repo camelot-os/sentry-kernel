@@ -8,6 +8,7 @@ SPDX-License-Identifier: Apache-2.0
 # About
 
 [![OpenSSF Best Practices](https://www.bestpractices.dev/projects/10498/badge)](https://www.bestpractices.dev/projects/10498)
+[![OpenSSF Baseline](https://www.bestpractices.dev/projects/10498/baseline)](https://www.bestpractices.dev/projects/10498)
 ![GNU/Linux build](https://github.com/camelot-os/sentry-kernel/actions/workflows/gnulinux.yml/badge.svg)
 ![MacOS X build](https://github.com/camelot-os/sentry-kernel/actions/workflows/macos.yml/badge.svg)
 ![Frama-C RTE Analysis](https://github.com/camelot-os/sentry-kernel/actions/workflows/proof.yml/badge.svg)
