@@ -24,9 +24,9 @@ config TASK_PRIORITY
 
 config TASK_QUANTUM
 	int "Quantum"
-	range 0 255
+	range 1 255
 	help
-	  Task quantum, number of HZ allowed contiguous periods
+	  Task quantum, number of HZ allowed contiguous periods. 1 is the minimum
 
 config TASK_DOMAIN
 	int "Domain"
