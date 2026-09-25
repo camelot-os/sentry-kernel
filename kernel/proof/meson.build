@@ -71,7 +71,6 @@ framac_gen_opts = [
   '-cpp-extra-args=-nostdinc,-I ' + framac_dep_tree + ',-DDTS_FILE=\\"@0@\\"'.format(sentry_dts_file),
   '-frama-c-stdlib',
   '-absolute-valid-range', '40000000-0xE000F000',
-
 ]
 
 framac_rte_eva_opts = [
@@ -92,7 +91,7 @@ framac_rte_eva_opts = [
  '-eva-domains', 'equality',
  '-eva-split-return', 'auto',
  '-eva-partition-history', '1',
- '-remove-redundant-alarms',
+ '-eva-remove-redundant-alarms',
 ]
 
 framac_wp_opts = [
@@ -106,6 +105,11 @@ framac_wp_opts = [
   '-wp-time-margin', '25',
   '-wp-no-smoke-dead-code',
   '-wp-no-smoke-dead-call',
+]
+
+framac_metrics_opts = [
+    '-metrics',
+    '-metrics-by-function',
 ]
 
 framac_md_opts = [
