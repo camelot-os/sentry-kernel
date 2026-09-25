@@ -89,10 +89,12 @@ jobs:
           cat builddir/meson-logs/meson-log.txt || true
           cat builddir/meson-logs/testlog.txt || true
       - name: Run Build Wrapper
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         run: |
           mkdir -p ${{ env.BUILD_WRAPPER_OUT_DIR }}
-          build-wrapper-linux-x86-64 --out-dir ${{ env.BUILD_WRAPPER_OUT_DIR }} ninja -C builddir kernel/sentry-kernel.elf
+          build-wrapper-linux-x86-64 --out-dir ${{ env.BUILD_WRAPPER_OUT_DIR }} ninja -C builddir kernel/sentry-kernel.elf proof_coverage
       - name: SonarQube Scan
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         uses: SonarSource/sonarqube-scan-action@v8
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}

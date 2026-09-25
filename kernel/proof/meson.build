@@ -202,7 +202,7 @@ subprocess.run([
     build_always_stale: true,
   )
 
-  custom_target(
+  gen_framac_sonarqube_coverage = custom_target(
     'framac_sonarqube_coverage',
     command: [
       gcovr,
@@ -213,6 +213,8 @@ subprocess.run([
     input: gen_framac_coverage,
     output: 'framacovr-sonarqube.xml',
   )
+
+  proof_coverage = alias_target('proof_coverage', [gen_framac_sonarqube_coverage])
 endif
 
 subdir('proof_entrypoint')
