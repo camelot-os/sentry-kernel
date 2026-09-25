@@ -167,6 +167,54 @@ with open(sys.argv[1], 'r') as fp:
 exit(0)
 '''
 
+framacovr_py = pymod.find_installation('python3', modules: ['framacovr'], required: false)
+if framacovr_py.found()
+  framacovr = find_program('framacovr', required: true, native: true)
+  gcovr = find_program('gcovr', required: true, native: true)
+
+  framacovr_py_wrapper = '''
+import pathlib
+import subprocess
+import sys
+
+build_dir, framacovr, output, source_root = sys.argv[1:]
+metrics_files = sorted(pathlib.Path(build_dir).rglob('*-coverage.json'))
+if not metrics_files:
+    sys.exit('No Frama-C metrics coverage report found; run the proof tests first')
+
+subprocess.run([
+    framacovr,
+    '--framac-metrics-files', *metrics_files,
+    '--source-dirs', pathlib.Path(source_root) / 'kernel',
+    '--source-root', source_root,
+    '--gcovr-format-version', '0.6',
+    '-o', output,
+], check=True)
+'''
+
+  gen_framac_coverage = custom_target(
+    'framac_coverage',
+    command: [
+      py3, '-c', framacovr_py_wrapper,
+      meson.current_build_dir(), framacovr, '@OUTPUT@', meson.project_source_root(),
+    ],
+    output: 'framacovr.json',
+    build_always_stale: true,
+  )
+
+  custom_target(
+    'framac_sonarqube_coverage',
+    command: [
+      gcovr,
+      '--root', meson.project_source_root(),
+      '--json-add-tracefile', '@INPUT@',
+      '--sonarqube', '@OUTPUT@',
+    ],
+    input: gen_framac_coverage,
+    output: 'framacovr-sonarqube.xml',
+  )
+endif
+
 subdir('proof_entrypoint')
 subdir('proof_handlers')
 subdir('proof_composition')
