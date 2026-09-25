@@ -39,7 +39,7 @@ kstatus_t mgr_mm_watchdog(void);
 
 /* BSP related, not for syscalls */
 /*@
-    assigns (*(MPU_Type*)MPU_BASE);
+    assigns (*(MPU_Type*)MPU_BASE) \from address, len;
  */
 kstatus_t mgr_mm_map_kdev(uint32_t address, size_t len);
 
