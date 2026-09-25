@@ -16,6 +16,7 @@ SPDX-License-Identifier: Apache-2.0
 ![GitHub Release](https://img.shields.io/github/v/release/camelot-os/sentry-kernel)
 ![GitHub License](https://img.shields.io/github/license/camelot-os/sentry-kernel)
 [![REUSE status](https://api.reuse.software/badge/github.com/camelot-os/sentry-kernel)](https://api.reuse.software/info/github.com/camelot-os/sentry-kernel)
+[![Coverage](https://sonarcloud.io/api/project_badges/measure?project=camelot-os_sentry-kernel&metric=coverage)](https://sonarcloud.io/dashboard?id=MON_PROJET_KEY)
 
 The Sentry kernel is a high security level micro-kernel implementation made for high security embedded systems that include micro-controllers in association with dedicated Secure Element component for security cryptographic functions.
 
