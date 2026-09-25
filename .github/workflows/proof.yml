@@ -66,6 +66,8 @@ jobs:
       - name: Install local deps
         run: |
           pip3 install -r requirements.txt
+      - name: Install Sonar Build Wrapper
+        uses: SonarSource/sonarqube-scan-action/install-build-wrapper@v8
       - name: defconfig
         run: |
           defconfig configs/nucleo_u5a5_autotest_framac_defconfig
@@ -84,3 +86,24 @@ jobs:
         run: |
           cat builddir/meson-logs/meson-log.txt || true
           cat builddir/meson-logs/testlog.txt || true
+      - name: Run Build Wrapper
+        run: |
+          mkdir -p ${{ env.BUILD_WRAPPER_OUT_DIR }}
+          build-wrapper-linux-x86-64 --out-dir ${{ env.BUILD_WRAPPER_OUT_DIR }} ninja -C builddir test sonar
+      - name: SonarQube Scan
+        uses: SonarSource/sonarqube-scan-action@v8
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        with:
+          args: >
+            -Dsonar.organization=camelot-os
+            -Dsonar.projectName=sentry-kernel
+            -Dsonar.projectKey=camelot-os_sentry-kernel
+            -Dsonar.sources=kernel/src,kernel/include
+            -Dsonar.exclusions=subprojects
+            -Dsonar.working.directory=.sonar
+            -Dsonar.sourceEncoding=UTF-8
+            -Dsonar.scm.provider=git
+            -Dsonar.coverageReportPaths=builddir/kernel/proof/framacovr-sonarqube.xml
+            -Dsonar.verbose=true
+            -Dsonar.cfamily.compile-commands=builddir/compile_commands.json
