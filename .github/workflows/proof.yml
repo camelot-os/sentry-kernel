@@ -34,7 +34,7 @@ jobs:
       - name: install prerequisites pkg
         uses: camelot-os/action-install-pkg@v1
         with:
-          packages: 'device-tree-compiler,curl,lld,graphviz,lsb-release,libglib2.0-dev-bin,python3,python3-pip,python3-venv'
+          packages: 'device-tree-compiler,curl,lld,graphviz,lsb-release,libglib2.0-dev-bin,python3,python3-pip,python3-venv,gcovr'
       - name: Spawn and use python venv
         run: |
           python3 -m venv venv
