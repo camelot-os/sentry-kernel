@@ -15,3 +15,4 @@ weasyprint
 lief
 GitPython>=3.1.62
 cyclonedx-bom
+framacovr>=0.1.0

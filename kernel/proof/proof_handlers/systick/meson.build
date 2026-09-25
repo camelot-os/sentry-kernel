@@ -21,9 +21,11 @@ framac_stub_elf = executable(
     build_by_default: false,
 )
 
+test_name = 'frama-c-eva-handler-systick'
+
 # testing EVA/noRTE through kernel svc handler
 test(
-  'frama-C-eva-handler-systick',
+  test_name,
  frama_c,
  args: [
     frama_c_norte_systick_entrypoint, kernel_sources,
@@ -34,9 +36,8 @@ test(
     framac_rte_eva_opts,
     '-eva-flamegraph',join_paths(meson.current_build_dir(), 'frama-c-eva-handler-systick.flamegraph'),
     '-eva-report-red-statuses',join_paths(meson.current_build_dir(), 'frama-c-eva-handler-systick.red'),
-    '-metrics',
-    '-metrics-eva-cover',
-    '-metrics-output',join_paths(meson.current_build_dir(), 'frama-c-eva-handler-systick-coverage.json'),
+    framac_metrics_opts,
+    '-metrics-output',join_paths(meson.current_build_dir(), test_name + '-coverage.json'),
     '-save',join_paths(meson.current_build_dir(), 'frama-c-eva-handler-systick.session'),
     '-then',
     framac_md_opts,
@@ -51,8 +52,10 @@ test(
   priority: 254,
 )
 
+test_name = 'frama-C-eva-handler-systick-redalarm'
+
 test(
-  'frama-C-eva-handler-systick-redalarm',
+  test_name,
   py3,
   args: [
     '-c',

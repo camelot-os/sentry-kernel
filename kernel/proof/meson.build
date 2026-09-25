@@ -71,7 +71,6 @@ framac_gen_opts = [
   '-cpp-extra-args=-nostdinc,-I ' + framac_dep_tree + ',-DDTS_FILE=\\"@0@\\"'.format(sentry_dts_file),
   '-frama-c-stdlib',
   '-absolute-valid-range', '40000000-0xE000F000',
-
 ]
 
 framac_rte_eva_opts = [
@@ -92,7 +91,7 @@ framac_rte_eva_opts = [
  '-eva-domains', 'equality',
  '-eva-split-return', 'auto',
  '-eva-partition-history', '1',
- '-remove-redundant-alarms',
+ '-eva-remove-redundant-alarms',
 ]
 
 framac_wp_opts = [
@@ -106,6 +105,11 @@ framac_wp_opts = [
   '-wp-time-margin', '25',
   '-wp-no-smoke-dead-code',
   '-wp-no-smoke-dead-call',
+]
+
+framac_metrics_opts = [
+    '-metrics',
+    '-metrics-by-function',
 ]
 
 framac_md_opts = [
@@ -162,6 +166,56 @@ with open(sys.argv[1], 'r') as fp:
   print('found ' + str(lines-1) + ' alarms')
 exit(0)
 '''
+
+framacovr_py = pymod.find_installation('python3', modules: ['framacovr'], required: false)
+if framacovr_py.found()
+  framacovr = find_program('framacovr', required: true, native: true)
+  gcovr = find_program('gcovr', required: true, native: true)
+
+  framacovr_py_wrapper = '''
+import pathlib
+import subprocess
+import sys
+
+build_dir, framacovr, output, source_root = sys.argv[1:]
+metrics_files = sorted(pathlib.Path(build_dir).rglob('*-coverage.json'))
+if not metrics_files:
+    sys.exit('No Frama-C metrics coverage report found; run the proof tests first')
+
+subprocess.run([
+    framacovr,
+    '--framac-metrics-files', *metrics_files,
+    '--source-dirs', pathlib.Path(source_root) / 'kernel',
+    '--source-root', source_root,
+    '--gcovr-format-version', '0.6',
+    '-o', output,
+], check=True)
+'''
+
+  gen_framac_coverage = custom_target(
+    'framac_coverage',
+    command: [
+      py3, '-c', framacovr_py_wrapper,
+      meson.current_build_dir(), framacovr, '@OUTPUT@', meson.project_source_root(),
+    ],
+    output: 'framacovr.json',
+    build_always_stale: true,
+  )
+
+  gen_framac_sonarqube_coverage = custom_target(
+    'framac_sonarqube_coverage',
+    command: [
+      gcovr,
+      '--root', meson.project_source_root(),
+      '--json-add-tracefile', '@INPUT@',
+      '--sonarqube', '@OUTPUT@',
+    ],
+    input: gen_framac_coverage,
+    output: 'framacovr-sonarqube.xml',
+  )
+
+  proof_coverage = alias_target('proof_coverage', [gen_framac_sonarqube_coverage])
+endif
 
 subdir('proof_entrypoint')
 subdir('proof_handlers')
