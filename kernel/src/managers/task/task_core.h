@@ -88,6 +88,7 @@ typedef struct  task {
     */
     layout_resource_t layout[TASK_MAX_RESSOURCES_NUM];
     uint32_t num_ressources; /* number of ressources, including txt and data */
+    uint32_t ressource_crc; /**< CRC of the task's resources */
     const task_meta_t *metadata; /**< task metadata (const, build-time, informations) */
     /*
      * Task context information, these fields store dynamic values, such as current
