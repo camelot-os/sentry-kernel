@@ -18,6 +18,7 @@
 #include <sentry/managers/debug.h>
 #include <sentry/managers/memory.h>
 #include <sentry/zlib/math.h>
+#include <sentry/zlib/crypto.h>
 #include <sentry/sched.h>
 #include "task_init.h"
 #include "task_idle.h"
@@ -850,7 +851,7 @@ kstatus_t mgr_task_add_resource(const taskh_t t, const uint8_t resource_id, cons
     memcpy(&cell->layout[resource_id], &resource, sizeof(layout_resource_t));
     /*@ assert do_overlap == 0; */
     /* updating CRC accordingly to the updated layout table */
-    cell->ressource_crc = crc32((unsigned char const * const)cell->layout, sizeof(cell->layout), &cell->handle);
+    cell->ressource_crc = crc32((unsigned char const * const)cell->layout, sizeof(cell->layout), *  ktaskh_to_taskh(&(cell->handle)));
     status = K_STATUS_OKAY;
 err:
     return status;
@@ -885,7 +886,7 @@ kstatus_t mgr_task_get_layout_from_handle(taskh_t t,
         goto err;
     }
     /* if CRC32 do not match the expected value, someone other than the kernel has tampered the layout, panic */
-    if (unlikely(cell->ressource_crc != crc32((unsigned char const * const)cell->layout, sizeof(cell->layout), &cell->handle))) {
+    if (unlikely(cell->ressource_crc != crc32((unsigned char const * const)cell->layout, sizeof(cell->layout), *ktaskh_to_taskh(&(cell->handle))))) {
         panic(PANIC_HARDWARE_UNEXPECTED_MODIFICATION);
     }
     *layout = &cell->layout[0];

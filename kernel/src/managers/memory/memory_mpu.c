@@ -16,6 +16,7 @@
 #include <sentry/managers/task.h>
 #include <uapi/handle.h>
 
+#include <sentry/zlib/crypto.h>
 #include <sentry/managers/memory.h>
 #include "memory.h"
 
