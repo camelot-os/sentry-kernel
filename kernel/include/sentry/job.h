@@ -58,7 +58,10 @@ typedef struct __attribute__((packed)) job_flags {
     unsigned int exit_mode:  3;
     unsigned int :   28; /* reserved */
 } job_flags_t;
+
+#ifndef __FRAMAC__
 static_assert((sizeof(job_flags_t) == sizeof(uint32_t)), "job_flags_t as invalid size!");
+#endif
 /*@
   logic boolean job_state_is_valid(uint32_t job_state) =
     (

@@ -195,6 +195,7 @@ taskh_t sched_rrmq_elect(void)
          */
          goto elect;
     }
+    /*@ assert sched_rrmq_ctx.active_jobset->num_jobs > 0; */
     if (unlikely(mgr_task_get_state(sched_rrmq_ctx.current_job->handler, &state) != K_STATUS_OKAY)) {
         pr_err("failed to get task state for task %x !",
            sched_rrmq_ctx.current_job->handler);
@@ -217,6 +218,7 @@ taskh_t sched_rrmq_elect(void)
     /* deactivate current from current slot */
     sched_rrmq_ctx.current_job->active = false;
     /* decrement current number of jobs in active jobset */
+    /*@ assert sched_rrmq_ctx.active_jobset->num_jobs > 0; */
     sched_rrmq_ctx.active_jobset->num_jobs--;
 elect:
     /* elect new task */
@@ -273,6 +275,14 @@ stack_frame_t *sched_rrmq_refresh(stack_frame_t *frame)
         /* no task as never been scheduled() nor elected() */
         goto end;
     }
+    if (unlikely(sched_rrmq_ctx.current_job->quantum == 0)) {
+        /*
+         * this should never happen, as it means that a just scheduled task has zero quantum
+         * Such a behavior indicates that the task quantum in metadata is set to 0, which is invalid.
+         */
+        panic(PANIC_KERNEL_INVALID_MANAGER_RESPONSE);
+    }
+    /*@ assert sched_rrmq_ctx.current_job->quantum > 0; */
     sched_rrmq_ctx.current_job->quantum--;
     if (unlikely(sched_rrmq_ctx.current_job->quantum == 0)) {
         /* quantum terminated: election required */
