@@ -1,0 +1,6 @@
+# SPDX-FileCopyrightText: 2026 H2Lab Development Team
+# SPDX-License-Identifier: Apache-2.0
+
+CONFIG_ARCH_MCU_RP2350=y
+CONFIG_STANDALONE_MODE=y
+# CONFIG_WITH_SMP_SUPPORT is not set

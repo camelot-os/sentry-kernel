@@ -1,0 +1,88 @@
+// SPDX-License-Identifier: Apache-2.0
+
+/*
+ * Copyright 2026 ANSSI
+ *
+ * Hardcoded RP2350 IRQ definitions.
+ */
+
+#ifndef __RP2350_IRQ_DEFS_H
+#define __RP2350_IRQ_DEFS_H
+
+typedef void(*__irq_handler_t)(void);
+
+/**
+ * @brief IRQ num typedef that comply with cmsis header
+ */
+typedef enum IRQn
+{
+    /* core exceptions */
+    RESET_IRQ      = -15,
+    NMI_IRQ        = -14,
+    HARDFAULT_IRQ  = -13,
+    MEMMANAGE_IRQ  = -12,
+    BUSFAULT_IRQ   = -11,
+    USAGEFAULT_IRQ = -10,
+    RES7_IRQ       = -9,
+    RES8_IRQ       = -8,
+    RES9_IRQ       = -7,
+    RES10_IRQ      = -6,
+    SVC_IRQ        = -5,
+    RES12_IRQ      = -4,
+    RES13_IRQ      = -3,
+    PENDSV_IRQ     = -2,
+    SYSTICK_IRQ    = -1,
+
+    /* RP2350 SoC-defined interrupts */
+    TIMER0_IRQ_0_IRQ = 0,
+    TIMER0_IRQ_1_IRQ = 1,
+    TIMER0_IRQ_2_IRQ = 2,
+    TIMER0_IRQ_3_IRQ = 3,
+    TIMER1_IRQ_0_IRQ = 4,
+    TIMER1_IRQ_1_IRQ = 5,
+    TIMER1_IRQ_2_IRQ = 6,
+    TIMER1_IRQ_3_IRQ = 7,
+    PWM_IRQ_WRAP_0_IRQ = 8,
+    PWM_IRQ_WRAP_1_IRQ = 9,
+    DMA_IRQ_0_IRQ = 10,
+    DMA_IRQ_1_IRQ = 11,
+    DMA_IRQ_2_IRQ = 12,
+    DMA_IRQ_3_IRQ = 13,
+    USBCTRL_IRQ_IRQ = 14,
+    PIO0_IRQ_0_IRQ = 15,
+    PIO0_IRQ_1_IRQ = 16,
+    PIO1_IRQ_0_IRQ = 17,
+    PIO1_IRQ_1_IRQ = 18,
+    PIO2_IRQ_0_IRQ = 19,
+    PIO2_IRQ_1_IRQ = 20,
+    IO_IRQ_BANK0_IRQ = 21,
+    IO_IRQ_BANK0_NS_IRQ = 22,
+    IO_IRQ_QSPI_IRQ = 23,
+    IO_IRQ_QSPI_NS_IRQ = 24,
+    SIO_IRQ_FIFO_IRQ = 25,
+    SIO_IRQ_BELL_IRQ = 26,
+    SIO_IRQ_FIFO_NS_IRQ = 27,
+    SIO_IRQ_BELL_NS_IRQ = 28,
+    SIO_IRQ_MTIMECMP_IRQ = 29,
+    CLOCKS_IRQ_IRQ = 30,
+    SPI0_IRQ_IRQ = 31,
+    SPI1_IRQ_IRQ = 32,
+    UART0_IRQ_IRQ = 33,
+    UART1_IRQ_IRQ = 34,
+    ADC_IRQ_FIFO_IRQ = 35,
+    I2C0_IRQ_IRQ = 36,
+    I2C1_IRQ_IRQ = 37,
+    OTP_IRQ_IRQ = 38,
+    TRNG_IRQ_IRQ = 39,
+    PLL_SYS_IRQ_IRQ = 42,
+    PLL_USB_IRQ_IRQ = 43,
+    POWMAN_IRQ_POW_IRQ = 44,
+    POWMAN_IRQ_TIMER_IRQ = 45,
+} IRQn_Type;
+
+/** @brief total number of connected IRQ line in current SoC */
+#define __NVIC_VECTOR_LEN 46
+/** @brief bitfield size of NVIC interrupt lines priority */
+#define __NVIC_PRIO_BITS 4
+
+#endif /* __RP2350_IRQ_DEFS_H */

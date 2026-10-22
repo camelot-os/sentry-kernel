@@ -1,0 +1,69 @@
+// SPDX-FileCopyrightText: 2026 ANSSI
+// SPDX-License-Identifier: Apache-2.0
+
+#include <sentry/ktypes.h>
+
+#include <bsp/drivers/gpio/pinctrl.h>
+
+#include "rp2350-usart-dt.h"
+
+{% set uart_ports = dts.get_compatible("raspberrypi,pico-uart") -%}
+{%- set debug_uart = dts.chosen["sentry,debug_stdout"] %}
+{%- if not debug_uart %}
+#error "sentry,debug_stdout not defined in device tree"
+{%- elif debug_uart.status != "okay" %}
+#error "sentry,debug_stdout is disabled, check uart status property"
+{%- endif %}
+
+{% for port in uart_ports -%}
+{% if port != debug_uart -%}
+{% continue -%}
+{% endif -%}
+{%- set pinctrl_prop = port["pinctrl-0"] %}
+{%- if pinctrl_prop is not none %}
+{%- set pinctrl_tbl = [] %}
+{%- set _ = pinctrl_tbl.extend(pinctrl_prop) if pinctrl_prop is iterable else pinctrl_tbl.append(pinctrl_prop) %}
+static const gpio_pinctrl_desc_t {{ port.label }}_pinctrl_tbl[] = {
+    {%- for pinctrl in pinctrl_tbl %}
+    {%- set port_ref, pin, mode, altfunc = pinctrl.pinmux %}
+    {%- set type, speed, pull_mode = pinctrl.pincfg %}
+    {
+        .mode = {{ mode }},
+        .altfunc = {{ altfunc }},
+        .type = {{ type }},
+        .speed = {{ speed }},
+        .pull_mode = {{ pull_mode }},
+        .port_id = {{ port_ref.label.upper() }}_PORT_ID,
+        .pin = {{ pin }},
+    },
+    {%- endfor %}
+};
+
+#define {{ port.label.upper() }}_PINCTRL_TBL_SIZE {{ pinctrl_tbl|length }}UL
+{%- else %}
+#define {{ port.label.upper() }}_PINCTRL_TBL_SIZE 0UL
+{%- endif %}
+{% endfor %}
+
+static const rp2350_usart_desc_t rp2350_usartports[] = {
+    {
+        .base_addr = {{ "%#08xUL"|format(debug_uart.reg[0]) }},
+        .size = {{ "%#08xUL"|format(debug_uart.reg[1]) }},
+        {% set _, reset_line = debug_uart.resets -%}
+        .reset_line = {{ reset_line|int }},
+        .baudrate = {{ debug_uart['current-speed']|default(115200, true)|int }}UL,
+        {% if debug_uart["pinctrl-0"] is not none -%}
+        .pinctrl_tbl = {{ debug_uart.label }}_pinctrl_tbl,
+        .pinctrl_tbl_size = {{ debug_uart.label.upper() }}_PINCTRL_TBL_SIZE,
+        {% else -%}
+        .pinctrl_tbl = NULL,
+        .pinctrl_tbl_size = 0UL,
+        {% endif -%}
+    },
+    {}
+};
+
+const rp2350_usart_desc_t *rp2350_usart_get_desc(void)
+{
+    return &rp2350_usartports[0];
+}

@@ -1,0 +1,51 @@
+// SPDX-FileCopyrightText: 2026 ANSSI
+// SPDX-License-Identifier: Apache-2.0
+
+#ifndef __RP2350_GPDMA_DT_GENERATED_H
+#define __RP2350_GPDMA_DT_GENERATED_H
+
+#include <stddef.h>
+
+#include <sentry/managers/memory.h>
+
+{% set gpdma_ports = dts.get_compatible("raspberrypi,pico-dma") -%}
+
+{% set ns = namespace() -%}
+{% set ns.num_gpdma = 0 -%}
+{% for port in gpdma_ports -%}
+{% if port is owned or port is not enabled -%}
+{% continue -%}
+{% endif -%}
+{% set ns.num_gpdma = ns.num_gpdma + 1 -%}
+{% endfor -%}
+
+#define RP2350_GPDMA_NUMBER {{ "%uUL"|format(ns.num_gpdma) }}
+
+typedef struct rp2350_gpdma_desc {
+    uint32_t base_addr;       /**< IP base address */
+    size_t size;              /**< IP mapped size */
+    uint16_t num_chan;        /**< Number of HW channels */
+    uint16_t num_irq;         /**< Number of DMA IRQ lines */
+    uint16_t reset_line;      /**< Reset line identifier */
+    uint16_t const *interrupts; /**< Controller IRQ list */
+} rp2350_gpdma_desc_t;
+
+const rp2350_gpdma_desc_t *rp2350_gpdma_get_desc(uint8_t ctrl);
+
+bool rp2350_gpdma_irq_is_dma_owned(uint16_t IRQn);
+
+static inline kstatus_t rp2350_gpdma_map(uint8_t controller)
+{
+    const rp2350_gpdma_desc_t *dma_desc = rp2350_gpdma_get_desc(controller);
+    if (unlikely(dma_desc == NULL)) {
+        return K_ERROR_INVPARAM;
+    }
+    return mgr_mm_map_kdev(dma_desc->base_addr, dma_desc->size);
+}
+
+static inline kstatus_t rp2350_gpdma_unmap(void)
+{
+    return mgr_mm_unmap_kdev();
+}
+
+#endif /* __RP2350_GPDMA_DT_GENERATED_H */

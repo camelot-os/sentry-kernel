@@ -25,3 +25,7 @@ bsp_private_gen_source_set.add(when: 'CONFIG_SOC_FAMILY_STM32', if_true: [ stm32
 
 # driver source selection
 bsp_source_set.add(when: 'CONFIG_SOC_SUBFAMILY_STM32F4', if_true: files('stm32f4-syscfg.c'))
+
+if kconfig_data.get('CONFIG_SOC_SUBFAMILY_RP2350', 0) == 1
+subdir('rp2350')
+endif

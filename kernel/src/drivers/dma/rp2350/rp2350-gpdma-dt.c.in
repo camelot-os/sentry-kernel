@@ -1,0 +1,67 @@
+// SPDX-FileCopyrightText: 2026 ANSSI
+// SPDX-License-Identifier: Apache-2.0
+
+#include <stdbool.h>
+
+#include "rp2350-gpdma-dt.h"
+
+{% set gpdma_ports = dts.get_compatible("raspberrypi,pico-dma") -%}
+
+{% for port in gpdma_ports -%}
+{% if port is owned or port is not enabled -%}
+{% continue -%}
+{% endif -%}
+
+static const uint16_t rp2350_{{ port.label }}_interrupts[] = {
+    {% for idx in range(port['interrupts']|length) -%}
+    {{ port['interrupts'][idx][0]|int }},
+    {% endfor -%}
+    0,
+};
+
+#define IRQ_IS_{{ port.label|upper }}_OWNED(x) ( \
+{% for idx in range(port['interrupts']|length) -%}
+    {{ port['interrupts'][idx][0]|int }} == x || \
+{% endfor -%}
+    0 \
+)
+
+{% endfor -%}
+
+bool rp2350_gpdma_irq_is_dma_owned(uint16_t IRQn)
+{
+    return ( \
+{% for port in gpdma_ports -%}
+{% if port is owned or port is not enabled -%}
+{% continue -%}
+{% endif -%}
+        IRQ_IS_{{ port.label|upper }}_OWNED(IRQn) || \
+{% endfor -%}
+        0);
+}
+
+static const rp2350_gpdma_desc_t rp2350_gpdmas[] = {
+{% for port in gpdma_ports -%}
+{% if port is owned or port is not enabled -%}
+{% continue -%}
+{% endif -%}
+{% set _, reset_line = port.resets -%}
+    {
+        .base_addr = {{ "%#08xUL"|format(port.reg[0]) }},
+        .size = {{ "%#08xUL"|format(port.reg[1]) }},
+        .num_chan = {{ port['dma-channels']|int }},
+        .num_irq = {{ port['interrupts']|length }},
+        .reset_line = {{ reset_line|int }},
+        .interrupts = &rp2350_{{ port.label }}_interrupts[0],
+    },
+{% endfor -%}
+    {}
+};
+
+const rp2350_gpdma_desc_t *rp2350_gpdma_get_desc(uint8_t ctrl)
+{
+    if (unlikely(ctrl >= RP2350_GPDMA_NUMBER)) {
+        return NULL;
+    }
+    return &rp2350_gpdmas[ctrl];
+}

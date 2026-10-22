@@ -1,0 +1,27 @@
+// SPDX-FileCopyrightText: 2026 ANSSI
+// SPDX-License-Identifier: Apache-2.0
+
+#ifndef __RP2350_USART_DT_GENERATED_H
+#define __RP2350_USART_DT_GENERATED_H
+
+#include <stddef.h>
+
+#include <bsp/drivers/gpio/pinctrl.h>
+
+typedef struct rp2350_usart_desc {
+    uint32_t base_addr; /**< UART base address */
+    size_t size; /**< UART register span */
+    uint32_t reset_line; /**< UART reset line */
+    uint32_t baudrate; /**< Configured baudrate */
+    const gpio_pinctrl_desc_t *const pinctrl_tbl; /**< Optional pinctrl table */
+    size_t pinctrl_tbl_size; /**< Optional pinctrl table size */
+} rp2350_usart_desc_t;
+
+const rp2350_usart_desc_t *rp2350_usart_get_desc(void);
+
+static inline bool rp2350_usart_has_pinctrl(const rp2350_usart_desc_t *desc)
+{
+    return ((desc != NULL) && (desc->pinctrl_tbl != NULL) && (desc->pinctrl_tbl_size > 0u));
+}
+
+#endif /* __RP2350_USART_DT_GENERATED_H */

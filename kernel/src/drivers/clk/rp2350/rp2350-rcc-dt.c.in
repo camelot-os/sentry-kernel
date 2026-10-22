@@ -1,0 +1,34 @@
+// SPDX-FileCopyrightText: 2026 ANSSI
+// SPDX-License-Identifier: Apache-2.0
+
+#include <sentry/ktypes.h>
+
+#include "rp2350-rcc-dt.h"
+
+{% set clocks = dts.get_compatible("raspberrypi,pico-clock-controller") -%}
+{% set resets = dts.get_compatible("raspberrypi,pico-reset") -%}
+
+static const rp2350_rcc_desc_t rp2350_rcc[] = {
+    {
+    {% if clocks[0].status and clocks[0].status == "okay" -%}
+    .clocks_base_addr = {{ "%#08xUL"|format(clocks[0].reg[0]) }},
+    .clocks_size = {{ "%#08xUL"|format(clocks[0].reg[1]) }},
+    {% else -%}
+    .clocks_base_addr = 0x0UL,
+    .clocks_size = 0x0UL,
+    {% endif -%}
+    {% if resets[0].status and resets[0].status == "okay" -%}
+    .resets_base_addr = {{ "%#08xUL"|format(resets[0].reg[0]) }},
+    .resets_size = {{ "%#08xUL"|format(resets[0].reg[1]) }},
+    {% else -%}
+    .resets_base_addr = 0x0UL,
+    .resets_size = 0x0UL,
+    {% endif -%}
+    },
+    {} /* sentinel */
+};
+
+const rp2350_rcc_desc_t *rp2350_rcc_get_desc(void)
+{
+    return &rp2350_rcc[0];
+}
