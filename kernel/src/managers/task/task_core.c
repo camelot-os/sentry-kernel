@@ -106,13 +106,16 @@ size_t mgr_task_get_text_region_size(const task_meta_t *meta)
 kstatus_t mgr_task_get_stack_size(const taskh_t h, size_t* stack_limit)
 {
     kstatus_t status = K_ERROR_INVPARAM;
+
+    if (unlikely(stack_limit == NULL)) {
+        pr_err("invalid stack limit pointer!");
+        goto err;
+    }
+    *stack_limit = 0;
+
     task_t *tsk = task_get_from_handle(h);
     if (unlikely(tsk == NULL)) {
         pr_err("invalid task handle!");
-        goto err;
-    }
-    if (unlikely(stack_limit == NULL)) {
-        pr_err("invalid stack limit pointer!");
         goto err;
     }
     *stack_limit = tsk->stack_limit;

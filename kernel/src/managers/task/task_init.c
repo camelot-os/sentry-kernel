@@ -254,11 +254,12 @@ kstatus_t task_do_initiate_localinfo(task_meta_t const * const meta, task_t *tas
      */
     task_ctx->sp = mgr_task_initialize_sp(0UL, stack_top, (meta->s_text + meta->entrypoint_offset), meta->s_got);
 #endif
-    if (unlikely(stack_top < meta->stack_size)) {
+    const size_t stack_end = stack_top + __WORDSIZE;
+    if (unlikely(stack_end < meta->stack_size)) {
         pr_err("security invalid stack size, not mappable   ");
         panic(PANIC_CONFIGURATION_MISMATCH);
     }
-    task_ctx->stack_limit = stack_top - meta->stack_size;
+    task_ctx->stack_limit = stack_end - meta->stack_size;
     task_ctx->state = JOB_STATE_READY;
     task_ctx->sysretassigned = SECURE_FALSE;
     task_ctx->returncode = 0UL;

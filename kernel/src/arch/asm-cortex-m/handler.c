@@ -13,6 +13,7 @@
 #include <sentry/managers/memory.h>
 #include <sentry/managers/interrupt.h>
 #include <sentry/managers/debug.h>
+#include <sentry/managers/task.h>
 #include <sentry/sched.h>
 #include <sentry/syscalls.h>
 #include <sentry/io.h>
