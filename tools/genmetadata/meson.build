@@ -5,6 +5,7 @@ add_languages('cpp', native: true, required: true)
 
 nl_json = dependency('nlohmann_json', native: true, version: '>=3.11')
 argparse = dependency('argparse', native: true, version: '>=3')
+openssl = dependency('openssl', native: true)
 
 subdir('src')
 
@@ -15,7 +16,7 @@ genmetadata = executable(
     include_directories: kernel_inc,
     link_language: 'cpp',
     override_options: ['cpp_std=gnu++20'],
-    dependencies: [ nl_json, argparse ],
+    dependencies: [ nl_json, argparse, openssl ],
     build_by_default: true,
     install_dir: get_option('libexecdir'),
     native: true,

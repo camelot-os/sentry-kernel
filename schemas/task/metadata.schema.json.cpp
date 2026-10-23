@@ -626,7 +626,7 @@
         "minItems": 0,
         "maxItems": CONFIG_MAX_DMA_STREAMS_PER_TASK
       },
-      "task_hmac": {
+      "task_sha256": {
         "type": "array",
         "items": {
           "type": "object",
@@ -648,7 +648,7 @@
           ]
         }
       },
-      "metadata_hmac": {
+      "metadata_sha256": {
         "type": "array",
         "items": {
           "type": "object",
@@ -695,7 +695,7 @@
       "devs",
       "num_dma",
       "dmas",
-      "task_hmac",
-      "metadata_hmac"
+      "task_sha256",
+      "metadata_sha256"
     ]
   }
