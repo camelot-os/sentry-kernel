@@ -1,7 +1,6 @@
 // SPDX-FileCopyrightText: 2023 Ledger SAS
 // SPDX-License-Identifier: Apache-2.0
 
-#include <string.h>
 #include <sentry/ktypes.h>
 #include <sentry/zlib/string.h>
 
