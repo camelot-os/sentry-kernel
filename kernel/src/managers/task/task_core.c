@@ -868,7 +868,11 @@ kstatus_t mgr_task_remove_resource(taskh_t t, uint8_t resource_id)
     if (unlikely((cell = task_get_from_handle(t)) == NULL)) {
         goto err;
     }
-    mpu_forge_unmapped_ressource(resource_id, &cell->layout[resource_id]);
+    if (unlikely(mpu_forge_unmapped_ressource(resource_id, &cell->layout[resource_id]) == K_STATUS_OKAY)) {
+        goto err;
+    }
+    /* updating CRC accordingly to the updated layout table */
+    cell->ressource_crc = crc32((unsigned char const * const)cell->layout, sizeof(cell->layout), *  ktaskh_to_taskh(&(cell->handle)));
     status = K_STATUS_OKAY;
 err:
     return status;
