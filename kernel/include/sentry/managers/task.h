@@ -225,7 +225,7 @@ secure_bool_t mgr_task_has_respawned(taskh_t t);
  * @return K_STATUS_OKAY if the stack limit has been successfully retrieved,
  *         K_ERROR_INVPARAM if the task handle is invalid or stack limit cannot be retrieved
  */
-kstatus_t mgr_task_get_stack_size(const taskh_t h, size_t* stack_limit);
+kstatus_t mgr_task_get_stack_limit(const taskh_t h, size_t* stack_limit);
 
 
 #endif/*!SECURITY_MANAGER_H*/

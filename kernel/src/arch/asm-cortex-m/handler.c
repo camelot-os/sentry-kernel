@@ -340,10 +340,10 @@ stack_frame_t *Default_SubHandler(stack_frame_t *frame)
         /* clearing the sysreturn. next job is no more syscall-preempted */
         mgr_task_clear_sysreturn(next);
     }
-#if CONFIG_ARCH_ARM_ARMV8MML
+#if CONFIG_HAS_STACK_LIMIT_REG
     /* ARMv8-M Mainline support PSPLIM register to detect stack overflow */
     size_t stack_limit = 0;
-    if (likely(mgr_task_get_stack_size(next, &stack_limit) == K_STATUS_OKAY)) {
+    if (likely(mgr_task_get_stack_limit(next, &stack_limit) == K_STATUS_OKAY)) {
         asm volatile ("MSR psplim, %0" : : "r" (stack_limit) );
     }
 #endif

@@ -90,6 +90,7 @@ size_t mgr_task_get_text_region_size(const task_meta_t *meta)
     /* got and data in flash are excluded (no need) */
 }
 
+#if CONFIG_HAS_STACK_LIMIT_REG
 /*@
    assigns \nothing;
 
@@ -103,7 +104,7 @@ size_t mgr_task_get_text_region_size(const task_meta_t *meta)
    complete behaviors;
    disjoint behaviors;
 */
-kstatus_t mgr_task_get_stack_size(const taskh_t h, size_t* stack_limit)
+kstatus_t mgr_task_get_stack_limit(const taskh_t h, size_t* stack_limit)
 {
     kstatus_t status = K_ERROR_INVPARAM;
 
@@ -123,6 +124,7 @@ kstatus_t mgr_task_get_stack_size(const taskh_t h, size_t* stack_limit)
 err:
     return status;
 }
+#endif
 
 void task_dump_table(void)
 {
