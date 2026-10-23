@@ -32,6 +32,7 @@ config ARCH_ARM_ARMV8MML
 	select ARCH_ARM_ARMV8M
 	select HAS_DSP
 	select HAS_SIMD
+	select HAS_STACK_LIMIT_REG
 
 config ARCH_ARM_CORTEX_M3
 	bool
@@ -67,6 +68,9 @@ config HAS_MPU_PMSA_V7
 	bool
 
 config HAS_MPU_PMSA_V8
+	bool
+
+config HAS_STACK_LIMIT_REG
 	bool
 
 # TODO Add secure MPU feature
