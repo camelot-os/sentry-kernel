@@ -1,4 +1,5 @@
 // SPDX-FileCopyrightText: 2023 Ledger SAS
+// SPDX-FileCopyrightText: 2026 H2Lab Development Team
 // SPDX-License-Identifier: Apache-2.0
 
 /**
@@ -11,7 +12,7 @@
 #include <bsp/drivers/dma/gpdma.h>
 #include "dma-dt.h"
 
-{% set gpdma_ports = dts.get_compatible("stm32u5-dma") -%}
+{% set gpdma_ports = dts.get_compatible("stm32u5-dma") or dts.get_compatible("stm32-dma-v1") or dts.get_compatible("stm32-dma-v2")   -%}
 
 {%- macro stream_get_transfer_type(node) -%}
 {% set source = node["source"] -%}
