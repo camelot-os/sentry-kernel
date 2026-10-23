@@ -19,6 +19,7 @@
 #include <sentry/arch/asm-cortex-m/core.h>
 #include <sentry/ktypes.h>
 #include <sentry/zlib/math.h>
+#include <sentry/arch/asm-generic/panic.h>
 
 /** MPU Access Permission no access */
 #define MPU_REGION_PERM_NONE ARM_MPU_AP_NONE
@@ -266,6 +267,7 @@ err:
  *
  * @note for PMSAv7, resource ID is encoded in RBAR register,
  * thus, first_region_number is unused.
+ * @note All enabled regions are checked for W^X before any region is loaded.
  */
 /*@
   requires \valid_read(resource + (0 .. num_resources-1));
@@ -276,6 +278,20 @@ __STATIC_FORCEINLINE void __mpu_fastload(
     const layout_resource_t *resource,
     uint8_t num_resources
 ){
+#ifndef __FRAMAC__
+    /* Check the raw attributes again in case the layout was corrupted. */
+    for (uint8_t i = 0; i < num_resources; i++) {
+        uint32_t rasr = resource[i].RASR;
+        uint32_t ap = rasr & MPU_RASR_AP_Msk;
+
+        /* Disabled entries revoke mappings and grant no access. */
+        if (unlikely((rasr & (MPU_RASR_ENABLE_Msk | MPU_RASR_XN_Msk)) == MPU_RASR_ENABLE_Msk &&
+                     ap != (MPU_REGION_PERM_RO << MPU_RASR_AP_Pos) &&
+                     ap != (MPU_REGION_PERM_PRIV_RO << MPU_RASR_AP_Pos))) {
+            panic(PANIC_HARDWARE_UNEXPECTED_MODIFICATION);
+        }
+    }
+#endif
     ARM_MPU_Load(resource, num_resources);
 }
 

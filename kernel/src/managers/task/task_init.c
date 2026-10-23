@@ -17,6 +17,7 @@
 #include <sentry/arch/asm-generic/platform.h>
 #include <sentry/arch/asm-generic/panic.h>
 #include <sentry/zlib/sort.h>
+#include <sentry/zlib/crypto.h>
 
 #include "task_core.h"
 #include "task_init.h"
@@ -270,6 +271,8 @@ kstatus_t task_do_initiate_localinfo(task_meta_t const * const meta, task_t *tas
     mgr_task_add_resource(*handle, mgr_mm_region_to_layout_id(MM_REGION_TASK_TXT), ressource);
     mgr_mm_forge_ressource(MM_REGION_TASK_DATA, *handle, &ressource);
     mgr_task_add_resource(*handle, mgr_mm_region_to_layout_id(MM_REGION_TASK_DATA), ressource);
+    /* forge layout table CRC32 using handle as IV. Note that this crc is calculated each time a resource is added/remove from the task*/
+    task_ctx->ressource_crc = crc32((unsigned char const * const)task_ctx->layout, sizeof(task_ctx->layout), *handle);
     status = K_STATUS_OKAY;
 end:
     return status;
@@ -450,6 +453,7 @@ static inline kstatus_t task_init_add_autotest(void)
     /*@ assert valid_mpu_regions(&ressource, 1); */
     mgr_task_add_resource(*handle, mgr_mm_region_to_layout_id(MM_REGION_TASK_DATA), ressource);
     /*@ assert regions_disjoint(&task_ctx->layout[0], TASK_MAX_RESSOURCES_NUM); */
+    task_ctx->ressource_crc = crc32((unsigned char const * const)task_ctx->layout, sizeof(task_ctx->layout), *handle);
     ctx.status = task_set_job_layout(task_ctx);
     if (unlikely(ctx.status != K_STATUS_OKAY)) {
         pr_err("failed to set job layout!");
@@ -515,6 +519,7 @@ static inline kstatus_t task_init_add_idle(void)
     /*@ assert valid_mpu_regions(&ressource, 1); */
     mgr_task_add_resource(*handle, mgr_mm_region_to_layout_id(MM_REGION_TASK_DATA), ressource);
     /*@ assert regions_disjoint(&task_ctx->layout[0], TASK_MAX_RESSOURCES_NUM); */
+    task_ctx->ressource_crc = crc32((unsigned char const * const)task_ctx->layout, sizeof(task_ctx->layout), *handle);
     ctx.status = task_set_job_layout(task_ctx);
     if (unlikely(ctx.status != K_STATUS_OKAY)) {
         pr_err("failed to set job layout!");

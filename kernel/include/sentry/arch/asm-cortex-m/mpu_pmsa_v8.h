@@ -18,6 +18,7 @@
 #include <sentry/arch/asm-cortex-m/core.h>
 #include <sentry/ktypes.h>
 #include <sentry/zlib/math.h>
+#include <sentry/arch/asm-generic/panic.h>
 
 #define _PMSAv8_MEM_ALIGNMENT 32UL
 
@@ -335,6 +336,10 @@ end:
     return is_w_xor_x;
 }
 
+/* W^X holds when either XN or the read-only AP bit is set. */
+#define _MPU_RBAR_WX_MASK \
+    (MPU_RBAR_XN_Msk | (MPU_REGION_PERM_PRIV_RO << MPU_RBAR_AP_Pos))
+
 /**
  * @brief PMSAv8 MPU region fastload
  *
@@ -346,6 +351,7 @@ end:
  * In case of fast loading, write RNR reg to the first region number, fast load up
  * to 4 region, refresh RNR, write next 4 regions and so one. This is handle by CMSIS
  * intrinsics.
+ * @note All enabled regions are checked for W^X before any region is loaded.
  */
 /*@
   requires \valid_read(resource + (0 .. num_resources-1));
@@ -361,6 +367,20 @@ __STATIC_FORCEINLINE void __mpu_fastload(
 )
 {
 #ifndef __FRAMAC__
+    /*
+     * W^X is demonstrated using predicate and Frama-C. Yet, in case of
+     * external corruption (DMA, fault injection, etc.) the region configuration
+     * may be updated unexpectedly.
+     * To protect against such scenarios, additional integrity check is added here,
+     * in order to panic if the MPU configuration is tampered with a W^X violation.
+     */
+    for (uint8_t i = 0; i < num_resources; i++) {
+        /* Disabled entries revoke mappings and grant no access. */
+        if (unlikely((resource[i].RLAR & MPU_RLAR_EN_Msk) != 0 &&
+                     (resource[i].RBAR & _MPU_RBAR_WX_MASK) == 0)) {
+            panic(PANIC_HARDWARE_UNEXPECTED_MODIFICATION);
+        }
+    }
     /*
      * here we disable the effective MPU setting in Frama-C mode.
      * Although, this can be enhanced by adding to the corresponding frama-c
